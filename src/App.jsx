@@ -267,14 +267,14 @@ export default function LiveLoveRoomWithPhotobooth() {
 
         if (videoRef.current) {
           const canvas = document.createElement('canvas');
-          canvas.width = 640;
-          canvas.height = 480;
+          canvas.width = 1280;
+          canvas.height = 720;
           const ctx = canvas.getContext('2d');
           ctx.translate(canvas.width, 0);
           ctx.scale(-1, 1);
           ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
           
-          const photoData = canvas.toDataURL('image/jpeg', 0.9);
+          const photoData = canvas.toDataURL('image/jpeg', 0.95);
           const nextPhotos = [...accumulatedPhotos, photoData];
           
           setTimeout(() => {
@@ -293,7 +293,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   }, [myPhotos, partnerPhotos]);
 
-  // GENERATE KANVAS DENGAN UKURAN FOTO LEBIH BESAR & ORNAMEN TAMBAHAN
+  // FIX GEPENG: FUNGSI DRAW IMAGE DENGAN TEKNIK COVER (CROP OTOMATIS)
   const generatePhotoboothCanvas = async () => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -355,7 +355,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.strokeStyle = themeConfig.border;
     ctx.stroke();
 
-    // Header Teks & Stiker Ornamen Lebih Kaya
+    // Header Teks & Stiker Ornamen
     ctx.fillStyle = themeConfig.text;
     ctx.font = '900 24px sans-serif';
     ctx.textAlign = 'center';
@@ -377,11 +377,13 @@ export default function LiveLoveRoomWithPhotobooth() {
       });
     };
 
-    const drawSlot = async (photoSrc, x, y, width, height, radius) => {
+    // Fungsi Menggambar dengan Proporsi Sempurna (Anti-Gepeng / Object-Fit Cover)
+    const drawCoverImage = async (photoSrc, x, y, width, height, radius) => {
       const img = await loadImage(photoSrc);
       if (!img) return;
 
       ctx.save();
+      // Clip path untuk sudut melengkung (rounded)
       ctx.beginPath();
       ctx.moveTo(x + radius, y);
       ctx.lineTo(x + width - radius, y);
@@ -394,10 +396,27 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.quadraticCurveTo(x, y, x + radius, y);
       ctx.closePath();
       ctx.clip();
-      
-      ctx.drawImage(img, x, y, width, height);
+
+      // Hitung rasio cover agar tidak gepeng
+      const imgRatio = img.width / img.height;
+      const targetRatio = width / height;
+      let sWidth = img.width;
+      let sHeight = img.height;
+      let sX = 0;
+      let sY = 0;
+
+      if (imgRatio > targetRatio) {
+        sWidth = img.height * targetRatio;
+        sX = (img.width - sWidth) / 2;
+      } else {
+        sHeight = img.width / targetRatio;
+        sY = (img.height - sHeight) / 2;
+      }
+
+      ctx.drawImage(img, sX, sY, sWidth, sHeight, x, y, width, height);
       ctx.restore();
       
+      // Border di sekeliling foto
       ctx.save();
       ctx.beginPath();
       ctx.moveTo(x + radius, y);
@@ -416,29 +435,28 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.restore();
     };
 
-    // Render Ukuran Foto yang Lebih Besar & Proporsional Sesuai Layout
+    // Render Ukuran Foto Proporsional Tanpa Gepeng
     if (selectedLayout === '1x2') {
-      await drawSlot(combinedPhotos[0], 75, 155, 550, 390, 25);
-      await drawSlot(combinedPhotos[1] || combinedPhotos[0], 75, 565, 550, 390, 25);
+      await drawCoverImage(combinedPhotos[0], 75, 155, 550, 390, 25);
+      await drawCoverImage(combinedPhotos[1] || combinedPhotos[0], 75, 565, 550, 390, 25);
     } else if (selectedLayout === '1x3') {
-      await drawSlot(combinedPhotos[0], 85, 150, 530, 260, 20);
-      await drawSlot(combinedPhotos[1] || combinedPhotos[0], 85, 430, 530, 260, 20);
-      await drawSlot(combinedPhotos[2] || combinedPhotos[0], 85, 710, 530, 260, 20);
+      await drawCoverImage(combinedPhotos[0], 85, 150, 530, 260, 20);
+      await drawCoverImage(combinedPhotos[1] || combinedPhotos[0], 85, 430, 530, 260, 20);
+      await drawCoverImage(combinedPhotos[2] || combinedPhotos[0], 85, 710, 530, 260, 20);
     } else if (selectedLayout === '2x2') {
-      await drawSlot(combinedPhotos[0], 70, 155, 265, 380, 20);
-      await drawSlot(combinedPhotos[1] || combinedPhotos[0], 365, 155, 265, 380, 20);
-      await drawSlot(combinedPhotos[2] || combinedPhotos[0], 70, 560, 265, 380, 20);
-      await drawSlot(combinedPhotos[3] || combinedPhotos[1] || combinedPhotos[0], 365, 560, 265, 380, 20);
+      await drawCoverImage(combinedPhotos[0], 70, 155, 265, 380, 20);
+      await drawCoverImage(combinedPhotos[1] || combinedPhotos[0], 365, 155, 265, 380, 20);
+      await drawCoverImage(combinedPhotos[2] || combinedPhotos[0], 70, 560, 265, 380, 20);
+      await drawCoverImage(combinedPhotos[3] || combinedPhotos[1] || combinedPhotos[0], 365, 560, 265, 380, 20);
     } else if (selectedLayout === 'polaroid') {
-      await drawSlot(combinedPhotos[0], 100, 155, 500, 600, 15);
-      // Extra polaroid caption box text in canvas
+      await drawCoverImage(combinedPhotos[0], 100, 155, 500, 600, 15);
       ctx.fillStyle = '#1c1917';
       ctx.font = 'italic 20px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(`"Our Sweet Moment Together"`, canvas.width / 2, 800);
     }
 
-    // Divider & Footer Ornamen Lebih Menarik
+    // Divider & Footer
     ctx.beginPath();
     ctx.moveTo(70, 1020);
     ctx.lineTo(630, 1020);
@@ -756,7 +774,7 @@ export default function LiveLoveRoomWithPhotobooth() {
             {activeTab === 'photobooth' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-4 overflow-y-auto p-1">
                 
-                {/* STEP 1: PILIH LAYOUT & TEMA (DITAMBAHKAN PILIHAN POLAROID & TEMA MONO) */}
+                {/* STEP 1: PILIH LAYOUT & TEMA */}
                 {boothStep === 'select-layout' && (
                   <div className="space-y-3 w-full max-w-xs text-left my-auto">
                     <div className="text-center">
@@ -861,7 +879,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                       <a
                         href={finalStripUrl}
                         download={`Photobooth_${myName}_dan_${partnerName}.png`}
-                        className="flex-1 py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs text-center cursor-pointer block hover:scale-105 transition"
+                        className="flex-1 py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs text-center block cursor-pointer hover:scale-105 transition"
                       >
                         📥 Download Strip (PNG)
                       </a>
