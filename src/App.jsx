@@ -20,7 +20,7 @@ const LiveOrnaments = React.memo(() => (
         className="absolute text-xl sm:text-2xl"
         style={{ fontSize: `${Math.random() * 15 + 20}px` }}
       >
-        {['💖', '✨', '📸', '🌸', '💬', '✨'][Math.floor(Math.random() * 6)]}
+        {['💖', '✨', '📸', '🌸', '🎀', '⭐'][Math.floor(Math.random() * 6)]}
       </motion.div>
     ))}
   </div>
@@ -48,13 +48,18 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [partnerMood, setPartnerMood] = useState('😊 Normal / Senang');
   const [myMood, setMyMood] = useState('😊 Normal / Senang');
 
-  // Fitur Photobooth State
+  // Fitur Photobooth Custom Layout & Ornamen State
+  const [selectedLayout, setSelectedLayout] = useState('1x2'); // '1x2', '1x3', '2x2'
+  const [selectedTheme, setSelectedTheme] = useState('rose'); // 'rose', 'purple', 'peach'
   const [cameraActive, setCameraActive] = useState(false);
   const [countdown, setCountdown] = useState(null);
-  const [myPhoto, setMyPhoto] = useState(null);
-  const [partnerPhoto, setPartnerPhoto] = useState(null);
-  const [boothStatus, setBoothStatus] = useState('idle'); 
-  const [finalStripUrl, setFinalStripUrl] = useState(null); // URL Gambar Photobooth Gabungan
+  
+  // Menyimpan array foto berdasarkan layout yang dipilih
+  const [myPhotos, setMyPhotos] = useState([]);
+  const [partnerPhotos, setPartnerPhotos] = useState([]);
+  
+  const [boothStep, setBoothStep] = useState('select-layout'); // 'select-layout', 'capturing', 'waiting', 'ready'
+  const [finalStripUrl, setFinalStripUrl] = useState(null);
 
   const videoRef = useRef(null);
   const mediaStreamRef = useRef(null);
@@ -133,8 +138,10 @@ export default function LiveLoveRoomWithPhotobooth() {
         setPartnerMood(data.mood);
       } else if (data.type === 'love-tap') {
         confetti({ particleCount: 60, spread: 80, origin: { y: 0.5 } });
-      } else if (data.type === 'photobooth-photo') {
-        setPartnerPhoto(data.photo);
+      } else if (data.type === 'photobooth-package') {
+        setPartnerPhotos(data.photos);
+        setSelectedLayout(data.layout);
+        setSelectedTheme(data.theme);
       }
     });
 
@@ -193,10 +200,40 @@ export default function LiveLoveRoomWithPhotobooth() {
     setCameraActive(false);
   };
 
-  const triggerCountdownAndCapture = () => {
-    setCountdown(3);
-    setBoothStatus('countdown');
+  // Tentukan jumlah foto yang harus diambil berdasarkan layout
+  const getRequiredPhotosCount = () => {
+    if (selectedLayout === '1x2') return 2; // 2 foto vertikal
+    if (selectedLayout === '1x3') return 3; // 3 foto vertikal
+    if (selectedLayout === '2x2') return 2; // 2 foto kamu (2 lainnya dari pasangan)
+    return 2;
+  };
 
+  const startCapturingSequence = async () => {
+    await startCamera();
+    setBoothStep('capturing');
+    takePhotosLoop(0, []);
+  };
+
+  const takePhotosLoop = (index, accumulatedPhotos) => {
+    const total = getRequiredPhotosCount();
+    if (index >= total) {
+      stopCamera();
+      setMyPhotos(accumulatedPhotos);
+      setBoothStep('waiting');
+
+      // Kirim paket foto ke pasangan
+      if (conn) {
+        conn.send({
+          type: 'photobooth-package',
+          photos: accumulatedPhotos,
+          layout: selectedLayout,
+          theme: selectedTheme
+        });
+      }
+      return;
+    }
+
+    setCountdown(3);
     let count = 3;
     const timer = setInterval(() => {
       count -= 1;
@@ -205,170 +242,204 @@ export default function LiveLoveRoomWithPhotobooth() {
       } else {
         clearInterval(timer);
         setCountdown(null);
-        capturePhoto();
+
+        // Capture 1 foto
+        if (videoRef.current) {
+          const canvas = document.createElement('canvas');
+          canvas.width = 640;
+          canvas.height = 480;
+          const ctx = canvas.getContext('2d');
+          ctx.translate(canvas.width, 0);
+          ctx.scale(-1, 1);
+          ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+          
+          const photoData = canvas.toDataURL('image/jpeg', 0.9);
+          const nextPhotos = [...accumulatedPhotos, photoData];
+          
+          // Jeda sebentar antar foto jika lebih dari 1
+          setTimeout(() => {
+            takePhotosLoop(index + 1, nextPhotos);
+          }, 800);
+        }
       }
     }, 1000);
   };
 
-  const capturePhoto = () => {
-    if (!videoRef.current) return;
-    const canvas = document.createElement('canvas');
-    // Atur resolusi sedikit lebih besar agar tidak pecah
-    canvas.width = 640; 
-    canvas.height = 480;
-    const ctx = canvas.getContext('2d');
-    
-    // Balik gambar (mirror) agar terlihat natural
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-    
-    const photoData = canvas.toDataURL('image/jpeg', 0.9);
-    setMyPhoto(photoData);
-    setBoothStatus('waiting');
-    stopCamera();
-
-    if (conn) {
-      conn.send({ type: 'photobooth-photo', photo: photoData });
-    }
-  };
-
-  // Fungsi Pembantu untuk menggambar gambar dengan border-radius pada Canvas murni
-  const drawRoundedImage = (ctx, img, x, y, width, height, radius) => {
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(x + radius, y);
-    ctx.lineTo(x + width - radius, y);
-    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-    ctx.lineTo(x + width, y + height - radius);
-    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-    ctx.lineTo(x + radius, y + height);
-    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-    ctx.lineTo(x, y + radius);
-    ctx.quadraticCurveTo(x, y, x + radius, y);
-    ctx.closePath();
-    ctx.clip();
-    
-    ctx.drawImage(img, x, y, width, height);
-    ctx.restore();
-    
-    // Gambar border di sekeliling foto
-    ctx.save();
-    ctx.beginPath();
-    ctx.moveTo(x + radius, y);
-    ctx.lineTo(x + width - radius, y);
-    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-    ctx.lineTo(x + width, y + height - radius);
-    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-    ctx.lineTo(x + radius, y + height);
-    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-    ctx.lineTo(x, y + radius);
-    ctx.quadraticCurveTo(x, y, x + radius, y);
-    ctx.closePath();
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = '#ffe4e6'; // Warna rose-100 (mirip digambar)
-    ctx.stroke();
-    ctx.restore();
-  };
-
-  // FUNGSI UTAMA: MENGGABUNGKAN KEDUA FOTO MENJADI 1 GAMBAR STRIP CANVAS MURNI (Desain Persis SS)
+  // Jika kedua belah pihak sudah mengirim foto, generate strip canvas dengan ornamen!
   useEffect(() => {
-    if (myPhoto && partnerPhoto) {
-      setBoothStatus('ready');
-      confetti({ particleCount: 80, spread: 90, origin: { y: 0.5 } });
+    if (myPhotos.length > 0 && partnerPhotos.length > 0) {
+      setBoothStep('ready');
+      confetti({ particleCount: 100, spread: 100, origin: { y: 0.5 } });
 
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      // Ukuran Kanvas Mengikuti Desain (Sekitar Rasio Kartu Photobooth)
-      canvas.width = 600;
-      canvas.height = 1000;
-
-      // 1. Gambar Background Utama (Putih dengan Border Bulat Pink Tebal)
-      // Tambah shadow efek
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
-      ctx.shadowBlur = 30;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 10;
-      
-      // Background Putih Box
-      ctx.fillStyle = '#ffffff';
-      const boxX = 30;
-      const boxY = 30;
-      const boxW = 540;
-      const boxH = 940;
-      const boxRadius = 40;
-      
-      ctx.beginPath();
-      ctx.moveTo(boxX + boxRadius, boxY);
-      ctx.lineTo(boxX + boxW - boxRadius, boxY);
-      ctx.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + boxRadius);
-      ctx.lineTo(boxX + boxW, boxY + boxH - boxRadius);
-      ctx.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - boxRadius, boxY + boxH);
-      ctx.lineTo(boxX + boxRadius, boxY + boxH);
-      ctx.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - boxRadius);
-      ctx.lineTo(boxX, boxY + boxRadius);
-      ctx.quadraticCurveTo(boxX, boxY, boxX + boxRadius, boxY);
-      ctx.closePath();
-      ctx.fill();
-
-      // Reset Shadow
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetX = 0;
-      ctx.shadowOffsetY = 0;
-
-      // Gambar Border Pink Luar
-      ctx.lineWidth = 12;
-      ctx.strokeStyle = '#fbcfe8'; // Warna pink lembut seperti di SS
-      ctx.stroke();
-
-      // 2. Header Teks Photobooth
-      ctx.fillStyle = '#f43f5e'; // Warna pink tua/merah untuk judul
-      ctx.font = '900 24px sans-serif'; // Bold
-      ctx.textAlign = 'center';
-      ctx.fillText('OUR PHOTOBOOTH DATE 📸 ✨', canvas.width / 2, 110);
-
-      // 3. Load & Gambar Foto 1 (Kamu)
-      const img1 = new Image();
-      img1.crossOrigin = 'anonymous';
-      img1.src = myPhoto;
-      img1.onload = () => {
-        // Koordinat dan Ukuran Foto 1
-        drawRoundedImage(ctx, img1, 80, 160, 440, 310, 30);
-        
-        // 4. Load & Gambar Foto 2 (Pasangan)
-        const img2 = new Image();
-        img2.crossOrigin = 'anonymous';
-        img2.src = partnerPhoto;
-        img2.onload = () => {
-          // Koordinat dan Ukuran Foto 2
-          drawRoundedImage(ctx, img2, 80, 500, 440, 310, 30);
-
-          // 5. Garis Pemisah (Divider)
-          ctx.beginPath();
-          ctx.moveTo(80, 860);
-          ctx.lineTo(520, 860);
-          ctx.lineWidth = 2;
-          ctx.strokeStyle = '#fecdd3';
-          ctx.stroke();
-
-          // 6. Footer Teks (Nama & Tanggal)
-          ctx.fillStyle = '#a8a29e'; // Warna teks abu kecoklatan
-          ctx.font = '900 18px sans-serif'; // Bold
-          ctx.textAlign = 'left';
-          ctx.fillText(`${myName} & ${partnerName}`, 80, 910);
-
-          ctx.textAlign = 'right';
-          const today = new Date();
-          const dateString = `${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`;
-          ctx.fillText(dateString, 520, 910);
-
-          // Simpan hasil gabungan menjadi URL Gambar (Kualitas Tinggi)
-          setFinalStripUrl(canvas.toDataURL('image/png', 1.0));
-        };
-      };
+      generatePhotoboothCanvas();
     }
-  }, [myPhoto, partnerPhoto]);
+  }, [myPhotos, partnerPhotos]);
+
+  // Fungsi Pembuat Kanvas dengan Ornamen & Tema Estetik
+  const generatePhotoboothCanvas = () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Tentukan Tema Warna Berdasarkan Pilihan
+    let themeConfig = {
+      bg: '#fff1f2',
+      border: '#f43f5e',
+      accent: '#fb7185',
+      text: '#881337',
+      cardBg: '#ffffff'
+    };
+
+    if (selectedTheme === 'purple') {
+      themeConfig = { bg: '#f3e8ff', border: '#9333ea', accent: '#a855f7', text: '#581c87', cardBg: '#ffffff' };
+    } else if (selectedTheme === 'peach') {
+      themeConfig = { bg: '#ffedd5', border: '#ea580c', accent: '#f97316', text: '#7c2d12', cardBg: '#ffffff' };
+    }
+
+    canvas.width = 650;
+    canvas.height = 1150;
+
+    // 1. Background Kanvas Lembut
+    ctx.fillStyle = themeConfig.bg;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // 2. Main Card Container (Putih dengan Shadow)
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
+    ctx.shadowBlur = 25;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 10;
+
+    ctx.fillStyle = themeConfig.cardBg;
+    const boxX = 35;
+    const boxY = 35;
+    const boxW = 580;
+    const boxH = 1080;
+    const boxRadius = 35;
+
+    ctx.beginPath();
+    ctx.moveTo(boxX + boxRadius, boxY);
+    ctx.lineTo(boxX + boxW - boxRadius, boxY);
+    ctx.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + boxRadius);
+    ctx.lineTo(boxX + boxW, boxY + boxH - boxRadius);
+    ctx.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - boxRadius, boxY + boxH);
+    ctx.lineTo(boxX + boxRadius, boxY + boxH);
+    ctx.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - boxRadius);
+    ctx.lineTo(boxX, boxY + boxRadius);
+    ctx.quadraticCurveTo(boxX, boxY, boxX + boxRadius, boxY);
+    ctx.closePath();
+    ctx.fill();
+
+    // Reset Shadow
+    ctx.shadowBlur = 0;
+    ctx.shadowOffsetX = 0;
+    ctx.shadowOffsetY = 0;
+
+    // Border Frame Luar
+    ctx.lineWidth = 10;
+    ctx.strokeStyle = themeConfig.border;
+    ctx.stroke();
+
+    // 3. Header & Ornamen Stiker Teks
+    ctx.fillStyle = themeConfig.text;
+    ctx.font = '900 22px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('✨ OUR SPECIAL PHOTOBOOTH DATE 📸', canvas.width / 2, 95);
+
+    // Tambahan Ornamen Bintang / Hati di Header
+    ctx.font = '20px sans-serif';
+    ctx.fillText('💖 🎀 🌟 🌸', canvas.width / 2, 130);
+
+    // Gabungkan foto kamu dan pasangan sesuai layout
+    // Gabungan list foto: misal 1x2 (1 kamu, 1 partner), 1x3 (2 kamu, 1 partner atau sebaliknya)
+    let combinedPhotos = [...myPhotos, ...partnerPhotos];
+    
+    // Render Foto ke Canvas Berdasarkan Layout
+    if (selectedLayout === '1x2') {
+      // 2 Foto Vertikal Besar
+      drawPhotoSlot(ctx, combinedPhotos[0], 75, 160, 500, 360, 25, themeConfig.border);
+      drawPhotoSlot(ctx, combinedPhotos[1] || combinedPhotos[0], 75, 540, 500, 360, 25, themeConfig.border);
+    } else if (selectedLayout === '1x3') {
+      // 3 Foto Vertikal
+      drawPhotoSlot(ctx, combinedPhotos[0], 95, 155, 460, 250, 20, themeConfig.border);
+      drawPhotoSlot(ctx, combinedPhotos[1] || combinedPhotos[0], 95, 420, 460, 250, 20, themeConfig.border);
+      drawPhotoSlot(ctx, combinedPhotos[2] || combinedPhotos[0], 95, 685, 460, 250, 20, themeConfig.border);
+    } else if (selectedLayout === '2x2') {
+      // Grid 4 Foto (2x2)
+      drawPhotoSlot(ctx, combinedPhotos[0], 75, 160, 235, 360, 20, themeConfig.border);
+      drawPhotoSlot(ctx, combinedPhotos[1] || combinedPhotos[0], 340, 160, 235, 360, 20, themeConfig.border);
+      drawPhotoSlot(ctx, combinedPhotos[2] || combinedPhotos[0], 75, 540, 235, 360, 20, themeConfig.border);
+      drawPhotoSlot(ctx, combinedPhotos[3] || combinedPhotos[1] || combinedPhotos[0], 340, 540, 235, 360, 20, themeConfig.border);
+    }
+
+    // 4. Ornamen Bawah / Footer (Divider & Stamp Stiker)
+    ctx.beginPath();
+    ctx.moveTo(75, 960);
+    ctx.lineTo(575, 960);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = themeConfig.accent;
+    ctx.stroke();
+
+    // Stiker / Stamp Ornamen Hati Lucu di sudut
+    ctx.fillStyle = themeConfig.border;
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🎀  S E A L E D   W I T H   L O V E  🎀', canvas.width / 2, 995);
+
+    // Nama & Tanggal
+    ctx.fillStyle = '#57534e';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`👥 ${myName} & ${partnerName}`, 75, 1045);
+
+    ctx.textAlign = 'right';
+    const today = new Date();
+    ctx.fillText(`📅 ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`, 575, 1045);
+
+    setFinalStripUrl(canvas.toDataURL('image/png', 1.0));
+  };
+
+  // Helper Gambar Foto dengan Border Melengkung
+  const drawPhotoSlot = (ctx, photoSrc, x, y, width, height, radius, borderColor) => {
+    if (!photoSrc) return;
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = photoSrc;
+    img.onload = () => {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      ctx.clip();
+      
+      ctx.drawImage(img, x, y, width, height);
+      ctx.restore();
+      
+      // Border Foto
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(x + radius, y);
+      ctx.lineTo(x + width - radius, y);
+      ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+      ctx.lineTo(x + width, y + height - radius);
+      ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+      ctx.lineTo(x + radius, y + height);
+      ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+      ctx.lineTo(x, y + radius);
+      ctx.quadraticCurveTo(x, y, x + radius, y);
+      ctx.closePath();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = borderColor;
+      ctx.stroke();
+      ctx.restore();
+    };
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-100 via-pink-100 to-purple-200 flex items-center justify-center p-4 overflow-hidden relative font-sans text-stone-800">
@@ -580,7 +651,6 @@ export default function LiveLoveRoomWithPhotobooth() {
                 <button
                   onClick={() => {
                     setActiveTab('photobooth');
-                    if (!cameraActive && !myPhoto) startCamera();
                   }}
                   className={`px-3 py-1.5 rounded-lg transition ${activeTab === 'photobooth' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}
                 >
@@ -660,15 +730,78 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 2: PHOTOBOOTH */}
+            {/* TAB 2: PHOTOBOOTH DENGAN PILIHAN LAYOUT & ORNAMEN */}
             {activeTab === 'photobooth' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-4 overflow-y-auto p-1">
                 
-                {/* 1. BELUM FOTO */}
-                {!myPhoto && (
-                  <div className="space-y-3 w-full text-center">
+                {/* STEP 1: PILIH LAYOUT & TEMA ORNAMEN */}
+                {boothStep === 'select-layout' && (
+                  <div className="space-y-4 w-full max-w-xs text-left my-auto">
+                    <div className="text-center">
+                      <h3 className="font-bold text-stone-900 text-base">Pilih Ukuran & Tema Strip 📸</h3>
+                      <p className="text-xs text-stone-500">Sesuaikan gaya photobooth kalian berdua.</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-stone-600 mb-1">Pilih Layout:</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { id: '1x2', label: '1x2 (2 Cut)' },
+                          { id: '1x3', label: '1x3 (3 Cut)' },
+                          { id: '2x2', label: '2x2 (4 Grid)' }
+                        ].map((layout) => (
+                          <button
+                            key={layout.id}
+                            onClick={() => setSelectedLayout(layout.id)}
+                            className={`py-2 px-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                              selectedLayout === layout.id
+                                ? 'bg-rose-500 text-white border-rose-500 shadow-sm'
+                                : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
+                            }`}
+                          >
+                            {layout.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-stone-600 mb-1">Pilih Tema & Ornamen:</label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[
+                          { id: 'rose', label: '🌸 Rose Pink' },
+                          { id: 'purple', label: '💜 Lilac' },
+                          { id: 'peach', label: '🍑 Peach' }
+                        ].map((theme) => (
+                          <button
+                            key={theme.id}
+                            onClick={() => setSelectedTheme(theme.id)}
+                            className={`py-2 px-2 rounded-xl text-xs font-bold border transition cursor-pointer ${
+                              selectedTheme === theme.id
+                                ? 'bg-stone-900 text-white border-stone-900 shadow-sm'
+                                : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
+                            }`}
+                          >
+                            {theme.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={startCapturingSequence}
+                      className="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-2xl shadow-md text-xs cursor-pointer mt-2"
+                    >
+                      Mulai Foto Sesi ({getRequiredPhotosCount()} Foto) 🎬
+                    </motion.button>
+                  </div>
+                )}
+
+                {/* STEP 2: PROSES KAMERA & COUNTDOWN */}
+                {boothStep === 'capturing' && (
+                  <div className="space-y-3 w-full text-center my-auto">
                     <div className="relative w-full max-w-[280px] h-[210px] mx-auto bg-black rounded-2xl overflow-hidden border-4 border-rose-200 shadow-md">
-                      {/* PENTING: Tambahkan transform: scaleX(-1) pada video agar kamera HP depan tidak terbalik! */}
                       <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
                       
                       {countdown !== null && (
@@ -677,58 +810,43 @@ export default function LiveLoveRoomWithPhotobooth() {
                         </div>
                       )}
                     </div>
-
-                    <p className="text-xs text-stone-500">Posisikan wajahmu dengan manis di depan kamera!</p>
-
-                    <motion.button
-                      whileTap={{ scale: 0.95 }}
-                      onClick={triggerCountdownAndCapture}
-                      disabled={countdown !== null}
-                      className="px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-2xl shadow-md text-sm cursor-pointer disabled:opacity-50"
-                    >
-                      📸 Ambil Foto Sekarang!
-                    </motion.button>
+                    <p className="text-xs font-semibold text-rose-600 animate-pulse">Sedang mengambil rangkaian foto...</p>
                   </div>
                 )}
 
-                {/* 2. MENUNGGU PASANGAN */}
-                {myPhoto && boothStatus === 'waiting' && (
+                {/* STEP 3: MENUNGGU PASANGAN */}
+                {boothStep === 'waiting' && (
                   <div className="space-y-4 text-center my-auto">
-                    <div className="w-24 h-24 mx-auto rounded-xl overflow-hidden border-2 border-rose-300 shadow">
-                      <img src={myPhoto} alt="My Photo" className="w-full h-full object-cover transform scale-x-100" />
-                    </div>
+                    <div className="text-4xl animate-spin">⏳</div>
                     <div className="space-y-1">
-                      <div className="text-3xl animate-spin">⏳</div>
-                      <h3 className="font-bold text-stone-800 text-sm">Foto kamu berhasil diambil!</h3>
+                      <h3 className="font-bold text-stone-800 text-sm">Foto kamu sudah tersimpan!</h3>
                       <p className="text-xs text-stone-500 animate-pulse">Menunggu foto dari {partnerName}...</p>
                     </div>
                   </div>
                 )}
 
-                {/* 3. TAMPILAN GAMBAR CANVAS JADI & TOMBOL DOWNLOAD */}
-                {boothStatus === 'ready' && finalStripUrl && (
-                  <div className="space-y-4 w-full flex flex-col items-center my-auto pt-4">
+                {/* STEP 4: HASIL KANVAS JADI DENGAN ORNAMEN LENGKAP */}
+                {boothStep === 'ready' && finalStripUrl && (
+                  <div className="space-y-3 w-full flex flex-col items-center my-auto pt-2">
                     
-                    {/* Tampilkan TEPAT DARI CANVAS (sudah ada frame pink, judul, dll) */}
-                    <div className="w-[280px] drop-shadow-2xl">
-                      <img src={finalStripUrl} alt="Hasil Photobooth" className="w-full h-auto object-contain" />
+                    <div className="w-[240px] drop-shadow-2xl">
+                      <img src={finalStripUrl} alt="Hasil Photobooth Estetik" className="w-full h-auto object-contain rounded-2xl" />
                     </div>
 
-                    <div className="flex gap-2 w-full max-w-[280px] pt-2">
+                    <div className="flex gap-2 w-full max-w-[260px] pt-1">
                       <a
                         href={finalStripUrl}
                         download={`Photobooth_${myName}_dan_${partnerName}.png`}
                         className="flex-1 py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs text-center cursor-pointer block hover:scale-105 transition"
                       >
-                        📥 Download (PNG)
+                        📥 Download Strip (PNG)
                       </a>
                       <button
                         onClick={() => {
-                          setMyPhoto(null);
-                          setPartnerPhoto(null);
+                          setMyPhotos([]);
+                          setPartnerPhotos([]);
                           setFinalStripUrl(null);
-                          setBoothStatus('idle');
-                          startCamera();
+                          setBoothStep('select-layout');
                         }}
                         className="px-4 py-3 bg-stone-200 text-stone-600 font-bold rounded-xl text-xs hover:bg-stone-300 transition cursor-pointer"
                       >
