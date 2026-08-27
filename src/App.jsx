@@ -52,21 +52,27 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [notes, setNotes] = useState([]);
   const [inputNote, setInputNote] = useState('');
 
-  // Fitur Photobooth Custom Layout & Ornamen State
+  // Fitur Photobooth Bergantian (Turn-Based) State
   const [selectedLayout, setSelectedLayout] = useState('1x2'); 
   const [selectedTheme, setSelectedTheme] = useState('rose'); 
   const [cameraActive, setCameraActive] = useState(false);
   const [countdown, setCountdown] = useState(null);
   
-  const [myPhotos, setMyPhotos] = useState([]);
-  const [partnerPhotos, setPartnerPhotos] = useState([]);
+  const [allPhotos, setAllPhotos] = useState([]);
+  const allPhotosRef = useRef([]);
   
   const [boothStep, setBoothStep] = useState('select-layout'); 
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isLeader, setIsLeader] = useState(false);
   const [finalStripUrl, setFinalStripUrl] = useState(null);
 
   const videoRef = useRef(null);
   const mediaStreamRef = useRef(null);
   const messagesEndRef = useRef(null);
+
+  useEffect(() => {
+    allPhotosRef.current = allPhotos;
+  }, [allPhotos]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -151,12 +157,18 @@ export default function LiveLoveRoomWithPhotobooth() {
         confetti({ particleCount: 60, spread: 80, origin: { y: 0.5 } });
       } else if (data.type === 'love-note') {
         setNotes((prev) => [data.note, ...prev]);
-      } else if (data.type === 'photobooth-start-sync') {
+      } else if (data.type === 'pb-start') {
         setSelectedLayout(data.layout);
         setSelectedTheme(data.theme);
-        startCapturingSequence();
-      } else if (data.type === 'photobooth-package') {
-        setPartnerPhotos(data.photos);
+        setIsLeader(false);
+        setCurrentStep(0);
+        setAllPhotos([]);
+        setBoothStep('capturing');
+        startCamera();
+      } else if (data.type === 'pb-submit-photo') {
+        const updated = [...allPhotosRef.current, data.photo];
+        setAllPhotos(updated);
+        setCurrentStep(data.step + 1);
       }
     });
 
@@ -211,7 +223,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  // --- PHOTOBOOTH LOGIC BERSIH & BENAR ---
+  // --- PHOTOBOOTH LOGIC & KAMERA ---
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -242,83 +254,90 @@ export default function LiveLoveRoomWithPhotobooth() {
   const getRequiredPhotosCount = () => {
     if (selectedLayout === '1x2') return 2;
     if (selectedLayout === '1x3') return 3;
-    if (selectedLayout === '2x2') return 2;
+    if (selectedLayout === '2x2') return 4;
     if (selectedLayout === 'polaroid') return 1;
     return 2;
   };
 
   const handleInitiateCapture = () => {
+    setIsLeader(true);
+    setCurrentStep(0);
+    setAllPhotos([]);
+    setBoothStep('capturing');
     if (conn) {
       conn.send({
-        type: 'photobooth-start-sync',
+        type: 'pb-start',
         layout: selectedLayout,
         theme: selectedTheme
       });
     }
-    startCapturingSequence();
+    startCamera();
   };
 
-  const startCapturingSequence = async () => {
-    setBoothStep('capturing');
-    await startCamera();
-    takePhotosLoop(0, []);
-  };
+  // Loop Step Berdasarkan Giliran (Turn-Based)
+  useEffect(() => {
+    if (boothStep === 'capturing') {
+      runStep();
+    }
+  }, [boothStep, currentStep]);
 
-  const takePhotosLoop = (index, accumulatedPhotos) => {
+  const runStep = async () => {
     const total = getRequiredPhotosCount();
-    if (index >= total) {
+    if (currentStep >= total) {
       stopCamera();
-      setMyPhotos(accumulatedPhotos);
-      setBoothStep('waiting');
-
-      if (conn) {
-        conn.send({
-          type: 'photobooth-package',
-          photos: accumulatedPhotos
-        });
-      }
+      setBoothStep('ready');
+      generatePhotoboothCanvas(allPhotosRef.current);
+      confetti({ particleCount: 100, spread: 100, origin: { y: 0.5 } });
       return;
     }
 
-    setCountdown(3);
-    let count = 3;
-    const timer = setInterval(() => {
-      count -= 1;
-      if (count > 0) {
-        setCountdown(count);
-      } else {
-        clearInterval(timer);
-        setCountdown(null);
+    const myTurn = (currentStep % 2 === 0 && isLeader) || (currentStep % 2 !== 0 && !isLeader);
 
-        if (videoRef.current) {
-          const canvas = document.createElement('canvas');
-          canvas.width = 640;
-          canvas.height = 480;
-          const ctx = canvas.getContext('2d');
-          ctx.translate(canvas.width, 0);
-          ctx.scale(-1, 1);
-          ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
-          
-          const photoData = canvas.toDataURL('image/jpeg', 0.7);
-          const nextPhotos = [...accumulatedPhotos, photoData];
-          
-          setTimeout(() => {
-            takePhotosLoop(index + 1, nextPhotos);
-          }, 800);
-        }
+    if (myTurn) {
+      if (!mediaStreamRef.current) {
+        await startCamera();
       }
-    }, 1000);
+
+      setCountdown(3);
+      let count = 3;
+      const timer = setInterval(() => {
+        count -= 1;
+        if (count > 0) {
+          setCountdown(count);
+        } else {
+          clearInterval(timer);
+          setCountdown(null);
+
+          if (videoRef.current) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 640;
+            canvas.height = 480;
+            const ctx = canvas.getContext('2d');
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+            
+            const photoData = canvas.toDataURL('image/jpeg', 0.7);
+            const updated = [...allPhotosRef.current, photoData];
+            setAllPhotos(updated);
+
+            if (conn) {
+              conn.send({
+                type: 'pb-submit-photo',
+                step: currentStep,
+                photo: photoData
+              });
+            }
+
+            setCurrentStep(prev => prev + 1);
+          }
+        }
+      }, 1000);
+    }
   };
 
-  useEffect(() => {
-    if (myPhotos.length > 0 && partnerPhotos.length > 0) {
-      setBoothStep('ready');
-      confetti({ particleCount: 100, spread: 100, origin: { y: 0.5 } });
-      generatePhotoboothCanvas();
-    }
-  }, [myPhotos, partnerPhotos]);
-
-  const generatePhotoboothCanvas = async () => {
+  const generatePhotoboothCanvas = async (photosToUse) => {
+    const photos = photosToUse || allPhotosRef.current;
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
@@ -385,7 +404,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.font = '22px sans-serif';
     ctx.fillText('💖 🧸 🎀 📸 🌟 🌸', canvas.width / 2, 125);
 
-    let combinedPhotos = [...myPhotos, ...partnerPhotos];
+    let combinedPhotos = photos;
 
     const loadImage = (src) => {
       return new Promise((resolve) => {
@@ -679,7 +698,7 @@ export default function LiveLoveRoomWithPhotobooth() {
           </motion.div>
         )}
 
-        {/* DASHBOARD UTAMA (FIX: HANYA MUNCUL JIKA MODE === 'dashboard') */}
+        {/* DASHBOARD UTAMA */}
         {mode === 'dashboard' && (
           <motion.div
             key="dash"
@@ -789,7 +808,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 2: LOVE NOTES (CATATAN HATI) */}
+            {/* TAB 2: LOVE NOTES */}
             {activeTab === 'notes' && (
               <div className="flex-1 flex flex-col space-y-3 overflow-hidden">
                 <div className="text-center shrink-0">
@@ -841,7 +860,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 3: PHOTOBOOTH SINKRONASI OTOMATIS */}
+            {/* TAB 3: PHOTOBOOTH BERGANTIAN (TURN-BASED) */}
             {activeTab === 'photobooth' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-4 overflow-y-auto p-1">
                 
@@ -849,7 +868,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                   <div className="space-y-3 w-full max-w-xs text-left my-auto">
                     <div className="text-center">
                       <h3 className="font-bold text-stone-900 text-base">Pilih Ukuran & Tema Strip 📸</h3>
-                      <p className="text-xs text-stone-500">Pilihanmu otomatis menyamakan perangkat pasanganmu!</p>
+                      <p className="text-xs text-stone-500">Foto akan diambil secara bergantian (turn-based)!</p>
                     </div>
 
                     <div>
@@ -905,7 +924,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                       onClick={handleInitiateCapture}
                       className="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-2xl shadow-md text-xs cursor-pointer mt-1"
                     >
-                      Mulai Sesi Foto Bersama 🎬
+                      Mulai Sesi Foto Bergantian 🎬
                     </motion.button>
                   </div>
                 )}
@@ -915,23 +934,27 @@ export default function LiveLoveRoomWithPhotobooth() {
                     <div className="relative w-full max-w-[280px] h-[210px] mx-auto bg-stone-900 rounded-2xl overflow-hidden border-4 border-rose-300 shadow-md flex items-center justify-center">
                       <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
                       
-                      {countdown !== null && (
+                      {/* TAMPILKAN COUNTDOWN JIKA GILIRAN SAYA */}
+                      {((currentStep % 2 === 0 && isLeader) || (currentStep % 2 !== 0 && !isLeader)) && countdown !== null && (
                         <div className="absolute inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center pointer-events-none">
                           <span className="text-7xl font-black text-white drop-shadow-lg animate-bounce">{countdown}</span>
                         </div>
                       )}
-                    </div>
-                    <p className="text-xs font-semibold text-rose-600 animate-pulse">Senyum terbaikmu! Sedang mengambil foto...</p>
-                  </div>
-                )}
 
-                {boothStep === 'waiting' && (
-                  <div className="space-y-4 text-center my-auto">
-                    <div className="text-4xl animate-spin">⏳</div>
-                    <div className="space-y-1">
-                      <h3 className="font-bold text-stone-800 text-sm">Foto kamu berhasil diambil!</h3>
-                      <p className="text-xs text-stone-500 animate-pulse">Menunggu foto dari {partnerName}...</p>
+                      {/* TAMPILKAN PEMBERITAHUAN JIKA GILIRAN PASANGAN */}
+                      {!((currentStep % 2 === 0 && isLeader) || (currentStep % 2 !== 0 && !isLeader)) && (
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-xs flex flex-col items-center justify-center p-4 text-center">
+                          <div className="text-3xl animate-bounce mb-1">⏳</div>
+                          <p className="text-white text-xs font-bold">Giliran {partnerName} yang berfoto...</p>
+                          <p className="text-rose-200 text-[10px] mt-1">Foto ke-{currentStep + 1} dari {getRequiredPhotosCount()}</p>
+                        </div>
+                      )}
                     </div>
+                    <p className="text-xs font-semibold text-rose-600 animate-pulse">
+                      {((currentStep % 2 === 0 && isLeader) || (currentStep % 2 !== 0 && !isLeader))
+                        ? `Giliran Kamu! Foto ke-${currentStep + 1} dari ${getRequiredPhotosCount()}`
+                        : `Menunggu ${partnerName} mengambil foto...`}
+                    </p>
                   </div>
                 )}
 
@@ -951,8 +974,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                       </a>
                       <button
                         onClick={() => {
-                          setMyPhotos([]);
-                          setPartnerPhotos([]);
+                          setAllPhotos([]);
                           setFinalStripUrl(null);
                           setBoothStep('select-layout');
                         }}
