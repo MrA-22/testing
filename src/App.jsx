@@ -129,11 +129,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       setMode('join');
     });
 
-    newPeer.on('error', () => {
-      alert('Gagal terhubung! Pastikan kode room benar.');
-      setMode('join');
-    });
-
     setPeer(newPeer);
   };
 
@@ -216,7 +211,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  // --- PHOTOBOOTH LOGIC & KAMERA FIX ---
+  // --- PHOTOBOOTH LOGIC BERSIH & BENAR ---
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -297,14 +292,14 @@ export default function LiveLoveRoomWithPhotobooth() {
 
         if (videoRef.current) {
           const canvas = document.createElement('canvas');
-          canvas.width = 1280;
-          canvas.height = 720;
+          canvas.width = 640;
+          canvas.height = 480;
           const ctx = canvas.getContext('2d');
           ctx.translate(canvas.width, 0);
           ctx.scale(-1, 1);
           ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
           
-          const photoData = canvas.toDataURL('image/jpeg', 0.95);
+          const photoData = canvas.toDataURL('image/jpeg', 0.7);
           const nextPhotos = [...accumulatedPhotos, photoData];
           
           setTimeout(() => {
@@ -794,7 +789,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 2: LOVE NOTES (CATATAN HATI) - FITUR BARU */}
+            {/* TAB 2: LOVE NOTES (CATATAN HATI) */}
             {activeTab === 'notes' && (
               <div className="flex-1 flex flex-col space-y-3 overflow-hidden">
                 <div className="text-center shrink-0">
