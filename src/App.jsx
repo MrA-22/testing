@@ -20,7 +20,7 @@ const LiveOrnaments = React.memo(() => (
         className="absolute text-xl sm:text-2xl"
         style={{ fontSize: `${Math.random() * 15 + 20}px` }}
       >
-        {['💖', '✨', '📸', '🌸', '🎀', '🧸', '⭐'][Math.floor(Math.random() * 7)]}
+        {['💖', '✨', '📸', '🌸', '🎀', '🧸', '💌', '⭐'][Math.floor(Math.random() * 8)]}
       </motion.div>
     ))}
   </div>
@@ -39,7 +39,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [partnerName, setPartnerName] = useState('Ayang');
   const [statusText, setStatusText] = useState('Menunggu koneksi...');
 
-  // Navigasi Dashboard ('chat' atau 'photobooth')
+  // Navigasi Dashboard ('chat', 'photobooth', atau 'notes')
   const [activeTab, setActiveTab] = useState('chat');
 
   // Fitur Live Chat & Mood
@@ -48,16 +48,20 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [partnerMood, setPartnerMood] = useState('😊 Normal / Senang');
   const [myMood, setMyMood] = useState('😊 Normal / Senang');
 
+  // Fitur Love Notes (Catatan Hati) State
+  const [notes, setNotes] = useState([]);
+  const [inputNote, setInputNote] = useState('');
+
   // Fitur Photobooth Custom Layout & Ornamen State
-  const [selectedLayout, setSelectedLayout] = useState('1x2'); // '1x2', '1x3', '2x2', 'polaroid'
-  const [selectedTheme, setSelectedTheme] = useState('rose'); // 'rose', 'purple', 'peach', 'mono'
+  const [selectedLayout, setSelectedLayout] = useState('1x2'); 
+  const [selectedTheme, setSelectedTheme] = useState('rose'); 
   const [cameraActive, setCameraActive] = useState(false);
   const [countdown, setCountdown] = useState(null);
   
   const [myPhotos, setMyPhotos] = useState([]);
   const [partnerPhotos, setPartnerPhotos] = useState([]);
   
-  const [boothStep, setBoothStep] = useState('select-layout'); // 'select-layout', 'capturing', 'waiting', 'ready'
+  const [boothStep, setBoothStep] = useState('select-layout'); 
   const [finalStripUrl, setFinalStripUrl] = useState(null);
 
   const videoRef = useRef(null);
@@ -125,6 +129,11 @@ export default function LiveLoveRoomWithPhotobooth() {
       setMode('join');
     });
 
+    newPeer.on('error', () => {
+      alert('Gagal terhubung! Pastikan kode room benar.');
+      setMode('join');
+    });
+
     setPeer(newPeer);
   };
 
@@ -145,6 +154,8 @@ export default function LiveLoveRoomWithPhotobooth() {
         setPartnerMood(data.mood);
       } else if (data.type === 'love-tap') {
         confetti({ particleCount: 60, spread: 80, origin: { y: 0.5 } });
+      } else if (data.type === 'love-note') {
+        setNotes((prev) => [data.note, ...prev]);
       } else if (data.type === 'photobooth-start-sync') {
         setSelectedLayout(data.layout);
         setSelectedTheme(data.theme);
@@ -170,6 +181,25 @@ export default function LiveLoveRoomWithPhotobooth() {
     conn.send(msgObj);
     setMessages((prev) => [...prev, { sender: 'me', text: inputMessage, time: timeStr }]);
     setInputMessage('');
+  };
+
+  const handleSendNote = (e) => {
+    e.preventDefault();
+    if (!inputNote.trim()) return;
+
+    const newNote = {
+      id: Date.now(),
+      sender: myName,
+      text: inputNote,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      color: ['bg-pink-100 text-pink-900', 'bg-yellow-100 text-yellow-900', 'bg-purple-100 text-purple-900', 'bg-rose-100 text-rose-900'][Math.floor(Math.random() * 4)]
+    };
+
+    setNotes((prev) => [newNote, ...prev]);
+    if (conn) {
+      conn.send({ type: 'love-note', note: newNote });
+    }
+    setInputNote('');
   };
 
   const handleMoodChange = (newMood) => {
@@ -293,7 +323,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   }, [myPhotos, partnerPhotos]);
 
-  // FIX GEPENG: FUNGSI DRAW IMAGE DENGAN TEKNIK COVER (CROP OTOMATIS)
   const generatePhotoboothCanvas = async () => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -317,11 +346,9 @@ export default function LiveLoveRoomWithPhotobooth() {
     canvas.width = 700;
     canvas.height = 1250;
 
-    // Background Kanvas
     ctx.fillStyle = themeConfig.bg;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Main Card Container
     ctx.shadowColor = 'rgba(0, 0, 0, 0.18)';
     ctx.shadowBlur = 30;
     ctx.shadowOffsetX = 0;
@@ -355,7 +382,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.strokeStyle = themeConfig.border;
     ctx.stroke();
 
-    // Header Teks & Stiker Ornamen
     ctx.fillStyle = themeConfig.text;
     ctx.font = '900 24px sans-serif';
     ctx.textAlign = 'center';
@@ -377,13 +403,11 @@ export default function LiveLoveRoomWithPhotobooth() {
       });
     };
 
-    // Fungsi Menggambar dengan Proporsi Sempurna (Anti-Gepeng / Object-Fit Cover)
     const drawCoverImage = async (photoSrc, x, y, width, height, radius) => {
       const img = await loadImage(photoSrc);
       if (!img) return;
 
       ctx.save();
-      // Clip path untuk sudut melengkung (rounded)
       ctx.beginPath();
       ctx.moveTo(x + radius, y);
       ctx.lineTo(x + width - radius, y);
@@ -397,7 +421,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.closePath();
       ctx.clip();
 
-      // Hitung rasio cover agar tidak gepeng
       const imgRatio = img.width / img.height;
       const targetRatio = width / height;
       let sWidth = img.width;
@@ -416,7 +439,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.drawImage(img, sX, sY, sWidth, sHeight, x, y, width, height);
       ctx.restore();
       
-      // Border di sekeliling foto
       ctx.save();
       ctx.beginPath();
       ctx.moveTo(x + radius, y);
@@ -435,7 +457,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.restore();
     };
 
-    // Render Ukuran Foto Proporsional Tanpa Gepeng
     if (selectedLayout === '1x2') {
       await drawCoverImage(combinedPhotos[0], 75, 155, 550, 390, 25);
       await drawCoverImage(combinedPhotos[1] || combinedPhotos[0], 75, 565, 550, 390, 25);
@@ -456,7 +477,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillText(`"Our Sweet Moment Together"`, canvas.width / 2, 800);
     }
 
-    // Divider & Footer
     ctx.beginPath();
     ctx.moveTo(70, 1020);
     ctx.lineTo(630, 1020);
@@ -501,7 +521,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               Live Space & Photobooth
             </h1>
             <p className="text-stone-600 text-xs sm:text-sm leading-relaxed">
-              Ruang interaktif real-time. Ngobrol, ubah status mood, dan ambil foto photobooth bareng pasangan secara jarak jauh!
+              Ruang interaktif real-time. Ngobrol, ubah status mood, catatan hati, dan ambil foto photobooth bareng pasangan!
             </p>
 
             <div className="space-y-3 pt-2">
@@ -681,20 +701,24 @@ export default function LiveLoveRoomWithPhotobooth() {
                 <h2 className="text-sm font-bold text-stone-900">{myName} & {partnerName}</h2>
               </div>
 
-              <div className="flex bg-stone-100 p-1 rounded-xl text-xs font-bold">
+              <div className="flex bg-stone-100 p-1 rounded-xl text-xs font-bold gap-1">
                 <button
                   onClick={() => setActiveTab('chat')}
-                  className={`px-3 py-1.5 rounded-lg transition ${activeTab === 'chat' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}
+                  className={`px-2.5 py-1.5 rounded-lg transition ${activeTab === 'chat' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}
                 >
                   💬 Chat
                 </button>
                 <button
-                  onClick={() => {
-                    setActiveTab('photobooth');
-                  }}
-                  className={`px-3 py-1.5 rounded-lg transition ${activeTab === 'photobooth' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}
+                  onClick={() => setActiveTab('notes')}
+                  className={`px-2.5 py-1.5 rounded-lg transition ${activeTab === 'notes' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}
                 >
-                  📸 Photobooth
+                  💌 Notes
+                </button>
+                <button
+                  onClick={() => setActiveTab('photobooth')}
+                  className={`px-2.5 py-1.5 rounded-lg transition ${activeTab === 'photobooth' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}
+                >
+                  📸 Booth
                 </button>
               </div>
             </div>
@@ -770,11 +794,62 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 2: PHOTOBOOTH SINKRONASI OTOMATIS */}
+            {/* TAB 2: LOVE NOTES (CATATAN HATI) - FITUR BARU */}
+            {activeTab === 'notes' && (
+              <div className="flex-1 flex flex-col space-y-3 overflow-hidden">
+                <div className="text-center shrink-0">
+                  <h3 className="font-bold text-stone-900 text-sm">💌 Papan Catatan Hati</h3>
+                  <p className="text-[11px] text-stone-500">Tinggalkan pesan manis yang langsung nempel di layar kalian berdua!</p>
+                </div>
+
+                <form onSubmit={handleSendNote} className="flex gap-2 shrink-0">
+                  <input
+                    type="text"
+                    value={inputNote}
+                    onChange={(e) => setInputNote(e.target.value)}
+                    placeholder="Tulis pesan/catatan romantis..."
+                    className="flex-1 px-4 py-2.5 rounded-2xl border border-stone-200 focus:border-rose-400 focus:outline-none text-stone-900 font-medium bg-stone-50 text-xs"
+                  />
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    type="submit"
+                    className="px-4 py-2.5 bg-rose-500 text-white font-bold rounded-2xl text-xs shadow-sm cursor-pointer"
+                  >
+                    Tempel 📌
+                  </motion.button>
+                </form>
+
+                <div className="flex-1 bg-stone-50 border border-stone-200/80 rounded-2xl p-3 overflow-y-auto space-y-2.5">
+                  {notes.length === 0 ? (
+                    <div className="h-full flex items-center justify-center text-center text-xs text-stone-400">
+                      Belum ada catatan hati. Yuk tulis pesan pertamamu! ✨
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-2.5">
+                      {notes.map((note) => (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          key={note.id}
+                          className={`p-3.5 rounded-2xl shadow-xs border border-white/50 ${note.color} flex flex-col justify-between`}
+                        >
+                          <p className="text-xs sm:text-sm font-medium whitespace-pre-wrap">{note.text}</p>
+                          <div className="flex justify-between items-center mt-2 pt-1 border-t border-black/5 text-[10px] opacity-75">
+                            <span className="font-bold">— {note.sender}</span>
+                            <span>{note.time}</span>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: PHOTOBOOTH SINKRONASI OTOMATIS */}
             {activeTab === 'photobooth' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-4 overflow-y-auto p-1">
                 
-                {/* STEP 1: PILIH LAYOUT & TEMA */}
                 {boothStep === 'select-layout' && (
                   <div className="space-y-3 w-full max-w-xs text-left my-auto">
                     <div className="text-center">
@@ -840,7 +915,6 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* STEP 2: PROSES KAMERA LIVE & COUNTDOWN */}
                 {boothStep === 'capturing' && (
                   <div className="space-y-3 w-full text-center my-auto">
                     <div className="relative w-full max-w-[280px] h-[210px] mx-auto bg-stone-900 rounded-2xl overflow-hidden border-4 border-rose-300 shadow-md flex items-center justify-center">
@@ -856,7 +930,6 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* STEP 3: MENUNGGU PASANGAN */}
                 {boothStep === 'waiting' && (
                   <div className="space-y-4 text-center my-auto">
                     <div className="text-4xl animate-spin">⏳</div>
@@ -867,10 +940,8 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* STEP 4: HASIL KANVAS JADI DENGAN ORNAMEN LENGKAP */}
                 {boothStep === 'ready' && finalStripUrl && (
                   <div className="space-y-3 w-full flex flex-col items-center my-auto pt-2">
-                    
                     <div className="w-[230px] drop-shadow-2xl">
                       <img src={finalStripUrl} alt="Hasil Photobooth Estetik" className="w-full h-auto object-contain rounded-2xl" />
                     </div>
@@ -895,7 +966,6 @@ export default function LiveLoveRoomWithPhotobooth() {
                         Ulangi 🔄
                       </button>
                     </div>
-
                   </div>
                 )}
 
