@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Peer } from 'peerjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import html2canvas from 'html2canvas';
 
 // Ornamen Melayang Romantis
 const LiveOrnaments = React.memo(() => (
@@ -33,17 +32,17 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [isConnected, setIsConnected] = useState(false);
   
   // Setup Room & Nama
-  const [mode, setMode] = useState('menu'); // 'menu', 'create', 'join', 'waiting-host', 'connecting', 'dashboard'
+  const [mode, setMode] = useState('menu'); 
   const [roomCode, setRoomCode] = useState('');
   const [inputCode, setInputCode] = useState('');
   const [myName, setMyName] = useState('');
   const [partnerName, setPartnerName] = useState('Ayang');
   const [statusText, setStatusText] = useState('Menunggu koneksi...');
 
-  // Navigasi dalam Dashboard ('chat' atau 'photobooth')
+  // Navigasi Dashboard ('chat' atau 'photobooth')
   const [activeTab, setActiveTab] = useState('chat');
 
-  // Fitur Interaktif Live Chat & Mood
+  // Fitur Live Chat & Mood
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [partnerMood, setPartnerMood] = useState('😊 Normal / Senang');
@@ -54,14 +53,13 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [countdown, setCountdown] = useState(null);
   const [myPhoto, setMyPhoto] = useState(null);
   const [partnerPhoto, setPartnerPhoto] = useState(null);
-  const [boothStatus, setBoothStatus] = useState('idle'); // 'idle', 'countdown', 'captured', 'waiting', 'ready'
+  const [boothStatus, setBoothStatus] = useState('idle'); 
+  const [finalStripUrl, setFinalStripUrl] = useState(null); // URL Gambar Photobooth Gabungan
 
   const videoRef = useRef(null);
   const mediaStreamRef = useRef(null);
   const messagesEndRef = useRef(null);
-  const photoboothResultRef = useRef(null);
 
-  // Auto-scroll chat ke bawah
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -118,7 +116,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     setPeer(newPeer);
   };
 
-  // Setup Listener Data Masuk dari Pasangan
   const setupConnection = (connection) => {
     connection.on('open', () => {
       setIsConnected(true);
@@ -147,7 +144,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     });
   };
 
-  // Kirim Pesan Chat Live
   const handleSendMessage = (e) => {
     e.preventDefault();
     if (!inputMessage.trim() || !conn) return;
@@ -160,7 +156,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     setInputMessage('');
   };
 
-  // Update & Kirim Mood Live
   const handleMoodChange = (newMood) => {
     setMyMood(newMood);
     if (conn) {
@@ -168,7 +163,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  // Kirim "Love Tap"
   const handleSendLoveTap = () => {
     confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
     if (conn) {
@@ -224,42 +218,69 @@ export default function LiveLoveRoomWithPhotobooth() {
     const ctx = canvas.getContext('2d');
     ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
     
-    // Kompres ke base64 JPEG ukuran kecil agar ringan dikirim via PeerJS
-    const photoData = canvas.toDataURL('image/jpeg', 0.6);
+    const photoData = canvas.toDataURL('image/jpeg', 0.9);
     setMyPhoto(photoData);
     setBoothStatus('waiting');
     stopCamera();
 
-    // Kirim ke pasangan
     if (conn) {
       conn.send({ type: 'photobooth-photo', photo: photoData });
     }
   };
 
-  // Jika kedua foto sudah ada, ubah status ke ready
+  // FUNGSI UTAMA: MENGGABUNGKAN KEDUA FOTO MENJADI 1 GAMBAR STRIP CANVAS MURNI
   useEffect(() => {
     if (myPhoto && partnerPhoto) {
       setBoothStatus('ready');
       confetti({ particleCount: 80, spread: 90, origin: { y: 0.5 } });
+
+      // Buat Canvas Master untuk menyatukan gambar secara otomatis
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      
+      // Ukuran strip photobooth
+      canvas.width = 400;
+      canvas.height = 700;
+
+      // 1. Background Putih Bersih
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // 2. Header Teks Photobooth
+      ctx.fillStyle = '#f43f5e'; // Warna pink rose
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('OUR PHOTOBOOTH DATE 📸✨', canvas.width / 2, 35);
+
+      // 3. Load & Gambar Foto 1 (Kamu)
+      const img1 = new Image();
+      img1.crossOrigin = 'anonymous';
+      img1.src = myPhoto;
+      img1.onload = () => {
+        ctx.drawImage(img1, 40, 55, 320, 240);
+        
+        // 4. Load & Gambar Foto 2 (Pasangan)
+        const img2 = new Image();
+        img2.crossOrigin = 'anonymous';
+        img2.src = partnerPhoto;
+        img2.onload = () => {
+          ctx.drawImage(img2, 40, 315, 320, 240);
+
+          // 5. Footer Teks (Nama & Tanggal)
+          ctx.fillStyle = '#78716c';
+          ctx.font = 'bold 13px sans-serif';
+          ctx.textAlign = 'left';
+          ctx.fillText(`${myName} & ${partnerName}`, 40, 600);
+
+          ctx.textAlign = 'right';
+          ctx.fillText(new Date().toLocaleDateString(), 360, 600);
+
+          // Simpan hasil gabungan menjadi URL Gambar
+          setFinalStripUrl(canvas.toDataURL('image/png'));
+        };
+      };
     }
   }, [myPhoto, partnerPhoto]);
-
-  const handleDownloadStrip = async () => {
-    if (!photoboothResultRef.current) return;
-    try {
-      const canvas = await html2canvas(photoboothResultRef.current, { scale: 2, backgroundColor: '#fff' });
-      const image = canvas.toDataURL('image/png');
-      const link = document.createElement('a');
-      link.href = image;
-      link.download = `Photobooth_${myName}_dan_${partnerName}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (err) {
-      console.error(err);
-      alert("Gagal mengunduh otomatis. Silakan screenshot manual!");
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-100 via-pink-100 to-purple-200 flex items-center justify-center p-4 overflow-hidden relative font-sans text-stone-800">
@@ -444,7 +465,7 @@ export default function LiveLoveRoomWithPhotobooth() {
           </motion.div>
         )}
 
-        {/* DASHBOARD UTAMA: CHAT & PHOTOBOOTH TABS */}
+        {/* DASHBOARD UTAMA */}
         {(mode === 'dashboard' || isConnected) && (
           <motion.div
             key="dash"
@@ -452,7 +473,7 @@ export default function LiveLoveRoomWithPhotobooth() {
             animate={{ opacity: 1, scale: 1 }}
             className="bg-white/90 backdrop-blur-xl p-5 sm:p-6 rounded-3xl shadow-[0_15px_50px_rgba(244,63,94,0.15)] border border-rose-100 max-w-lg w-full space-y-4 relative z-10 flex flex-col h-[90vh]"
           >
-            {/* Header Status & Navigation Tabs */}
+            {/* Header & Tabs */}
             <div className="flex justify-between items-center border-b border-stone-100 pb-3 shrink-0">
               <div>
                 <span className="text-[10px] uppercase tracking-widest text-green-600 font-bold flex items-center gap-1">
@@ -461,7 +482,6 @@ export default function LiveLoveRoomWithPhotobooth() {
                 <h2 className="text-sm font-bold text-stone-900">{myName} & {partnerName}</h2>
               </div>
 
-              {/* Tabs Switcher */}
               <div className="flex bg-stone-100 p-1 rounded-xl text-xs font-bold">
                 <button
                   onClick={() => setActiveTab('chat')}
@@ -481,7 +501,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             </div>
 
-            {/* TAB 1: CHAT & MOOD */}
+            {/* TAB 1: CHAT */}
             {activeTab === 'chat' && (
               <div className="flex-1 flex flex-col space-y-3 overflow-hidden">
                 <div className="grid grid-cols-2 gap-2 shrink-0">
@@ -552,17 +572,16 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 2: PHOTOBOOTH BARENG */}
+            {/* TAB 2: PHOTOBOOTH */}
             {activeTab === 'photobooth' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-4 overflow-y-auto p-1">
                 
-                {/* 1. KONDISI BELUM FOTO (Live Camera Preview) */}
+                {/* 1. BELUM FOTO */}
                 {!myPhoto && (
                   <div className="space-y-3 w-full text-center">
                     <div className="relative w-full max-w-[280px] h-[210px] mx-auto bg-black rounded-2xl overflow-hidden border-4 border-rose-200 shadow-md">
                       <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover -scale-x-100" />
                       
-                      {/* Countdown Overlay */}
                       {countdown !== null && (
                         <div className="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center">
                           <span className="text-7xl font-black text-white animate-bounce">{countdown}</span>
@@ -583,7 +602,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* 2. KONDISI SUDAH FOTO, MENUNGGU PASANGAN */}
+                {/* 2. MENUNGGU PASANGAN */}
                 {myPhoto && boothStatus === 'waiting' && (
                   <div className="space-y-4 text-center my-auto">
                     <div className="w-24 h-24 mx-auto rounded-xl overflow-hidden border-2 border-rose-300 shadow">
@@ -597,48 +616,28 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* 3. KONDISI KEDUANYA SUDAH LENGKAP (TAMPILKAN HASIL PHOTOBOOTH STRIP) */}
-                {boothStatus === 'ready' && (
+                {/* 3. SIAP DOWNLOAD STRIP GABUNGAN */}
+                {boothStatus === 'ready' && finalStripUrl && (
                   <div className="space-y-3 w-full flex flex-col items-center my-auto">
                     
-                    {/* Hasil Strip Photobooth yang akan di-download */}
-                    <div 
-                      ref={photoboothResultRef} 
-                      className="bg-white p-4 rounded-2xl shadow-xl border-4 border-rose-200 flex flex-col items-center space-y-3 w-[260px] text-center"
-                    >
-                      <div className="text-[10px] uppercase tracking-widest font-extrabold text-rose-500">
-                        Our Photobooth Date 📸✨
-                      </div>
-
-                      {/* Foto Kamu */}
-                      <div className="w-full h-[140px] rounded-xl overflow-hidden border border-rose-100 shadow-inner">
-                        <img src={myPhoto} alt="My Capture" className="w-full h-full object-cover" />
-                      </div>
-
-                      {/* Foto Pasangan */}
-                      <div className="w-full h-[140px] rounded-xl overflow-hidden border border-rose-100 shadow-inner">
-                        <img src={partnerPhoto} alt="Partner Capture" className="w-full h-full object-cover" />
-                      </div>
-
-                      <div className="pt-1 border-t border-rose-100 w-full flex justify-between items-center text-[10px] font-bold text-stone-400">
-                        <span>{myName} & {partnerName}</span>
-                        <span>{new Date().toLocaleDateString()}</span>
-                      </div>
+                    {/* Tampilkan Hasil Gambar Strip Gabungan */}
+                    <div className="bg-white p-3 rounded-2xl shadow-xl border-4 border-rose-200 flex flex-col items-center max-w-[220px]">
+                      <img src={finalStripUrl} alt="Photobooth Strip" className="w-full rounded-xl shadow-inner object-contain" />
                     </div>
 
-                    {/* Tombol Download & Ulangi */}
                     <div className="flex gap-2 w-full pt-1">
-                      <motion.button
-                        whileTap={{ scale: 0.95 }}
-                        onClick={handleDownloadStrip}
-                        className="flex-1 py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs cursor-pointer"
+                      <a
+                        href={finalStripUrl}
+                        download={`Photobooth_${myName}_dan_${partnerName}.png`}
+                        className="flex-1 py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs text-center cursor-pointer block"
                       >
                         📥 Download Strip (PNG)
-                      </motion.button>
+                      </a>
                       <button
                         onClick={() => {
                           setMyPhoto(null);
                           setPartnerPhoto(null);
+                          setFinalStripUrl(null);
                           setBoothStatus('idle');
                           startCamera();
                         }}
