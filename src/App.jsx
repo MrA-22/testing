@@ -52,7 +52,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [notes, setNotes] = useState([]);
   const [inputNote, setInputNote] = useState('');
 
-  // Fitur Photobooth Bergantian (Turn-Based)
+  // Fitur Photobooth Bergantian (Turn-Based) dengan Sinkronisasi Penuh
   const [selectedLayout, setSelectedLayout] = useState('1x2'); 
   const [selectedTheme, setSelectedTheme] = useState('rose'); 
   const [cameraActive, setCameraActive] = useState(false);
@@ -64,11 +64,11 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [isLeader, setIsLeader] = useState(false);
   const [finalStripUrl, setFinalStripUrl] = useState(null);
 
-  // --- FITUR BARU 1: COUNTER JADIAN ---
+  // --- FITUR COUNTER JADIAN ---
   const [anniversaryDate, setAnniversaryDate] = useState(() => localStorage.getItem('bucin_anniversary') || '2024-01-01');
   const [timeTogether, setTimeTogether] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
-  // --- FITUR BARU 2: QUIZ SEBERAPA KENAL ---
+  // --- FITUR QUIZ SEBERAPA KENAL ---
   const quizQuestions = [
     { q: "Apa makanan kesukaan atau jajanan favoritku?", options: ["Seblak/Pedas", "Manis/Dessert", "Makanan Berkuah", "Fast Food"] },
     { q: "Kalau lagi ngambek, biasanya aku paling suka digimanain?", options: ["Diemin dulu", "Dipujuk & ditenangin", "Dikasih makanan", "Diajak ngelawak"] },
@@ -77,11 +77,11 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [quizAnswers, setQuizAnswers] = useState({});
   const [partnerQuizAnswers, setPartnerQuizAnswers] = useState({});
 
-  // --- FITUR BARU 3: MUSIC PLAYER ---
+  // --- FITUR MUSIC PLAYER ---
   const [isPlayingMusic, setIsPlayingMusic] = useState(false);
   const audioRef = useRef(null);
 
-  // --- FITUR BARU 4: BUCKET LIST & DATE IDEAS ---
+  // --- FITUR BUCKET LIST & DATE IDEAS ---
   const [bucketList, setBucketList] = useState([
     { id: 1, text: "Nonton bioskop genre horor berdua 🍿", done: false },
     { id: 2, text: "Masak malam romantis bersama 🍝", done: false },
@@ -101,7 +101,6 @@ export default function LiveLoveRoomWithPhotobooth() {
   const mediaStreamRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // Simpan State ke LocalStorage agar tidak reset saat refresh
   useEffect(() => {
     localStorage.setItem('bucin_mode', mode);
     localStorage.setItem('bucin_roomCode', roomCode);
@@ -118,7 +117,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Hitung Waktu Jadian Real-Time
   useEffect(() => {
     const interval = setInterval(() => {
       const start = new Date(anniversaryDate);
@@ -218,6 +216,9 @@ export default function LiveLoveRoomWithPhotobooth() {
         setPartnerQuizAnswers(data.answers);
       } else if (data.type === 'bucket-sync') {
         setBucketList(data.list);
+      } else if (data.type === 'pb-config-sync') {
+        setSelectedLayout(data.layout);
+        setSelectedTheme(data.theme);
       } else if (data.type === 'pb-start') {
         setSelectedLayout(data.layout);
         setSelectedTheme(data.theme);
@@ -281,6 +282,21 @@ export default function LiveLoveRoomWithPhotobooth() {
     confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
     if (conn) {
       conn.send({ type: 'love-tap' });
+    }
+  };
+
+  // --- SINKRONISASI LAYOUT & TEMA REAL-TIME ---
+  const handleLayoutChange = (layoutId) => {
+    setSelectedLayout(layoutId);
+    if (conn) {
+      conn.send({ type: 'pb-config-sync', layout: layoutId, theme: selectedTheme });
+    }
+  };
+
+  const handleThemeChange = (themeId) => {
+    setSelectedTheme(themeId);
+    if (conn) {
+      conn.send({ type: 'pb-config-sync', layout: selectedLayout, theme: themeId });
     }
   };
 
@@ -821,14 +837,14 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 6: PHOTOBOOTH */}
+            {/* TAB 6: PHOTOBOOTH DENGAN SINKRONISASI LAYOUT & TEMA REAL-TIME */}
             {activeTab === 'photobooth' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-4 overflow-y-auto p-1">
                 {boothStep === 'select-layout' && (
                   <div className="space-y-3 w-full max-w-xs text-left my-auto">
                     <div className="text-center">
                       <h3 className="font-bold text-stone-900 text-base">Pilih Ukuran & Tema Strip 📸</h3>
-                      <p className="text-xs text-stone-500">Foto akan diambil secara bergantian (turn-based)!</p>
+                      <p className="text-xs text-stone-500">Pilihanmu otomatis tersinkron ke perangkat pasanganmu!</p>
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-stone-600 mb-1">Pilih Layout:</label>
@@ -839,7 +855,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                           { id: '2x2', label: '2x2 (4 Grid)' },
                           { id: 'polaroid', label: '🖼️ Polaroid Solo' }
                         ].map((layout) => (
-                          <button key={layout.id} onClick={() => setSelectedLayout(layout.id)} className={`py-2 px-2 rounded-xl text-xs font-bold border transition cursor-pointer ${selectedLayout === layout.id ? 'bg-rose-500 text-white border-rose-500 shadow-sm' : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'}`}>{layout.label}</button>
+                          <button key={layout.id} onClick={() => handleLayoutChange(layout.id)} className={`py-2 px-2 rounded-xl text-xs font-bold border transition cursor-pointer ${selectedLayout === layout.id ? 'bg-rose-500 text-white border-rose-500 shadow-sm' : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'}`}>{layout.label}</button>
                         ))}
                       </div>
                     </div>
@@ -852,7 +868,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                           { id: 'peach', label: '🍑 Warm Peach' },
                           { id: 'mono', label: '🖤 Aesthetic Mono' }
                         ].map((theme) => (
-                          <button key={theme.id} onClick={() => setSelectedTheme(theme.id)} className={`py-2 px-2 rounded-xl text-xs font-bold border transition cursor-pointer ${selectedTheme === theme.id ? 'bg-stone-900 text-white border-stone-900 shadow-sm' : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'}`}>{theme.label}</button>
+                          <button key={theme.id} onClick={() => handleThemeChange(theme.id)} className={`py-2 px-2 rounded-xl text-xs font-bold border transition cursor-pointer ${selectedTheme === theme.id ? 'bg-stone-900 text-white border-stone-900 shadow-sm' : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'}`}>{theme.label}</button>
                         ))}
                       </div>
                     </div>
