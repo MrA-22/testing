@@ -150,12 +150,10 @@ export default function LiveLoveRoomWithPhotobooth() {
         mediaStreamRef.current.getTracks().forEach(track => track.stop());
       }
       
-      // Bersihkan LocalStorage sesi
       localStorage.removeItem('bucin_mode');
       localStorage.removeItem('bucin_roomCode');
       localStorage.removeItem('bucin_partnerName');
 
-      // Reset State
       setMode('menu');
       setRoomCode('');
       setInputCode('');
@@ -254,8 +252,7 @@ export default function LiveLoveRoomWithPhotobooth() {
         setCurrentStep(0);
         setAllPhotos([]);
         setBoothStep('capturing');
-        startCamera();
-      } else if (data.type === 'pb-submit-photo') {
+      } else if (data.type === 'pb-next-step') {
         const updated = [...allPhotosRef.current, data.photo];
         setAllPhotos(updated);
         setCurrentStep(data.step + 1);
@@ -329,6 +326,7 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   const startCamera = async () => {
     try {
+      if (mediaStreamRef.current) return; // Kalau sudah aktif, jangan buka ulang
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }, 
         audio: false 
@@ -369,9 +367,9 @@ export default function LiveLoveRoomWithPhotobooth() {
     if (conn) {
       conn.send({ type: 'pb-start', layout: selectedLayout, theme: selectedTheme });
     }
-    startCamera();
   };
 
+  // Sinkronisasi Langkah & Giliran Berkelanjutan
   useEffect(() => {
     if (boothStep === 'capturing') {
       runStep();
@@ -388,11 +386,11 @@ export default function LiveLoveRoomWithPhotobooth() {
       return;
     }
 
+    // Tentukan siapa yang bertugas memotret di step ini (Bergantian Genap / Ganjil)
     const myTurn = (currentStep % 2 === 0 && isLeader) || (currentStep % 2 !== 0 && !isLeader);
 
     if (myTurn) {
-      if (!mediaStreamRef.current) await startCamera();
-
+      await startCamera();
       setCountdown(3);
       let count = 3;
       const timer = setInterval(() => {
@@ -417,12 +415,15 @@ export default function LiveLoveRoomWithPhotobooth() {
             setAllPhotos(updated);
 
             if (conn) {
-              conn.send({ type: 'pb-submit-photo', step: currentStep, photo: photoData });
+              conn.send({ type: 'pb-next-step', step: currentStep, photo: photoData });
             }
             setCurrentStep(prev => prev + 1);
           }
         }
       }, 1000);
+    } else {
+      // Jika bukan giliran saya, matikan kamera agar tidak bentrok, lalu tunggu foto dikirim pasangan
+      stopCamera();
     }
   };
 
@@ -940,7 +941,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                     </div>
                     <div className="flex gap-2 w-full max-w-[260px] pt-1">
                       <a href={finalStripUrl} download={`Photobooth_${myName}_dan_${partnerName}.png`} className="flex-1 py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs text-center block cursor-pointer hover:scale-105 transition">📥 Download Strip (PNG)</a>
-                      <button onClick={() => { setAllPhotos([]); setFinalStripUrl(null); setBoothStep('select-layout'); }} className="px-4 py-3 bg-stone-200 text-stone-600 font-bold rounded-xl text-xs hover:bg-stone-300 transition cursor-pointer">Ulangi 🔄</button>
+                      <button onClick={() => { setAllPhotos([]); setFinalStripUrl(null); setBoothStep('select-layout'); }} className="px-4 py-3 bg-stone-200 text-stone-600 font-bold rounded-xl text-xs hover:bg-stone-300 transition cursor-pointer">Ulangi sinyal🔄</button>
                     </div>
                   </div>
                 )}
