@@ -20,7 +20,7 @@ const LiveOrnaments = React.memo(() => (
         className="absolute text-xl sm:text-2xl"
         style={{ fontSize: `${Math.random() * 15 + 20}px` }}
       >
-        {['💖', '✨', '📸', '🌸', '🎀', '⭐'][Math.floor(Math.random() * 6)]}
+        {['💖', '✨', '📸', '🌸', '🎀', '🧸', '⭐'][Math.floor(Math.random() * 7)]}
       </motion.div>
     ))}
   </div>
@@ -49,8 +49,8 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [myMood, setMyMood] = useState('😊 Normal / Senang');
 
   // Fitur Photobooth Custom Layout & Ornamen State
-  const [selectedLayout, setSelectedLayout] = useState('1x2'); // '1x2', '1x3', '2x2'
-  const [selectedTheme, setSelectedTheme] = useState('rose'); // 'rose', 'purple', 'peach'
+  const [selectedLayout, setSelectedLayout] = useState('1x2'); // '1x2', '1x3', '2x2', 'polaroid'
+  const [selectedTheme, setSelectedTheme] = useState('rose'); // 'rose', 'purple', 'peach', 'mono'
   const [cameraActive, setCameraActive] = useState(false);
   const [countdown, setCountdown] = useState(null);
   
@@ -218,6 +218,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     if (selectedLayout === '1x2') return 2;
     if (selectedLayout === '1x3') return 3;
     if (selectedLayout === '2x2') return 2;
+    if (selectedLayout === 'polaroid') return 1;
     return 2;
   };
 
@@ -292,7 +293,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   }, [myPhotos, partnerPhotos]);
 
-  // FIX UTAMA: MENGGUNAKAN PROMISE AGAR SEMUA GAMBAR DIMUAT SEBELUM CANVAS DICETAK
+  // GENERATE KANVAS DENGAN UKURAN FOTO LEBIH BESAR & ORNAMEN TAMBAHAN
   const generatePhotoboothCanvas = async () => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -309,27 +310,29 @@ export default function LiveLoveRoomWithPhotobooth() {
       themeConfig = { bg: '#f3e8ff', border: '#9333ea', accent: '#a855f7', text: '#581c87', cardBg: '#ffffff' };
     } else if (selectedTheme === 'peach') {
       themeConfig = { bg: '#ffedd5', border: '#ea580c', accent: '#f97316', text: '#7c2d12', cardBg: '#ffffff' };
+    } else if (selectedTheme === 'mono') {
+      themeConfig = { bg: '#f5f5f4', border: '#292524', accent: '#78716c', text: '#1c1917', cardBg: '#ffffff' };
     }
 
-    canvas.width = 650;
-    canvas.height = 1150;
+    canvas.width = 700;
+    canvas.height = 1250;
 
     // Background Kanvas
     ctx.fillStyle = themeConfig.bg;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Main Card Container
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
-    ctx.shadowBlur = 25;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.18)';
+    ctx.shadowBlur = 30;
     ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 10;
+    ctx.shadowOffsetY = 12;
 
     ctx.fillStyle = themeConfig.cardBg;
     const boxX = 35;
     const boxY = 35;
-    const boxW = 580;
-    const boxH = 1080;
-    const boxRadius = 35;
+    const boxW = 630;
+    const boxH = 1180;
+    const boxRadius = 40;
 
     ctx.beginPath();
     ctx.moveTo(boxX + boxRadius, boxY);
@@ -348,22 +351,21 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
 
-    ctx.lineWidth = 10;
+    ctx.lineWidth = 12;
     ctx.strokeStyle = themeConfig.border;
     ctx.stroke();
 
-    // Header Teks & Stiker
+    // Header Teks & Stiker Ornamen Lebih Kaya
     ctx.fillStyle = themeConfig.text;
-    ctx.font = '900 22px sans-serif';
+    ctx.font = '900 24px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('✨ OUR SPECIAL PHOTOBOOTH DATE 📸', canvas.width / 2, 95);
+    ctx.fillText('✨ OUR LOVELY PHOTOBOOTH ✨', canvas.width / 2, 90);
 
-    ctx.font = '20px sans-serif';
-    ctx.fillText('💖 🎀 🌟 🌸', canvas.width / 2, 130);
+    ctx.font = '22px sans-serif';
+    ctx.fillText('💖 🧸 🎀 📸 🌟 🌸', canvas.width / 2, 125);
 
     let combinedPhotos = [...myPhotos, ...partnerPhotos];
 
-    // Helper untuk load image pakai Promise (menjamin gambar tidak gagal dimuat)
     const loadImage = (src) => {
       return new Promise((resolve) => {
         if (!src) return resolve(null);
@@ -408,50 +410,56 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.lineTo(x, y + radius);
       ctx.quadraticCurveTo(x, y, x + radius, y);
       ctx.closePath();
-      ctx.lineWidth = 4;
+      ctx.lineWidth = 5;
       ctx.strokeStyle = themeConfig.border;
       ctx.stroke();
       ctx.restore();
     };
 
-    // Render Berdasarkan Layout dengan Sinkronisasi Promise
+    // Render Ukuran Foto yang Lebih Besar & Proporsional Sesuai Layout
     if (selectedLayout === '1x2') {
-      await drawSlot(combinedPhotos[0], 75, 160, 500, 360, 25);
-      await drawSlot(combinedPhotos[1] || combinedPhotos[0], 75, 540, 500, 360, 25);
+      await drawSlot(combinedPhotos[0], 75, 155, 550, 390, 25);
+      await drawSlot(combinedPhotos[1] || combinedPhotos[0], 75, 565, 550, 390, 25);
     } else if (selectedLayout === '1x3') {
-      await drawSlot(combinedPhotos[0], 95, 155, 460, 250, 20);
-      await drawSlot(combinedPhotos[1] || combinedPhotos[0], 95, 420, 460, 250, 20);
-      await drawSlot(combinedPhotos[2] || combinedPhotos[0], 95, 685, 460, 250, 20);
+      await drawSlot(combinedPhotos[0], 85, 150, 530, 260, 20);
+      await drawSlot(combinedPhotos[1] || combinedPhotos[0], 85, 430, 530, 260, 20);
+      await drawSlot(combinedPhotos[2] || combinedPhotos[0], 85, 710, 530, 260, 20);
     } else if (selectedLayout === '2x2') {
-      await drawSlot(combinedPhotos[0], 75, 160, 235, 360, 20);
-      await drawSlot(combinedPhotos[1] || combinedPhotos[0], 340, 160, 235, 360, 20);
-      await drawSlot(combinedPhotos[2] || combinedPhotos[0], 75, 540, 235, 360, 20);
-      await drawSlot(combinedPhotos[3] || combinedPhotos[1] || combinedPhotos[0], 340, 540, 235, 360, 20);
+      await drawSlot(combinedPhotos[0], 70, 155, 265, 380, 20);
+      await drawSlot(combinedPhotos[1] || combinedPhotos[0], 365, 155, 265, 380, 20);
+      await drawSlot(combinedPhotos[2] || combinedPhotos[0], 70, 560, 265, 380, 20);
+      await drawSlot(combinedPhotos[3] || combinedPhotos[1] || combinedPhotos[0], 365, 560, 265, 380, 20);
+    } else if (selectedLayout === 'polaroid') {
+      await drawSlot(combinedPhotos[0], 100, 155, 500, 600, 15);
+      // Extra polaroid caption box text in canvas
+      ctx.fillStyle = '#1c1917';
+      ctx.font = 'italic 20px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`"Our Sweet Moment Together"`, canvas.width / 2, 800);
     }
 
-    // Divider & Footer Stiker
+    // Divider & Footer Ornamen Lebih Menarik
     ctx.beginPath();
-    ctx.moveTo(75, 960);
-    ctx.lineTo(575, 960);
+    ctx.moveTo(70, 1020);
+    ctx.lineTo(630, 1020);
     ctx.lineWidth = 2;
     ctx.strokeStyle = themeConfig.accent;
     ctx.stroke();
 
     ctx.fillStyle = themeConfig.border;
-    ctx.font = '16px sans-serif';
+    ctx.font = 'bold 16px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('🎀  S E A L E D   W I T H   L O V E  🎀', canvas.width / 2, 995);
+    ctx.fillText('🎀  MADE WITH LOVE & FOREVER TOGETHER  🎀', canvas.width / 2, 1065);
 
     ctx.fillStyle = '#57534e';
-    ctx.font = 'bold 16px sans-serif';
+    ctx.font = 'bold 18px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillText(`👥 ${myName} & ${partnerName}`, 75, 1045);
+    ctx.fillText(`👥 ${myName} & ${partnerName}`, 75, 1120);
 
     ctx.textAlign = 'right';
     const today = new Date();
-    ctx.fillText(`📅 ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`, 575, 1045);
+    ctx.fillText(`📅 ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`, 625, 1120);
 
-    // Set Final URL setelah semua gambar selesai digambar
     setFinalStripUrl(canvas.toDataURL('image/png', 1.0));
   };
 
@@ -748,21 +756,22 @@ export default function LiveLoveRoomWithPhotobooth() {
             {activeTab === 'photobooth' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-4 overflow-y-auto p-1">
                 
-                {/* STEP 1: PILIH LAYOUT & TEMA */}
+                {/* STEP 1: PILIH LAYOUT & TEMA (DITAMBAHKAN PILIHAN POLAROID & TEMA MONO) */}
                 {boothStep === 'select-layout' && (
-                  <div className="space-y-4 w-full max-w-xs text-left my-auto">
+                  <div className="space-y-3 w-full max-w-xs text-left my-auto">
                     <div className="text-center">
                       <h3 className="font-bold text-stone-900 text-base">Pilih Ukuran & Tema Strip 📸</h3>
-                      <p className="text-xs text-stone-500">Pilihanmu akan otomatis menyamakan perangkat pasanganmu!</p>
+                      <p className="text-xs text-stone-500">Pilihanmu otomatis menyamakan perangkat pasanganmu!</p>
                     </div>
 
                     <div>
                       <label className="block text-xs font-bold text-stone-600 mb-1">Pilih Layout:</label>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 gap-2">
                         {[
-                          { id: '1x2', label: '1x2 (2 Cut)' },
-                          { id: '1x3', label: '1x3 (3 Cut)' },
-                          { id: '2x2', label: '2x2 (4 Grid)' }
+                          { id: '1x2', label: '1x2 (2 Cut Besar)' },
+                          { id: '1x3', label: '1x3 (3 Cut Strip)' },
+                          { id: '2x2', label: '2x2 (4 Grid)' },
+                          { id: 'polaroid', label: '🖼️ Polaroid Solo' }
                         ].map((layout) => (
                           <button
                             key={layout.id}
@@ -781,11 +790,12 @@ export default function LiveLoveRoomWithPhotobooth() {
 
                     <div>
                       <label className="block text-xs font-bold text-stone-600 mb-1">Pilih Tema & Ornamen:</label>
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-2 gap-2">
                         {[
                           { id: 'rose', label: '🌸 Rose Pink' },
-                          { id: 'purple', label: '💜 Lilac' },
-                          { id: 'peach', label: '🍑 Peach' }
+                          { id: 'purple', label: '💜 Lilac Dream' },
+                          { id: 'peach', label: '🍑 Warm Peach' },
+                          { id: 'mono', label: '🖤 Aesthetic Mono' }
                         ].map((theme) => (
                           <button
                             key={theme.id}
@@ -805,7 +815,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                     <motion.button
                       whileTap={{ scale: 0.95 }}
                       onClick={handleInitiateCapture}
-                      className="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-2xl shadow-md text-xs cursor-pointer mt-2"
+                      className="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-2xl shadow-md text-xs cursor-pointer mt-1"
                     >
                       Mulai Sesi Foto Bersama 🎬
                     </motion.button>
@@ -843,7 +853,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                 {boothStep === 'ready' && finalStripUrl && (
                   <div className="space-y-3 w-full flex flex-col items-center my-auto pt-2">
                     
-                    <div className="w-[240px] drop-shadow-2xl">
+                    <div className="w-[230px] drop-shadow-2xl">
                       <img src={finalStripUrl} alt="Hasil Photobooth Estetik" className="w-full h-auto object-contain rounded-2xl" />
                     </div>
 
