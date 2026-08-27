@@ -62,6 +62,14 @@ export default function BucinWebsite() {
   const [promiseAnswer, setPromiseAnswer] = useState('');
   const [promiseError, setPromiseError] = useState('');
 
+  // STATE BARU: Syarat & Ketentuan Pra-Jadian
+  const [terms, setTerms] = useState({
+    t1: false,
+    t2: false,
+    t3: false,
+    t4: false,
+  });
+
   const [noQuizBtnPos, setNoQuizBtnPos] = useState({ x: 0, y: 0 });
   const [noBtnPos, setNoBtnPos] = useState({ x: 0, y: 0 });
   const [loveMeter, setLoveMeter] = useState(0);
@@ -70,6 +78,9 @@ export default function BucinWebsite() {
   const audioRef = useRef(null);
   const finalCardRef = useRef(null);
   const targetName = "Arif";
+
+  // Check jika semua T&C sudah dicentang
+  const allTermsChecked = terms.t1 && terms.t2 && terms.t3 && terms.t4;
 
   // Effect untuk timer mundur 5 detik pada step "loading" (Step 1.5)
   useEffect(() => {
@@ -262,7 +273,7 @@ export default function BucinWebsite() {
 
   const handleAccept = () => {
     playSoundEffect('correct');
-    setStep(20);
+    setStep(21); // Ke sertifikat
     
     let count = 0;
     const timer = setInterval(() => {
@@ -430,10 +441,10 @@ export default function BucinWebsite() {
             className="bg-white/60 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(236,72,153,0.3)] border border-white/60 text-center max-w-md w-full space-y-6 relative z-10"
           >
             <h2 className="text-2xl font-bold text-gray-800 leading-snug">
-              Kuis 2: Apa bedanya jam 12:00 siang sama kamu ({girlName})? ⏰🤔
+              Kuis 2: Apa bedanya jam 12:00 siang sama {girlName}? ⏰🤔
             </h2>
             <p className="text-sm font-medium text-pink-600 bg-pink-50 py-2 rounded-xl border border-pink-100">
-              Hint: Kalau jam 12:00 itu Kesiangan, kalau kamu itu...
+              Hint: Kalau jam 12:00 itu Kesiangan, kalau {girlName} itu...
             </p>
             
             <form onSubmit={handleGombalSubmit} className="space-y-4">
@@ -612,7 +623,7 @@ export default function BucinWebsite() {
             </h2>
 
             <div className="grid grid-cols-2 gap-3">
-              {['Sayang / Ay 💖', 'Beb / Babe 💋', 'Panggilan Khusus 🤪', 'Terserah Mas Arif 🥺'].map((item, idx) => (
+              {['Sayang / Ay 💖', 'Beb / Babe 💋', 'bubu/dudu 🤪', 'Terserah Mas Arif 🥺'].map((item, idx) => (
                 <motion.button 
                   key={idx}
                   whileHover={{ scale: 1.05 }}
@@ -991,17 +1002,69 @@ export default function BucinWebsite() {
           </motion.div>
         )}
 
-        {/* STEP 19: Penembakan Akhir */}
+        {/* STEP 19: T&C Pra-Jadian (Versi Cewek) */}
         {step === 19 && (
           <motion.div 
             key="step19"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, x: -100 }}
+            className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(236,72,153,0.3)] border border-white/80 text-left max-w-md w-full space-y-6 relative z-10"
+          >
+            <div className="text-center mb-4">
+              <span className="text-4xl">📜</span>
+              <h2 className="text-2xl font-bold text-pink-600 mt-2">Syarat & Ketentuan Pra-Jadian</h2>
+              <p className="text-sm text-gray-600 font-medium">Wajib centang semua sebelum lanjut ya cantik!</p>
+            </div>
+
+            <div className="space-y-4 text-sm font-semibold text-gray-700">
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input type="checkbox" checked={terms.t1} onChange={(e) => { playSoundEffect('correct'); setTerms({...terms, t1: e.target.checked}) }} className="w-5 h-5 mt-0.5 accent-pink-500" />
+                <span className="group-hover:text-pink-600 transition">Dilarang ngambek diam-diam. Kalau marah wajib kasih *clue* ke {targetName}. 😤</span>
+              </label>
+              
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input type="checkbox" checked={terms.t2} onChange={(e) => { playSoundEffect('correct'); setTerms({...terms, t2: e.target.checked}) }} className="w-5 h-5 mt-0.5 accent-pink-500" />
+                <span className="group-hover:text-pink-600 transition">Siap direpotin dengan sifat manja & randomnya mas ganteng. 👶</span>
+              </label>
+
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input type="checkbox" checked={terms.t3} onChange={(e) => { playSoundEffect('correct'); setTerms({...terms, t3: e.target.checked}) }} className="w-5 h-5 mt-0.5 accent-pink-500" />
+                <span className="group-hover:text-pink-600 transition">Wajib kangen minimal 3 kali sehari, kayak aturan minum obat. 💊💖</span>
+              </label>
+
+              <label className="flex items-start gap-3 cursor-pointer group">
+                <input type="checkbox" checked={terms.t4} onChange={(e) => { playSoundEffect('correct'); setTerms({...terms, t4: e.target.checked}) }} className="w-5 h-5 mt-0.5 accent-pink-500" />
+                <span className="group-hover:text-pink-600 transition">Bakal sayang sama {targetName} 1000% selamanya! 🔒🫶</span>
+              </label>
+            </div>
+
+            <motion.button 
+              whileHover={allTermsChecked ? { scale: 1.05 } : {}}
+              whileTap={allTermsChecked ? { scale: 0.95 } : {}}
+              onClick={() => { if(allTermsChecked) { playSoundEffect('correct'); setStep(20); } else { playSoundEffect('wrong'); } }}
+              className={`w-full py-4 font-bold rounded-full shadow-lg transition cursor-pointer text-lg mt-4 ${
+                allTermsChecked 
+                  ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-[0_0_15px_rgba(236,72,153,0.5)]' 
+                  : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              }`}
+            >
+              {allTermsChecked ? "Saya Setuju! Lanjut ✍️" : "Centang Dulu Semuanya 😜"}
+            </motion.button>
+          </motion.div>
+        )}
+
+        {/* STEP 20: Penembakan Akhir */}
+        {step === 20 && (
+          <motion.div 
+            key="step20"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.5 }}
             className="bg-white/60 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(236,72,153,0.3)] border border-white/60 text-center max-w-md w-full space-y-8 relative z-10"
           >
             <h2 className="text-2xl font-bold text-gray-800 leading-snug">
-              Nah <span className="text-pink-600 font-extrabold">{girlName}</span>, mau nggak kamu nemenin hari-hari <span className="text-pink-600 font-extrabold">{targetName}</span> terus dan jadi pacarnya selamanya? 🥺✨
+              Nah <span className="text-pink-600 font-extrabold">{girlName}</span>, karena udah janji, mau nggak kamu nemenin hari-hari <span className="text-pink-600 font-extrabold">{targetName}</span> terus dan jadi pacarnya selamanya? 🥺✨
             </h2>
 
             <div className="flex justify-center items-center gap-6 min-h-[100px] w-full relative">
@@ -1029,10 +1092,10 @@ export default function BucinWebsite() {
           </motion.div>
         )}
 
-        {/* STEP 20: Final Reveal & Sertifikat */}
-        {step === 20 && (
+        {/* STEP 21: Final Reveal & Sertifikat */}
+        {step === 21 && (
           <motion.div 
-            key="step20"
+            key="step21"
             initial={{ opacity: 0, scale: 0.2 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: "spring", bounce: 0.5 }}
