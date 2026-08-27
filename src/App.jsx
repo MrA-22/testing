@@ -213,9 +213,14 @@ export default function LiveLoveRoomWithPhotobooth() {
   const capturePhoto = () => {
     if (!videoRef.current) return;
     const canvas = document.createElement('canvas');
-    canvas.width = 320;
-    canvas.height = 240;
+    // Atur resolusi sedikit lebih besar agar tidak pecah
+    canvas.width = 640; 
+    canvas.height = 480;
     const ctx = canvas.getContext('2d');
+    
+    // Balik gambar (mirror) agar terlihat natural
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
     ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
     
     const photoData = canvas.toDataURL('image/jpeg', 0.9);
@@ -228,55 +233,138 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  // FUNGSI UTAMA: MENGGABUNGKAN KEDUA FOTO MENJADI 1 GAMBAR STRIP CANVAS MURNI
+  // Fungsi Pembantu untuk menggambar gambar dengan border-radius pada Canvas murni
+  const drawRoundedImage = (ctx, img, x, y, width, height, radius) => {
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+    ctx.clip();
+    
+    ctx.drawImage(img, x, y, width, height);
+    ctx.restore();
+    
+    // Gambar border di sekeliling foto
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x + radius, y);
+    ctx.lineTo(x + width - radius, y);
+    ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+    ctx.lineTo(x + width, y + height - radius);
+    ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+    ctx.lineTo(x + radius, y + height);
+    ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+    ctx.lineTo(x, y + radius);
+    ctx.quadraticCurveTo(x, y, x + radius, y);
+    ctx.closePath();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = '#ffe4e6'; // Warna rose-100 (mirip digambar)
+    ctx.stroke();
+    ctx.restore();
+  };
+
+  // FUNGSI UTAMA: MENGGABUNGKAN KEDUA FOTO MENJADI 1 GAMBAR STRIP CANVAS MURNI (Desain Persis SS)
   useEffect(() => {
     if (myPhoto && partnerPhoto) {
       setBoothStatus('ready');
       confetti({ particleCount: 80, spread: 90, origin: { y: 0.5 } });
 
-      // Buat Canvas Master untuk menyatukan gambar secara otomatis
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
-      // Ukuran strip photobooth
-      canvas.width = 400;
-      canvas.height = 700;
+      // Ukuran Kanvas Mengikuti Desain (Sekitar Rasio Kartu Photobooth)
+      canvas.width = 600;
+      canvas.height = 1000;
 
-      // 1. Background Putih Bersih
+      // 1. Gambar Background Utama (Putih dengan Border Bulat Pink Tebal)
+      // Tambah shadow efek
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+      ctx.shadowBlur = 30;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 10;
+      
+      // Background Putih Box
       ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const boxX = 30;
+      const boxY = 30;
+      const boxW = 540;
+      const boxH = 940;
+      const boxRadius = 40;
+      
+      ctx.beginPath();
+      ctx.moveTo(boxX + boxRadius, boxY);
+      ctx.lineTo(boxX + boxW - boxRadius, boxY);
+      ctx.quadraticCurveTo(boxX + boxW, boxY, boxX + boxW, boxY + boxRadius);
+      ctx.lineTo(boxX + boxW, boxY + boxH - boxRadius);
+      ctx.quadraticCurveTo(boxX + boxW, boxY + boxH, boxX + boxW - boxRadius, boxY + boxH);
+      ctx.lineTo(boxX + boxRadius, boxY + boxH);
+      ctx.quadraticCurveTo(boxX, boxY + boxH, boxX, boxY + boxH - boxRadius);
+      ctx.lineTo(boxX, boxY + boxRadius);
+      ctx.quadraticCurveTo(boxX, boxY, boxX + boxRadius, boxY);
+      ctx.closePath();
+      ctx.fill();
+
+      // Reset Shadow
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+
+      // Gambar Border Pink Luar
+      ctx.lineWidth = 12;
+      ctx.strokeStyle = '#fbcfe8'; // Warna pink lembut seperti di SS
+      ctx.stroke();
 
       // 2. Header Teks Photobooth
-      ctx.fillStyle = '#f43f5e'; // Warna pink rose
-      ctx.font = 'bold 16px sans-serif';
+      ctx.fillStyle = '#f43f5e'; // Warna pink tua/merah untuk judul
+      ctx.font = '900 24px sans-serif'; // Bold
       ctx.textAlign = 'center';
-      ctx.fillText('OUR PHOTOBOOTH DATE 📸✨', canvas.width / 2, 35);
+      ctx.fillText('OUR PHOTOBOOTH DATE 📸 ✨', canvas.width / 2, 110);
 
       // 3. Load & Gambar Foto 1 (Kamu)
       const img1 = new Image();
       img1.crossOrigin = 'anonymous';
       img1.src = myPhoto;
       img1.onload = () => {
-        ctx.drawImage(img1, 40, 55, 320, 240);
+        // Koordinat dan Ukuran Foto 1
+        drawRoundedImage(ctx, img1, 80, 160, 440, 310, 30);
         
         // 4. Load & Gambar Foto 2 (Pasangan)
         const img2 = new Image();
         img2.crossOrigin = 'anonymous';
         img2.src = partnerPhoto;
         img2.onload = () => {
-          ctx.drawImage(img2, 40, 315, 320, 240);
+          // Koordinat dan Ukuran Foto 2
+          drawRoundedImage(ctx, img2, 80, 500, 440, 310, 30);
 
-          // 5. Footer Teks (Nama & Tanggal)
-          ctx.fillStyle = '#78716c';
-          ctx.font = 'bold 13px sans-serif';
+          // 5. Garis Pemisah (Divider)
+          ctx.beginPath();
+          ctx.moveTo(80, 860);
+          ctx.lineTo(520, 860);
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = '#fecdd3';
+          ctx.stroke();
+
+          // 6. Footer Teks (Nama & Tanggal)
+          ctx.fillStyle = '#a8a29e'; // Warna teks abu kecoklatan
+          ctx.font = '900 18px sans-serif'; // Bold
           ctx.textAlign = 'left';
-          ctx.fillText(`${myName} & ${partnerName}`, 40, 600);
+          ctx.fillText(`${myName} & ${partnerName}`, 80, 910);
 
           ctx.textAlign = 'right';
-          ctx.fillText(new Date().toLocaleDateString(), 360, 600);
+          const today = new Date();
+          const dateString = `${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`;
+          ctx.fillText(dateString, 520, 910);
 
-          // Simpan hasil gabungan menjadi URL Gambar
-          setFinalStripUrl(canvas.toDataURL('image/png'));
+          // Simpan hasil gabungan menjadi URL Gambar (Kualitas Tinggi)
+          setFinalStripUrl(canvas.toDataURL('image/png', 1.0));
         };
       };
     }
@@ -580,7 +668,8 @@ export default function LiveLoveRoomWithPhotobooth() {
                 {!myPhoto && (
                   <div className="space-y-3 w-full text-center">
                     <div className="relative w-full max-w-[280px] h-[210px] mx-auto bg-black rounded-2xl overflow-hidden border-4 border-rose-200 shadow-md">
-                      <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover -scale-x-100" />
+                      {/* PENTING: Tambahkan transform: scaleX(-1) pada video agar kamera HP depan tidak terbalik! */}
+                      <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
                       
                       {countdown !== null && (
                         <div className="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center">
@@ -606,7 +695,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                 {myPhoto && boothStatus === 'waiting' && (
                   <div className="space-y-4 text-center my-auto">
                     <div className="w-24 h-24 mx-auto rounded-xl overflow-hidden border-2 border-rose-300 shadow">
-                      <img src={myPhoto} alt="My Photo" className="w-full h-full object-cover" />
+                      <img src={myPhoto} alt="My Photo" className="w-full h-full object-cover transform scale-x-100" />
                     </div>
                     <div className="space-y-1">
                       <div className="text-3xl animate-spin">⏳</div>
@@ -616,22 +705,22 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* 3. SIAP DOWNLOAD STRIP GABUNGAN */}
+                {/* 3. TAMPILAN GAMBAR CANVAS JADI & TOMBOL DOWNLOAD */}
                 {boothStatus === 'ready' && finalStripUrl && (
-                  <div className="space-y-3 w-full flex flex-col items-center my-auto">
+                  <div className="space-y-4 w-full flex flex-col items-center my-auto pt-4">
                     
-                    {/* Tampilkan Hasil Gambar Strip Gabungan */}
-                    <div className="bg-white p-3 rounded-2xl shadow-xl border-4 border-rose-200 flex flex-col items-center max-w-[220px]">
-                      <img src={finalStripUrl} alt="Photobooth Strip" className="w-full rounded-xl shadow-inner object-contain" />
+                    {/* Tampilkan TEPAT DARI CANVAS (sudah ada frame pink, judul, dll) */}
+                    <div className="w-[280px] drop-shadow-2xl">
+                      <img src={finalStripUrl} alt="Hasil Photobooth" className="w-full h-auto object-contain" />
                     </div>
 
-                    <div className="flex gap-2 w-full pt-1">
+                    <div className="flex gap-2 w-full max-w-[280px] pt-2">
                       <a
                         href={finalStripUrl}
                         download={`Photobooth_${myName}_dan_${partnerName}.png`}
-                        className="flex-1 py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs text-center cursor-pointer block"
+                        className="flex-1 py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs text-center cursor-pointer block hover:scale-105 transition"
                       >
-                        📥 Download Strip (PNG)
+                        📥 Download (PNG)
                       </a>
                       <button
                         onClick={() => {
@@ -641,7 +730,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                           setBoothStatus('idle');
                           startCamera();
                         }}
-                        className="px-4 py-3 bg-stone-100 text-stone-600 font-bold rounded-xl text-xs hover:bg-stone-200 transition cursor-pointer"
+                        className="px-4 py-3 bg-stone-200 text-stone-600 font-bold rounded-xl text-xs hover:bg-stone-300 transition cursor-pointer"
                       >
                         Ulangi 🔄
                       </button>
