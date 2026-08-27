@@ -60,7 +60,6 @@ export default function LiveLoveRoomWithPhotobooth() {
   // Fitur Love Notes (Catatan Hati)
   const [notes, setNotes] = useState([]);
   const [inputNote, setInputNote] = useState('');
-audio
   // Fitur Photobooth Bergantian (Turn-Based) dengan Sinkronisasi Penuh
   const [selectedLayout, setSelectedLayout] = useState('1x2'); 
   const [selectedTheme, setSelectedTheme] = useState('rose'); 
