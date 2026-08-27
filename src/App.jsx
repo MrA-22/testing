@@ -3,6 +3,29 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import html2canvas from 'html2canvas';
 
+// KOMPONEN ORNAMEN: Dipindah ke luar agar tidak reset saat mengetik
+const FloatingOrnaments = React.memo(() => (
+  <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
+    {[...Array(15)].map((_, i) => (
+      <motion.div
+        key={i}
+        initial={{ y: "110vh", x: `${Math.random() * 100}vw`, opacity: 0.2 + Math.random() * 0.5 }}
+        animate={{ y: "-10vh", rotate: Math.random() * 360 }}
+        transition={{
+          duration: 12 + Math.random() * 20,
+          repeat: Infinity,
+          ease: "linear",
+          delay: Math.random() * 10
+        }}
+        className="absolute text-2xl drop-shadow-md"
+        style={{ fontSize: `${Math.random() * 20 + 20}px` }}
+      >
+        {['💖', '✨', '🌸', '🦋', '💕', '🥰'][Math.floor(Math.random() * 6)]}
+      </motion.div>
+    ))}
+  </div>
+));
+
 export default function BucinWebsite() {
   const [step, setStep] = useState(1);
   const [girlName, setGirlName] = useState('');
@@ -13,15 +36,29 @@ export default function BucinWebsite() {
   // State untuk Layar Tunggu Musik (5 detik)
   const [countdown, setCountdown] = useState(5);
 
+  // State Jawaban Kuis Text
   const [quizGombalAnswer, setQuizGombalAnswer] = useState('');
   const [quizGombalError, setQuizGombalError] = useState('');
   const [quizChoiceError, setQuizChoiceError] = useState('');
   
-  // State Pilihan Baru
+  // State Pilihan Ganda
   const [foodChoice, setFoodChoice] = useState('');
   const [dateChoice, setDateChoice] = useState('');
   const [loveLanguage, setLoveLanguage] = useState('');
+  const [petName, setPetName] = useState('');
+  const [apologyStyle, setApologyStyle] = useState('');
+  const [movieChoice, setMovieChoice] = useState('');
+  const [rainChoice, setRainChoice] = useState('');
+  const [giftChoice, setGiftChoice] = useState('');
   
+  // State Kuis Baru (Ngeselin & Flirty)
+  const [firstImpression, setFirstImpression] = useState('');
+  const [kissReaction, setKissReaction] = useState('');
+
+  // State Kuis Ketik Cinta
+  const [loveInput, setLoveInput] = useState('');
+  const [loveError, setLoveError] = useState('');
+
   const [promiseAnswer, setPromiseAnswer] = useState('');
   const [promiseError, setPromiseError] = useState('');
 
@@ -41,7 +78,7 @@ export default function BucinWebsite() {
       if (countdown > 0) {
         timer = setTimeout(() => setCountdown(countdown - 1), 1000);
       } else {
-        setStep(2); // Otomatis masuk ke Kuis 1 setelah 5 detik
+        setStep(2);
       }
     }
     return () => clearTimeout(timer);
@@ -179,6 +216,19 @@ export default function BucinWebsite() {
     }
   };
 
+  const handleLoveSubmit = (e) => {
+    e.preventDefault();
+    const clean = loveInput.trim().toLowerCase();
+    if (clean.length > 0) {
+      setLoveError('');
+      playSoundEffect('correct');
+      setStep(17); 
+    } else {
+      playSoundEffect('wrong');
+      setLoveError('Diisi dulu dong pesannya buat mas ganteng! 🥺💕');
+    }
+  };
+
   const handlePromiseSubmit = (e) => {
     e.preventDefault();
     const clean = promiseAnswer.trim().toLowerCase();
@@ -186,7 +236,7 @@ export default function BucinWebsite() {
     if (clean.includes('janji')) {
       setPromiseError('');
       playSoundEffect('correct');
-      setStep(9); // Pindah ke Konfirmasi
+      setStep(18); 
     } else {
       playSoundEffect('wrong');
       const randomIndex = Math.floor(Math.random() * promiseWrongResponses.length);
@@ -212,7 +262,7 @@ export default function BucinWebsite() {
 
   const handleAccept = () => {
     playSoundEffect('correct');
-    setStep(11); // Pindah ke Final Step
+    setStep(20);
     
     let count = 0;
     const timer = setInterval(() => {
@@ -238,29 +288,6 @@ export default function BucinWebsite() {
       confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
     }, 250);
   };
-
-  // Komponen Ornamen Mengambang
-  const FloatingOrnaments = () => (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-      {[...Array(12)].map((_, i) => (
-        <motion.div
-          key={i}
-          initial={{ y: "110vh", x: `${Math.random() * 100}vw`, opacity: 0.2 + Math.random() * 0.5 }}
-          animate={{ y: "-10vh", rotate: Math.random() * 360 }}
-          transition={{
-            duration: 10 + Math.random() * 15,
-            repeat: Infinity,
-            ease: "linear",
-            delay: Math.random() * 5
-          }}
-          className="absolute text-2xl drop-shadow-md"
-          style={{ fontSize: `${Math.random() * 20 + 20}px` }}
-        >
-          {['💖', '✨', '🌸', '🦋', '💕'][Math.floor(Math.random() * 5)]}
-        </motion.div>
-      ))}
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-200 via-purple-100 to-rose-200 flex items-center justify-center p-4 overflow-hidden relative font-sans">
@@ -319,7 +346,7 @@ export default function BucinWebsite() {
           </motion.div>
         )}
 
-        {/* STEP 1.5: Layar Tunggu 5 Detik */}
+        {/* STEP 1.5: Layar Tunggu */}
         {step === 1.5 && (
           <motion.div 
             key="step1.5"
@@ -486,7 +513,7 @@ export default function BucinWebsite() {
             </h2>
 
             <div className="grid grid-cols-2 gap-4">
-              {['Seblak & Boba 🧋', 'Eskrim & Gelato 🍦', 'Ngedate di Cafe ☕', 'Terserah Arif aja 🥰'].map((item, idx) => (
+              {['Seblak & Boba 🧋', 'Eskrim & Gelato 🍦', 'Ngedate di Cafe ☕', 'Terserah Mas Arif 🥰'].map((item, idx) => (
                 <motion.button 
                   key={idx}
                   whileHover={{ scale: 1.05, y: -2 }}
@@ -571,7 +598,7 @@ export default function BucinWebsite() {
           </motion.div>
         )}
 
-        {/* STEP 8: Janji */}
+        {/* STEP 8: Panggilan Kesayangan */}
         {step === 8 && (
           <motion.div 
             key="step8"
@@ -581,7 +608,318 @@ export default function BucinWebsite() {
             className="bg-white/60 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(236,72,153,0.3)] border border-white/60 text-center max-w-md w-full space-y-6 relative z-10"
           >
             <h2 className="text-2xl font-bold text-gray-800 leading-snug">
-              Kuis Terakhir: Janji ya kalau lagi kangen sama {targetName}, gak boleh ngambek sendirian? 🥺
+              Kuis 7: Nanti kalau udah resmi jadian, enaknya panggilannya apa nih? 📞🥰
+            </h2>
+
+            <div className="grid grid-cols-2 gap-3">
+              {['Sayang / Ay 💖', 'Beb / Babe 💋', 'Panggilan Khusus 🤪', 'Terserah Mas Arif 🥺'].map((item, idx) => (
+                <motion.button 
+                  key={idx}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setPetName(item);
+                    playSoundEffect('correct');
+                    setStep(9);
+                  }}
+                  className="w-full py-4 bg-white hover:bg-pink-100 text-pink-700 font-bold rounded-xl border border-pink-300 shadow-sm cursor-pointer text-sm"
+                >
+                  {item}
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* STEP 9: Cara Bujuk Ngambek */}
+        {step === 9 && (
+          <motion.div 
+            key="step9"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            className="bg-white/60 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(236,72,153,0.3)] border border-white/60 text-center max-w-md w-full space-y-6 relative z-10"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 leading-snug">
+              Kuis 8: Amit-amit nih, tapi kalau misal kamu lagi ngambek, paling cepet luluh kalau aku ngapain? 🥺🚩
+            </h2>
+
+            <div className="grid grid-cols-1 gap-3">
+              {['Dibelikan Makanan Favorit 🍕', 'Dipeluk & Dielus Kepalanya 🫂', 'Diajak Jalan-jalan 🛵', 'Dikasih ShopeePay / Transferan 💸'].map((item, idx) => (
+                <motion.button 
+                  key={idx}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setApologyStyle(item);
+                    playSoundEffect('correct');
+                    setStep(10);
+                  }}
+                  className="w-full py-3 bg-pink-50 hover:bg-pink-200 text-pink-800 font-bold rounded-xl border border-pink-300 shadow-sm cursor-pointer text-left px-5"
+                >
+                  {item}
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* STEP 10: Kuis 9 (Genre Film) */}
+        {step === 10 && (
+          <motion.div 
+            key="step10"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            className="bg-white/60 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(236,72,153,0.3)] border border-white/60 text-center max-w-md w-full space-y-6 relative z-10"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 leading-snug">
+              Kuis 9: Kalau kita nonton Netflix bareng, <span className="text-pink-600">{girlName}</span> tim genre apa nih? 🎬🍿
+            </h2>
+
+            <div className="grid grid-cols-2 gap-3">
+              {['Drakor / Romance 💞', 'Horror / Thriller 👻', 'Comedy Bikin Ngakak 🤣', 'Action / Anime ⚔️'].map((item, idx) => (
+                <motion.button 
+                  key={idx}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setMovieChoice(item);
+                    playSoundEffect('correct');
+                    setStep(11);
+                  }}
+                  className="w-full py-4 bg-white hover:bg-pink-100 text-pink-700 font-bold rounded-xl border border-pink-300 shadow-sm cursor-pointer text-sm"
+                >
+                  {item}
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* STEP 11: Kuis 10 (Skenario Hujan) */}
+        {step === 11 && (
+          <motion.div 
+            key="step11"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            className="bg-white/60 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(236,72,153,0.3)] border border-white/60 text-center max-w-md w-full space-y-6 relative z-10"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 leading-snug">
+              Kuis 10: Tiba-tiba di jalan kehujanan deres banget! Kita enaknya ngapain? 🌧️🛵
+            </h2>
+
+            <div className="grid grid-cols-1 gap-3">
+              {['Mampir Makan Indomie Rebus 🍜', 'Neduh Sambil Pelukan 🫣', 'Beli Jas Hujan Batman Berdua 🦇', 'Terobos Aja Lah Biar Seru! 💦'].map((item, idx) => (
+                <motion.button 
+                  key={idx}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setRainChoice(item);
+                    playSoundEffect('correct');
+                    setStep(12);
+                  }}
+                  className="w-full py-3 bg-pink-50 hover:bg-pink-200 text-pink-800 font-bold rounded-xl border border-pink-300 shadow-sm cursor-pointer text-left px-5"
+                >
+                  {item}
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* STEP 12: Kuis 11 (Hadiah) */}
+        {step === 12 && (
+          <motion.div 
+            key="step12"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            className="bg-white/60 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(236,72,153,0.3)] border border-white/60 text-center max-w-md w-full space-y-6 relative z-10"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 leading-snug">
+              Kuis 11: Hadiah dadakan apa yang paling bikin <span className="text-pink-600">{girlName}</span> senyum-senyum sendiri seharian? 🎁✨
+            </h2>
+
+            <div className="grid grid-cols-1 gap-3">
+              {['Buket Bunga Cantik 💐', 'Cokelat / Dessert Manis 🍫', 'Barang Couple (Jaket/Sepatu) 👕', 'Surat Cinta Buatan Tangan 💌'].map((item, idx) => (
+                <motion.button 
+                  key={idx}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setGiftChoice(item);
+                    playSoundEffect('correct');
+                    setStep(13);
+                  }}
+                  className="w-full py-3 bg-white hover:bg-pink-100 text-pink-700 font-bold rounded-xl border border-pink-300 shadow-sm cursor-pointer"
+                >
+                  {item}
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* STEP 13: Kuis 12 (Persentase) */}
+        {step === 13 && (
+          <motion.div 
+            key="step13"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            className="bg-white/60 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(236,72,153,0.3)] border border-white/60 text-center max-w-md w-full space-y-6 relative z-10"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 leading-snug">
+              Kuis 12: Jujur dari lubuk hati yang paling dalam, seberapa sayang sih sama {targetName}? 🤭❤️
+            </h2>
+
+            <div className="grid grid-cols-2 gap-3">
+              {['100% Sayang! 😍', '1000% Sayang Banget! 🔥', 'Tak Terhingga ~ 🌌', 'Pokoknya Ga Bisa Hidup Tanpanya 😭'].map((item, idx) => (
+                <motion.button 
+                  key={idx}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    playSoundEffect('correct');
+                    setStep(14);
+                  }}
+                  className="w-full py-4 bg-gradient-to-r from-pink-400 to-pink-500 text-white font-bold rounded-xl shadow-md cursor-pointer text-sm"
+                >
+                  {item}
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* STEP 14: Kuis 13 BARU (First Impression Flirty) */}
+        {step === 14 && (
+          <motion.div 
+            key="step14"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            className="bg-white/60 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(236,72,153,0.3)] border border-white/60 text-center max-w-md w-full space-y-6 relative z-10"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 leading-snug">
+              Kuis 13: Coba jujur, pas pertama kali kenal / liat mas {targetName}, apa yang ada di pikiran kamu? 🫣💭
+            </h2>
+
+            <div className="grid grid-cols-1 gap-3">
+              {[
+                '"Boleh juga nih cowok..." 😏', 
+                '"Idih, siapa sih sok asik" 🙄 (padahal naksir)', 
+                '"Fix, ini bapak dari anak-anakku nanti!" 💍', 
+                '"Awalnya biasa aja... eh lama-lama kecanduan" 🤤'
+              ].map((item, idx) => (
+                <motion.button 
+                  key={idx}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setFirstImpression(item);
+                    playSoundEffect('correct');
+                    setStep(15);
+                  }}
+                  className="w-full py-4 bg-white hover:bg-pink-100 text-pink-700 font-bold rounded-xl border border-pink-300 shadow-sm cursor-pointer text-sm px-4"
+                >
+                  {item}
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* STEP 15: Kuis 14 BARU (Skenario Cium Flirty) */}
+        {step === 15 && (
+          <motion.div 
+            key="step15"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            className="bg-white/60 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(236,72,153,0.3)] border border-white/60 text-center max-w-md w-full space-y-6 relative z-10"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 leading-snug">
+              Kuis 14: Misal nih kita lagi jalan berdua, terus tiba-tiba aku iseng nyium pipi kamu... reaksi kamu bakal? 💋🏃‍♂️
+            </h2>
+
+            <div className="grid grid-cols-1 gap-3">
+              {[
+                'Marah-marah tapi mukanya merah tomat 🍅', 
+                'Balas nyium balik dong! Gas! 🔥', 
+                'Salting brutal sampe nyungsep / nabrak tiang 🤸‍♀️', 
+                'Pura-pura ngambek biar dibeliin makanan 🍜'
+              ].map((item, idx) => (
+                <motion.button 
+                  key={idx}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => {
+                    setKissReaction(item);
+                    playSoundEffect('correct');
+                    setStep(16);
+                  }}
+                  className="w-full py-4 bg-pink-50 hover:bg-pink-200 text-pink-800 font-bold rounded-xl border border-pink-300 shadow-sm cursor-pointer text-sm px-4"
+                >
+                  {item}
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* STEP 16: Kuis 15 (Ketik Sesuatu / I Love You) */}
+        {step === 16 && (
+          <motion.div 
+            key="step16"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            className="bg-white/60 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(236,72,153,0.3)] border border-white/60 text-center max-w-md w-full space-y-6 relative z-10"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 leading-snug">
+              Kuis 15: Sebelum lanjut ke akhir, coba dong ketik pesan manis/gombalan maut buat mas ganteng! 🥺💌
+            </h2>
+            
+            <form onSubmit={handleLoveSubmit} className="space-y-4">
+              <input 
+                type="text"
+                value={loveInput}
+                onChange={(e) => setLoveInput(e.target.value)}
+                placeholder="Ketik pesannya di sini..."
+                className="w-full px-5 py-3 rounded-full border-2 border-pink-300 focus:border-pink-500 focus:outline-none text-center text-gray-800 font-bold shadow-inner bg-white/70"
+              />
+
+              {loveError && (
+                <p className="text-red-500 text-sm font-bold bg-red-50 p-2 rounded-xl border border-red-200">{loveError}</p>
+              )}
+
+              <motion.button 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                type="submit"
+                className="w-full py-3 bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-full shadow-[0_5px_15px_rgba(236,72,153,0.4)] cursor-pointer transition text-lg"
+              >
+                Kirim Cinta 💘
+              </motion.button>
+            </form>
+          </motion.div>
+        )}
+
+        {/* STEP 17: Kuis 16 (Janji) */}
+        {step === 17 && (
+          <motion.div 
+            key="step17"
+            initial={{ opacity: 0, x: 100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            className="bg-white/60 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(236,72,153,0.3)] border border-white/60 text-center max-w-md w-full space-y-6 relative z-10"
+          >
+            <h2 className="text-2xl font-bold text-gray-800 leading-snug">
+              Kuis Terakhir (Kuis 16): Janji ya kalau lagi kangen sama {targetName}, gak boleh dipendem sendirian? Harus ngabarin! 🥺
             </h2>
             
             <form onSubmit={handlePromiseSubmit} className="space-y-4">
@@ -615,24 +953,24 @@ export default function BucinWebsite() {
           </motion.div>
         )}
 
-        {/* STEP 9: Konfirmasi */}
-        {step === 9 && (
+        {/* STEP 18: Konfirmasi */}
+        {step === 18 && (
           <motion.div 
-            key="step9"
+            key="step18"
             initial={{ opacity: 0, x: 100 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -100 }}
             className="bg-white/60 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(236,72,153,0.3)] border border-white/60 text-center max-w-md w-full space-y-8 relative z-10"
           >
             <h2 className="text-2xl font-bold text-gray-800 leading-snug">
-              Cantiknya aku pinter banget! Berarti fix <span className="text-pink-600 font-extrabold">{targetName}</span> emang cowok yang paling kamu sayang kan❤️✨
+              Gila, sabar banget ngerjain 16 Kuis! Berarti fix <span className="text-pink-600 font-extrabold">{targetName}</span> emang cowok yang paling kamu sayang kan❤️✨
             </h2>
             
             <div className="flex justify-center items-center gap-6 min-h-[100px] w-full relative">
               <motion.button 
                 whileHover={{ scale: 1.1, boxShadow: "0px 0px 15px rgba(236, 72, 153, 0.5)" }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => { playSoundEffect('correct'); setStep(10); }} 
+                onClick={() => { playSoundEffect('correct'); setStep(19); }} 
                 className="px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold rounded-full shadow-lg z-10 cursor-pointer text-lg"
               >
                 Iya Fix Banget! 💖
@@ -653,17 +991,17 @@ export default function BucinWebsite() {
           </motion.div>
         )}
 
-        {/* STEP 10: Penembakan Akhir */}
-        {step === 10 && (
+        {/* STEP 19: Penembakan Akhir */}
+        {step === 19 && (
           <motion.div 
-            key="step10"
+            key="step19"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.5 }}
             className="bg-white/60 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(236,72,153,0.3)] border border-white/60 text-center max-w-md w-full space-y-8 relative z-10"
           >
             <h2 className="text-2xl font-bold text-gray-800 leading-snug">
-              Nah <span className="text-pink-600 font-extrabold">{girlName}</span>, mau nggak kamu nemenin hari-hari <span className="text-pink-600 font-extrabold">{targetName}</span> terus dan jadi pacarnya? 🥺✨
+              Nah <span className="text-pink-600 font-extrabold">{girlName}</span>, mau nggak kamu nemenin hari-hari <span className="text-pink-600 font-extrabold">{targetName}</span> terus dan jadi pacarnya selamanya? 🥺✨
             </h2>
 
             <div className="flex justify-center items-center gap-6 min-h-[100px] w-full relative">
@@ -691,65 +1029,85 @@ export default function BucinWebsite() {
           </motion.div>
         )}
 
-        {/* STEP 11: Final Reveal & Kartu Spesial */}
-        {step === 11 && (
+        {/* STEP 20: Final Reveal & Sertifikat */}
+        {step === 20 && (
           <motion.div 
-            key="step11"
+            key="step20"
             initial={{ opacity: 0, scale: 0.2 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ type: "spring", bounce: 0.5 }}
-            className="bg-white/70 backdrop-blur-xl p-5 rounded-3xl shadow-2xl border border-white/80 text-center max-w-md w-full space-y-6 flex flex-col items-center max-h-[90vh] overflow-y-auto relative z-10"
+            // Diberi kelonggaran max height agar kartu tidak tergencet
+            className="bg-white/70 backdrop-blur-xl p-4 rounded-3xl shadow-2xl border border-white/80 text-center max-w-md w-full space-y-4 flex flex-col items-center max-h-[90vh] overflow-y-auto relative z-10"
           >
-            {/* Element Kartu Akhir yang di-screenshot */}
-            <div ref={finalCardRef} className="p-6 bg-white rounded-3xl w-full flex flex-col items-center space-y-5 border border-pink-100 shadow-[0_10px_30px_rgba(236,72,153,0.15)] relative overflow-hidden">
-              {/* Ornamen sudut di kartu screenshot */}
+            {/* Element Kartu Akhir yang di-screenshot. DITAMBAHKAN shrink-0 agar tidak menciut ke atas */}
+            <div ref={finalCardRef} className="shrink-0 p-5 bg-white rounded-3xl w-full flex flex-col items-center space-y-4 border border-pink-100 shadow-[0_10px_30px_rgba(236,72,153,0.15)] relative overflow-hidden">
               <div className="absolute -top-4 -left-4 text-5xl opacity-20">✨</div>
               <div className="absolute -bottom-4 -right-4 text-5xl opacity-20">🌸</div>
 
               <motion.h1 
                 animate={{ scale: [1, 1.05, 1] }} 
                 transition={{ repeat: Infinity, duration: 2 }}
-                className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-rose-500 drop-shadow-sm"
+                className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-rose-500 drop-shadow-sm shrink-0"
               >
                 YEEEAY! RESMI JADIAN! 🎉
               </motion.h1>
 
-              {/* Gambar Berbentuk Love / Heart Lebih Besar + Shadow */}
-              <div className="relative w-64 h-64 flex items-center justify-center my-2">
+              <div 
+                className="relative flex items-center justify-center my-4 shrink-0" 
+                style={{ width: '224px', height: '205px' }}
+              >
+                {/* Efek Glow di Belakang */}
                 <div 
                   className="absolute inset-0 bg-pink-400/50 blur-xl animate-pulse"
                   style={{
-                    clipPath: 'path("M 128,42 A 64,64 0 0,0 0,106 C 0,170 128,234 128,234 C 128,234 256,170 256,106 A 64,64 0 0,0 128,42 Z")'
+                    clipPath: 'path("M 112,35 A 56,56 0 0,0 0,93 C 0,149 112,205 112,205 C 112,205 224,149 224,93 A 56,56 0 0,0 112,35 Z")'
                   }}
                 ></div>
+                
+                {/* Gambar Utama yang Dipotong Hati */}
                 <img 
-                  src="/i3.png" 
+                  src="/1.png" 
                   alt="Love"
-                  className="w-60 h-60 object-cover relative z-10 filter drop-shadow-[0_10px_15px_rgba(236,72,153,0.5)]"
+                  className="absolute object-cover z-10 filter drop-shadow-[0_10px_15px_rgba(236,72,153,0.5)]"
                   style={{
-                    clipPath: 'path("M 120,38 A 60,60 0 0,0 0,98 C 0,158 120,218 120,218 C 120,218 240,158 240,98 A 60,60 0 0,0 120,38 Z")'
+                    width: '208px',
+                    height: '189px',
+                    clipPath: 'path("M 104,33 A 52,52 0 0,0 0,85 C 0,137 104,189 104,189 C 104,189 208,137 208,85 A 52,52 0 0,0 104,33 Z")'
                   }}
                 />
               </div>
 
-              <div className="w-full bg-pink-100 rounded-full h-6 overflow-hidden relative shadow-inner border border-pink-200">
+              <div className="w-full shrink-0 bg-pink-100 rounded-full h-5 overflow-hidden relative shadow-inner border border-pink-200">
                 <motion.div 
-                  className="bg-gradient-to-r from-pink-500 to-rose-500 h-full flex items-center justify-center text-xs font-bold text-white shadow-[0_0_10px_rgba(255,255,255,0.5)]"
+                  className="bg-gradient-to-r from-pink-500 to-rose-500 h-full flex items-center justify-center text-[10px] sm:text-xs font-bold text-white shadow-[0_0_10px_rgba(255,255,255,0.5)]"
                   style={{ width: `${loveMeter}%` }}
                 >
                   Kecocokan {girlName} & {targetName}: {loveMeter}%
                 </motion.div>
               </div>
 
-              <div className="bg-gradient-to-br from-pink-50 to-white p-5 rounded-2xl border border-pink-200 text-left space-y-3 w-full text-sm text-gray-800 shadow-sm relative">
-                <p className="font-extrabold text-pink-600 text-base border-b border-pink-200 pb-2">💌 Catatan Spesial Untuk {girlName}:</p>
-                <p className="leading-relaxed">
-                  Makasih ya <span className="font-bold text-pink-600">{girlName}</span> udah mau jawab kuis-kuisnya sampai beres! 
+              <div className="bg-gradient-to-br from-pink-50 to-white p-4 rounded-2xl border border-pink-200 text-left space-y-2 w-full text-xs text-gray-800 shadow-sm relative leading-relaxed shrink-0">
+                <p className="font-extrabold text-pink-600 text-sm border-b border-pink-200 pb-1">💌 Sertifikat Cinta {girlName}:</p>
+                
+                <p>
+                  Sesuai pilihanmu, nanti kita jalan sambil makan <span className="font-bold text-pink-600">{foodChoice}</span>, lanjut <span className="font-bold text-pink-600">{dateChoice}</span>, dan sekalian nonton <span className="font-bold text-pink-600">{movieChoice}</span>! Kalau di jalan kehujanan, kita tenang aja sambil <span className="font-bold text-pink-600">{rainChoice}</span> 🌧️.
                 </p>
-                <p className="leading-relaxed">
-                  Sesuai pilihanmu, nanti kita jalan-jalan sambil <span className="font-bold text-pink-600">{foodChoice}</span> terus lanjut <span className="font-bold text-pink-600">{dateChoice}</span>. Dan pastinya bakal aku usahain menuhi love language kamu yang <span className="font-bold text-pink-600">{loveLanguage}</span> itu tiap hari! 🥰
+
+                <p>
+                  Pastinya bakal aku usahain penuhi love language kamu yang suka <span className="font-bold text-pink-600">{loveLanguage}</span>, plus bawain <span className="font-bold text-pink-600">{giftChoice}</span> kesukaanmu! 🥰
                 </p>
-                <p className="font-bold text-pink-600 text-center pt-2">Love you 3000! 🫶✨</p>
+
+                <p>
+                  Ternyata kesan pertamamu ke aku itu <span className="font-bold text-pink-600">{firstImpression}</span> ya! Awas aja, pas jalan nanti siap-siap aku cium pipinya biar kamu <span className="font-bold text-pink-600">{kissReaction}</span> 🤪💋
+                </p>
+
+                <p>
+                  Mulai hari ini, aku panggil kamu <span className="font-bold text-pink-600">{petName}</span>. Kalau kamu lagi ngambek, tenang aja... aku pasti bujuk dengan cara <span className="font-bold text-pink-600">{apologyStyle}</span> biar senyum lagi!
+                </p>
+
+                <p className="italic text-pink-600/90 bg-pink-100/60 p-2 rounded-lg border border-pink-200">
+                  "{loveInput}" — {girlName} 💖
+                </p>
               </div>
             </div>
 
@@ -758,9 +1116,10 @@ export default function BucinWebsite() {
               whileTap={{ scale: 0.95 }}
               disabled={isSaving}
               onClick={handleDownloadScreenshot}
-              className="w-full py-4 bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold rounded-full shadow-lg transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 text-lg"
+              // Tombol juga diberi shrink-0 agar tidak ikut terpotong
+              className="shrink-0 w-full py-4 bg-gradient-to-r from-pink-500 to-rose-500 text-white font-bold rounded-full shadow-lg transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 text-base"
             >
-              {isSaving ? "Sedang Menyimpan..." : "📸 Simpan Bukti Jadian (PNG)"}
+              {isSaving ? "Sedang Menyimpan..." : "📸 Simpan Sertifikat (PNG)"}
             </motion.button>
           </motion.div>
         )}
