@@ -54,7 +54,6 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [cameraActive, setCameraActive] = useState(false);
   const [countdown, setCountdown] = useState(null);
   
-  // Menyimpan array foto berdasarkan layout yang dipilih
   const [myPhotos, setMyPhotos] = useState([]);
   const [partnerPhotos, setPartnerPhotos] = useState([]);
   
@@ -68,6 +67,15 @@ export default function LiveLoveRoomWithPhotobooth() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  // Cleanup kamera saat komponen unmount atau pindah tab
+  useEffect(() => {
+    return () => {
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
 
   // 1. BUAT ROOM (HOST)
   const handleCreateRoom = (e) => {
@@ -138,10 +146,12 @@ export default function LiveLoveRoomWithPhotobooth() {
         setPartnerMood(data.mood);
       } else if (data.type === 'love-tap') {
         confetti({ particleCount: 60, spread: 80, origin: { y: 0.5 } });
-      } else if (data.type === 'photobooth-package') {
-        setPartnerPhotos(data.photos);
+      } else if (data.type === 'photobooth-start-sync') {
         setSelectedLayout(data.layout);
         setSelectedTheme(data.theme);
+        startCapturingSequence();
+      } else if (data.type === 'photobooth-package') {
+        setPartnerPhotos(data.photos);
       }
     });
 
@@ -177,13 +187,18 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  // --- PHOTOBOOTH LOGIC ---
+  // --- PHOTOBOOTH LOGIC & KAMERA FIX ---
   const startCamera = async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }, 
+        audio: false 
+      });
       mediaStreamRef.current = stream;
+      
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(e => console.log("Play interrupted:", e));
       }
       setCameraActive(true);
     } catch (err) {
@@ -200,17 +215,27 @@ export default function LiveLoveRoomWithPhotobooth() {
     setCameraActive(false);
   };
 
-  // Tentukan jumlah foto yang harus diambil berdasarkan layout
   const getRequiredPhotosCount = () => {
-    if (selectedLayout === '1x2') return 2; // 2 foto vertikal
-    if (selectedLayout === '1x3') return 3; // 3 foto vertikal
-    if (selectedLayout === '2x2') return 2; // 2 foto kamu (2 lainnya dari pasangan)
+    if (selectedLayout === '1x2') return 2;
+    if (selectedLayout === '1x3') return 3;
+    if (selectedLayout === '2x2') return 2;
     return 2;
   };
 
+  const handleInitiateCapture = () => {
+    if (conn) {
+      conn.send({
+        type: 'photobooth-start-sync',
+        layout: selectedLayout,
+        theme: selectedTheme
+      });
+    }
+    startCapturingSequence();
+  };
+
   const startCapturingSequence = async () => {
-    await startCamera();
     setBoothStep('capturing');
+    await startCamera();
     takePhotosLoop(0, []);
   };
 
@@ -221,13 +246,10 @@ export default function LiveLoveRoomWithPhotobooth() {
       setMyPhotos(accumulatedPhotos);
       setBoothStep('waiting');
 
-      // Kirim paket foto ke pasangan
       if (conn) {
         conn.send({
           type: 'photobooth-package',
-          photos: accumulatedPhotos,
-          layout: selectedLayout,
-          theme: selectedTheme
+          photos: accumulatedPhotos
         });
       }
       return;
@@ -243,7 +265,6 @@ export default function LiveLoveRoomWithPhotobooth() {
         clearInterval(timer);
         setCountdown(null);
 
-        // Capture 1 foto
         if (videoRef.current) {
           const canvas = document.createElement('canvas');
           canvas.width = 640;
@@ -256,7 +277,6 @@ export default function LiveLoveRoomWithPhotobooth() {
           const photoData = canvas.toDataURL('image/jpeg', 0.9);
           const nextPhotos = [...accumulatedPhotos, photoData];
           
-          // Jeda sebentar antar foto jika lebih dari 1
           setTimeout(() => {
             takePhotosLoop(index + 1, nextPhotos);
           }, 800);
@@ -265,22 +285,18 @@ export default function LiveLoveRoomWithPhotobooth() {
     }, 1000);
   };
 
-  // Jika kedua belah pihak sudah mengirim foto, generate strip canvas dengan ornamen!
   useEffect(() => {
     if (myPhotos.length > 0 && partnerPhotos.length > 0) {
       setBoothStep('ready');
       confetti({ particleCount: 100, spread: 100, origin: { y: 0.5 } });
-
       generatePhotoboothCanvas();
     }
   }, [myPhotos, partnerPhotos]);
 
-  // Fungsi Pembuat Kanvas dengan Ornamen & Tema Estetik
   const generatePhotoboothCanvas = () => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
-    // Tentukan Tema Warna Berdasarkan Pilihan
     let themeConfig = {
       bg: '#fff1f2',
       border: '#f43f5e',
@@ -298,11 +314,9 @@ export default function LiveLoveRoomWithPhotobooth() {
     canvas.width = 650;
     canvas.height = 1150;
 
-    // 1. Background Kanvas Lembut
     ctx.fillStyle = themeConfig.bg;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 2. Main Card Container (Putih dengan Shadow)
     ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
     ctx.shadowBlur = 25;
     ctx.shadowOffsetX = 0;
@@ -328,49 +342,38 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.closePath();
     ctx.fill();
 
-    // Reset Shadow
     ctx.shadowBlur = 0;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 0;
 
-    // Border Frame Luar
     ctx.lineWidth = 10;
     ctx.strokeStyle = themeConfig.border;
     ctx.stroke();
 
-    // 3. Header & Ornamen Stiker Teks
     ctx.fillStyle = themeConfig.text;
     ctx.font = '900 22px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('✨ OUR SPECIAL PHOTOBOOTH DATE 📸', canvas.width / 2, 95);
 
-    // Tambahan Ornamen Bintang / Hati di Header
     ctx.font = '20px sans-serif';
     ctx.fillText('💖 🎀 🌟 🌸', canvas.width / 2, 130);
 
-    // Gabungkan foto kamu dan pasangan sesuai layout
-    // Gabungan list foto: misal 1x2 (1 kamu, 1 partner), 1x3 (2 kamu, 1 partner atau sebaliknya)
     let combinedPhotos = [...myPhotos, ...partnerPhotos];
     
-    // Render Foto ke Canvas Berdasarkan Layout
     if (selectedLayout === '1x2') {
-      // 2 Foto Vertikal Besar
       drawPhotoSlot(ctx, combinedPhotos[0], 75, 160, 500, 360, 25, themeConfig.border);
       drawPhotoSlot(ctx, combinedPhotos[1] || combinedPhotos[0], 75, 540, 500, 360, 25, themeConfig.border);
     } else if (selectedLayout === '1x3') {
-      // 3 Foto Vertikal
       drawPhotoSlot(ctx, combinedPhotos[0], 95, 155, 460, 250, 20, themeConfig.border);
       drawPhotoSlot(ctx, combinedPhotos[1] || combinedPhotos[0], 95, 420, 460, 250, 20, themeConfig.border);
       drawPhotoSlot(ctx, combinedPhotos[2] || combinedPhotos[0], 95, 685, 460, 250, 20, themeConfig.border);
     } else if (selectedLayout === '2x2') {
-      // Grid 4 Foto (2x2)
       drawPhotoSlot(ctx, combinedPhotos[0], 75, 160, 235, 360, 20, themeConfig.border);
       drawPhotoSlot(ctx, combinedPhotos[1] || combinedPhotos[0], 340, 160, 235, 360, 20, themeConfig.border);
       drawPhotoSlot(ctx, combinedPhotos[2] || combinedPhotos[0], 75, 540, 235, 360, 20, themeConfig.border);
       drawPhotoSlot(ctx, combinedPhotos[3] || combinedPhotos[1] || combinedPhotos[0], 340, 540, 235, 360, 20, themeConfig.border);
     }
 
-    // 4. Ornamen Bawah / Footer (Divider & Stamp Stiker)
     ctx.beginPath();
     ctx.moveTo(75, 960);
     ctx.lineTo(575, 960);
@@ -378,13 +381,11 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.strokeStyle = themeConfig.accent;
     ctx.stroke();
 
-    // Stiker / Stamp Ornamen Hati Lucu di sudut
     ctx.fillStyle = themeConfig.border;
     ctx.font = '16px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('🎀  S E A L E D   W I T H   L O V E  🎀', canvas.width / 2, 995);
 
-    // Nama & Tanggal
     ctx.fillStyle = '#57534e';
     ctx.font = 'bold 16px sans-serif';
     ctx.textAlign = 'left';
@@ -397,7 +398,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     setFinalStripUrl(canvas.toDataURL('image/png', 1.0));
   };
 
-  // Helper Gambar Foto dengan Border Melengkung
   const drawPhotoSlot = (ctx, photoSrc, x, y, width, height, radius, borderColor) => {
     if (!photoSrc) return;
     const img = new Image();
@@ -421,7 +421,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.drawImage(img, x, y, width, height);
       ctx.restore();
       
-      // Border Foto
       ctx.save();
       ctx.beginPath();
       ctx.moveTo(x + radius, y);
@@ -730,16 +729,16 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 2: PHOTOBOOTH DENGAN PILIHAN LAYOUT & ORNAMEN */}
+            {/* TAB 2: PHOTOBOOTH SINKRONASI OTOMATIS */}
             {activeTab === 'photobooth' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-4 overflow-y-auto p-1">
                 
-                {/* STEP 1: PILIH LAYOUT & TEMA ORNAMEN */}
+                {/* STEP 1: PILIH LAYOUT & TEMA */}
                 {boothStep === 'select-layout' && (
                   <div className="space-y-4 w-full max-w-xs text-left my-auto">
                     <div className="text-center">
                       <h3 className="font-bold text-stone-900 text-base">Pilih Ukuran & Tema Strip 📸</h3>
-                      <p className="text-xs text-stone-500">Sesuaikan gaya photobooth kalian berdua.</p>
+                      <p className="text-xs text-stone-500">Pilihanmu akan otomatis menyamakan perangkat pasanganmu!</p>
                     </div>
 
                     <div>
@@ -790,27 +789,29 @@ export default function LiveLoveRoomWithPhotobooth() {
 
                     <motion.button
                       whileTap={{ scale: 0.95 }}
-                      onClick={startCapturingSequence}
+                      onClick={handleInitiateCapture}
                       className="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-2xl shadow-md text-xs cursor-pointer mt-2"
                     >
-                      Mulai Foto Sesi ({getRequiredPhotosCount()} Foto) 🎬
+                      Mulai Sesi Foto Bersama 🎬
                     </motion.button>
                   </div>
                 )}
 
-                {/* STEP 2: PROSES KAMERA & COUNTDOWN */}
+                {/* STEP 2: PROSES KAMERA LIVE & COUNTDOWN */}
                 {boothStep === 'capturing' && (
                   <div className="space-y-3 w-full text-center my-auto">
-                    <div className="relative w-full max-w-[280px] h-[210px] mx-auto bg-black rounded-2xl overflow-hidden border-4 border-rose-200 shadow-md">
+                    <div className="relative w-full max-w-[280px] h-[210px] mx-auto bg-stone-900 rounded-2xl overflow-hidden border-4 border-rose-300 shadow-md flex items-center justify-center">
+                      {/* Video ditampilkan secara live agar kamera terlihat, bukan hitam */}
                       <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
                       
+                      {/* Overlay Countdown Angka Besar */}
                       {countdown !== null && (
-                        <div className="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center">
-                          <span className="text-7xl font-black text-white animate-bounce">{countdown}</span>
+                        <div className="absolute inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center pointer-events-none">
+                          <span className="text-7xl font-black text-white drop-shadow-lg animate-bounce">{countdown}</span>
                         </div>
                       )}
                     </div>
-                    <p className="text-xs font-semibold text-rose-600 animate-pulse">Sedang mengambil rangkaian foto...</p>
+                    <p className="text-xs font-semibold text-rose-600 animate-pulse">Senyum terbaikmu! Sedang mengambil foto...</p>
                   </div>
                 )}
 
@@ -819,7 +820,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                   <div className="space-y-4 text-center my-auto">
                     <div className="text-4xl animate-spin">⏳</div>
                     <div className="space-y-1">
-                      <h3 className="font-bold text-stone-800 text-sm">Foto kamu sudah tersimpan!</h3>
+                      <h3 className="font-bold text-stone-800 text-sm">Foto kamu berhasil diambil!</h3>
                       <p className="text-xs text-stone-500 animate-pulse">Menunggu foto dari {partnerName}...</p>
                     </div>
                   </div>
