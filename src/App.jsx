@@ -141,6 +141,34 @@ export default function LiveLoveRoomWithPhotobooth() {
     };
   }, []);
 
+  // --- FITUR KELUAR SESI / DISCONNECT ---
+  const handleLeaveSession = () => {
+    if (window.confirm("Yakin ingin keluar dari sesi ruangan ini?")) {
+      if (conn) conn.close();
+      if (peer) peer.destroy();
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      
+      // Bersihkan LocalStorage sesi
+      localStorage.removeItem('bucin_mode');
+      localStorage.removeItem('bucin_roomCode');
+      localStorage.removeItem('bucin_partnerName');
+
+      // Reset State
+      setMode('menu');
+      setRoomCode('');
+      setInputCode('');
+      setConn(null);
+      setPeer(null);
+      setIsConnected(false);
+      setMessages([]);
+      setNotes([]);
+      setAllPhotos([]);
+      setFinalStripUrl(null);
+    }
+  };
+
   // 1. BUAT ROOM (HOST)
   const handleCreateRoom = (e) => {
     e.preventDefault();
@@ -285,7 +313,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  // --- SINKRONISASI LAYOUT & TEMA REAL-TIME ---
   const handleLayoutChange = (layoutId) => {
     setSelectedLayout(layoutId);
     if (conn) {
@@ -300,7 +327,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  // --- PHOTOBOOTH LOGIC ---
   const startCamera = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -521,7 +547,7 @@ export default function LiveLoveRoomWithPhotobooth() {
 
       {/* AUDIO BACKGROUND MUSIC PLAYER */}
       <audio ref={audioRef} src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf756.mp3?filename=lofi-study-112191.mp3" loop />
-      <div className="absolute top-4 right-4 z-50">
+      <div className="absolute top-4 right-4 z-50 flex gap-2">
         <button
           onClick={() => {
             if (isPlayingMusic) {
@@ -533,7 +559,7 @@ export default function LiveLoveRoomWithPhotobooth() {
           }}
           className="bg-white/90 backdrop-blur-md px-3 py-2 rounded-2xl shadow-md border border-rose-200 flex items-center gap-2 text-xs font-bold text-rose-600 hover:scale-105 transition cursor-pointer"
         >
-          <span>{isPlayingMusic ? '🎶 Pause Music' : '▶️ Play Romantic Lofi'}</span>
+          <span>{isPlayingMusic ? '🎶 Pause' : '▶️ Music'}</span>
         </button>
       </div>
 
@@ -617,27 +643,35 @@ export default function LiveLoveRoomWithPhotobooth() {
           </motion.div>
         )}
 
-        {/* DASHBOARD UTAMA DENGAN TAB LENGKAP */}
+        {/* DASHBOARD UTAMA DENGAN TOMBOL KELUAR SESI */}
         {mode === 'dashboard' && (
           <motion.div key="dash" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white/95 backdrop-blur-xl p-4 sm:p-5 rounded-3xl shadow-2xl border border-rose-100 max-w-lg w-full space-y-3 relative z-10 flex flex-col h-[92vh]">
             
             {/* Header & Tabs Navigasi */}
             <div className="flex justify-between items-center border-b border-stone-100 pb-2 shrink-0">
               <div>
-                <span className="text-[10px] uppercase tracking-widest text-green-600 font-bold flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Terhubung Live
-                </span>
-                <h2 className="text-sm font-bold text-stone-900">{myName} & {partnerName}</h2>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] uppercase tracking-widest text-green-600 font-bold flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Terhubung Live
+                  </span>
+                  <button
+                    onClick={handleLeaveSession}
+                    className="px-2 py-0.5 bg-rose-100 hover:bg-rose-200 text-rose-700 rounded-lg text-[10px] font-bold transition cursor-pointer"
+                  >
+                    🚪 Keluar Room
+                  </button>
+                </div>
+                <h2 className="text-sm font-bold text-stone-900 mt-0.5">{myName} & {partnerName}</h2>
               </div>
 
               {/* Scrollable Tabs */}
-              <div className="flex bg-stone-100 p-1 rounded-xl text-xs font-bold gap-1 overflow-x-auto max-w-[220px]">
-                <button onClick={() => setActiveTab('chat')} className={`px-2.5 py-1 rounded-lg transition whitespace-nowrap ${activeTab === 'chat' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}>💬 Chat</button>
-                <button onClick={() => setActiveTab('counter')} className={`px-2.5 py-1 rounded-lg transition whitespace-nowrap ${activeTab === 'counter' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}>⏳ Counter</button>
-                <button onClick={() => setActiveTab('quiz')} className={`px-2.5 py-1 rounded-lg transition whitespace-nowrap ${activeTab === 'quiz' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}>❓ Quiz</button>
-                <button onClick={() => setActiveTab('bucket')} className={`px-2.5 py-1 rounded-lg transition whitespace-nowrap ${activeTab === 'bucket' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}>🎡 Bucket</button>
-                <button onClick={() => setActiveTab('notes')} className={`px-2.5 py-1 rounded-lg transition whitespace-nowrap ${activeTab === 'notes' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}>💌 Notes</button>
-                <button onClick={() => setActiveTab('photobooth')} className={`px-2.5 py-1 rounded-lg transition whitespace-nowrap ${activeTab === 'photobooth' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}>📸 Booth</button>
+              <div className="flex bg-stone-100 p-1 rounded-xl text-xs font-bold gap-1 overflow-x-auto max-w-[210px]">
+                <button onClick={() => setActiveTab('chat')} className={`px-2 py-1 rounded-lg transition whitespace-nowrap ${activeTab === 'chat' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}>💬 Chat</button>
+                <button onClick={() => setActiveTab('counter')} className={`px-2 py-1 rounded-lg transition whitespace-nowrap ${activeTab === 'counter' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}>⏳ Counter</button>
+                <button onClick={() => setActiveTab('quiz')} className={`px-2 py-1 rounded-lg transition whitespace-nowrap ${activeTab === 'quiz' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}>❓ Quiz</button>
+                <button onClick={() => setActiveTab('bucket')} className={`px-2 py-1 rounded-lg transition whitespace-nowrap ${activeTab === 'bucket' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}>🎡 Bucket</button>
+                <button onClick={() => setActiveTab('notes')} className={`px-2 py-1 rounded-lg transition whitespace-nowrap ${activeTab === 'notes' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}>💌 Notes</button>
+                <button onClick={() => setActiveTab('photobooth')} className={`px-2 py-1 rounded-lg transition whitespace-nowrap ${activeTab === 'photobooth' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}>📸 Booth</button>
               </div>
             </div>
 
@@ -837,7 +871,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 6: PHOTOBOOTH DENGAN SINKRONISASI LAYOUT & TEMA REAL-TIME */}
+            {/* TAB 6: PHOTOBOOTH */}
             {activeTab === 'photobooth' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-4 overflow-y-auto p-1">
                 {boothStep === 'select-layout' && (
