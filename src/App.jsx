@@ -339,12 +339,14 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  // --- KADOKU / VIRTUAL GIFT SYSTEM ---
+  // --- KIRIM KADO VIRTUAL HANYA KE PASANGAN ---
   const sendVirtualGift = (giftName, giftEmoji) => {
-    showGiftPopup(giftName, giftEmoji, myName);
-    if (conn) {
-      conn.send({ type: 'virtual-gift', giftName, giftEmoji, sender: myName });
+    if (!conn) {
+      alert("Belum terhubung dengan pasangan! Hubungkan room terlebih dahulu.");
+      return;
     }
+    conn.send({ type: 'virtual-gift', giftName, giftEmoji, sender: myName });
+    alert(`🎁 Berhasil mengirim ${giftName} ${giftEmoji} ke ${partnerName}! Cek layarnya ya! ❤️`);
   };
 
   const showGiftPopup = (giftName, giftEmoji, sender) => {
@@ -358,7 +360,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     setActiveGiftPopup({ sender, giftName, giftEmoji });
     setTimeout(() => {
       setActiveGiftPopup(null);
-    }, 3500);
+    }, 4000);
   };
 
   const handleSendNote = (e) => {
@@ -404,14 +406,17 @@ export default function LiveLoveRoomWithPhotobooth() {
     setFloatingHearts((prev) => [...prev, ...newHearts]);
     setTimeout(() => {
       setFloatingHearts((prev) => prev.filter(h => !newHearts.includes(h)));
-    }, 2000);
+    }, 2500);
   };
 
+  // --- KIRIM HATI/PELUK HANYA KE PASANGAN ---
   const handleSendLoveTap = () => {
-    triggerLoveEffect();
-    if (conn) {
-      conn.send({ type: 'love-tap' });
+    if (!conn) {
+      alert("Belum terhubung dengan pasangan! Hubungkan room terlebih dahulu.");
+      return;
     }
+    conn.send({ type: 'love-tap' });
+    alert("💖 Berhasil mengirim Hati / Peluk ke Ayang! Cek layarnya ya!");
   };
 
   const handleLayoutChange = (layoutId) => {
@@ -647,7 +652,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     <div className="min-h-screen bg-gradient-to-br from-rose-100 via-pink-100 to-purple-200 flex items-center justify-center p-4 overflow-hidden relative font-sans text-stone-800">
       <LiveOrnaments />
 
-      {/* FLOATING HEARTS OVERLAY */}
+      {/* FLOATING HEARTS OVERLAY (MUNCUL DI LAYAR PENERIMA) */}
       <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
         {floatingHearts.map((h) => (
           <motion.div
@@ -662,7 +667,7 @@ export default function LiveLoveRoomWithPhotobooth() {
         ))}
       </div>
 
-      {/* VIRTUAL GIFT POPUP OVERLAY */}
+      {/* VIRTUAL GIFT POPUP OVERLAY (MUNCUL DI LAYAR PENERIMA) */}
       <AnimatePresence>
         {activeGiftPopup && (
           <motion.div
@@ -826,9 +831,9 @@ export default function LiveLoveRoomWithPhotobooth() {
                   <button onClick={handleSendLoveTap} className="py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer hover:scale-105 transition">💖 Kirim Hati / Peluk</button>
                 </div>
 
-                {/* Kirim Kado Virtual Cepat */}
+                {/* Kirim Kado Virtual Cepat (Muncul di Layar Pasangan) */}
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 shrink-0 text-xs">
-                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider shrink-0">Kado:</span>
+                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider shrink-0">Kirim Kado:</span>
                   <button onClick={() => sendVirtualGift("Bunga Mawar", "🌹")} className="px-2.5 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 rounded-xl font-bold shrink-0 transition">🌹 Bunga</button>
                   <button onClick={() => sendVirtualGift("Cokelat Manis", "🍫")} className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl font-bold shrink-0 transition">🍫 Cokelat</button>
                   <button onClick={() => sendVirtualGift("Cincin Romantis", "💍")} className="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-xl font-bold shrink-0 transition">💍 Cincin</button>
