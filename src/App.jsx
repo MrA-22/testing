@@ -53,6 +53,9 @@ export default function LiveLoveRoomWithPhotobooth() {
   const mediaRecorderAudioRef = useRef(null);
   const audioChunksRef = useRef([]);
 
+  // Animasi Floating Love Effect
+  const [floatingHearts, setFloatingHearts] = useState([]);
+
   // Fitur Love Notes (Catatan Hati)
   const [notes, setNotes] = useState([]);
   const [inputNote, setInputNote] = useState('');
@@ -242,7 +245,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       } else if (data.type === 'mood') {
         setPartnerMood(data.mood);
       } else if (data.type === 'love-tap') {
-        confetti({ particleCount: 60, spread: 80, origin: { y: 0.5 } });
+        triggerLoveEffect();
       } else if (data.type === 'love-note') {
         setNotes((prev) => [data.note, ...prev]);
       } else if (data.type === 'quiz-sync') {
@@ -284,7 +287,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     setInputMessage('');
   };
 
-  // --- REKAM & KIRIM VOICE NOTE ---
   const startAudioRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -360,8 +362,29 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
+  // --- EFEK ANIMASI LOVE & CONFETTI KUSTOM ---
+  const triggerLoveEffect = () => {
+    confetti({
+      particleCount: 80,
+      spread: 100,
+      origin: { y: 0.6 },
+      colors: ['#ff4d6d', '#ff758f', '#ffb3c6', '#fb6f92', '#e63946', '#ffffff']
+    });
+
+    const newHearts = Array.from({ length: 18 }).map(() => ({
+      id: Math.random(),
+      x: Math.random() * 85 + 5,
+      emoji: ['❤️', '💖', '💗', '💓', '💕', '💘', '✨'][Math.floor(Math.random() * 7)]
+    }));
+
+    setFloatingHearts((prev) => [...prev, ...newHearts]);
+    setTimeout(() => {
+      setFloatingHearts((prev) => prev.filter(h => !newHearts.includes(h)));
+    }, 2000);
+  };
+
   const handleSendLoveTap = () => {
-    confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
+    triggerLoveEffect();
     if (conn) {
       conn.send({ type: 'love-tap' });
     }
@@ -600,9 +623,24 @@ export default function LiveLoveRoomWithPhotobooth() {
     <div className="min-h-screen bg-gradient-to-br from-rose-100 via-pink-100 to-purple-200 flex items-center justify-center p-4 overflow-hidden relative font-sans text-stone-800">
       <LiveOrnaments />
 
+      {/* FLOATING HEARTS OVERLAY (SAAT TOMBOL HATI/PELUK DITEKAN) */}
+      <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
+        {floatingHearts.map((h) => (
+          <motion.div
+            key={h.id}
+            initial={{ y: "85vh", x: `${h.x}vw`, opacity: 1, scale: 0.5 }}
+            animate={{ y: "15vh", opacity: 0, scale: 2, rotate: Math.random() * 60 - 30 }}
+            transition={{ duration: 1.6, ease: "easeOut" }}
+            className="absolute text-4xl sm:text-5xl"
+          >
+            {h.emoji}
+          </motion.div>
+        ))}
+      </div>
+
       {/* AUDIO BACKGROUND MUSIC PLAYER */}
       <audio ref={audioRef} src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf756.mp3?filename=lofi-study-112191.mp3" loop />
-      <div className="absolute top-4 right-4 z-50 flex gap-2">
+      <div className="absolute top-4 right-4 z-40 flex gap-2">
         <button
           onClick={() => {
             if (isPlayingMusic) {
@@ -741,7 +779,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                     <option value="😴 Mengantuk">😴 Mengantuk</option>
                     <option value="😡 Lagi Ngambek">😡 Lagi Ngambek</option>
                   </select>
-                  <button onClick={handleSendLoveTap} className="py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer">💖 Kirim Hati / Peluk</button>
+                  <button onClick={handleSendLoveTap} className="py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer hover:scale-105 transition">💖 Kirim Hati / Peluk</button>
                 </div>
 
                 <div className="flex-1 bg-stone-50 border border-stone-200/80 rounded-2xl p-3 overflow-y-auto space-y-2.5 flex flex-col">
