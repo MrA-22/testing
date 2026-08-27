@@ -68,7 +68,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Cleanup kamera saat komponen unmount atau pindah tab
   useEffect(() => {
     return () => {
       if (mediaStreamRef.current) {
@@ -293,7 +292,8 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   }, [myPhotos, partnerPhotos]);
 
-  const generatePhotoboothCanvas = () => {
+  // FIX UTAMA: MENGGUNAKAN PROMISE AGAR SEMUA GAMBAR DIMUAT SEBELUM CANVAS DICETAK
+  const generatePhotoboothCanvas = async () => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
@@ -314,9 +314,11 @@ export default function LiveLoveRoomWithPhotobooth() {
     canvas.width = 650;
     canvas.height = 1150;
 
+    // Background Kanvas
     ctx.fillStyle = themeConfig.bg;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Main Card Container
     ctx.shadowColor = 'rgba(0, 0, 0, 0.15)';
     ctx.shadowBlur = 25;
     ctx.shadowOffsetX = 0;
@@ -350,6 +352,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.strokeStyle = themeConfig.border;
     ctx.stroke();
 
+    // Header Teks & Stiker
     ctx.fillStyle = themeConfig.text;
     ctx.font = '900 22px sans-serif';
     ctx.textAlign = 'center';
@@ -359,51 +362,23 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.fillText('💖 🎀 🌟 🌸', canvas.width / 2, 130);
 
     let combinedPhotos = [...myPhotos, ...partnerPhotos];
-    
-    if (selectedLayout === '1x2') {
-      drawPhotoSlot(ctx, combinedPhotos[0], 75, 160, 500, 360, 25, themeConfig.border);
-      drawPhotoSlot(ctx, combinedPhotos[1] || combinedPhotos[0], 75, 540, 500, 360, 25, themeConfig.border);
-    } else if (selectedLayout === '1x3') {
-      drawPhotoSlot(ctx, combinedPhotos[0], 95, 155, 460, 250, 20, themeConfig.border);
-      drawPhotoSlot(ctx, combinedPhotos[1] || combinedPhotos[0], 95, 420, 460, 250, 20, themeConfig.border);
-      drawPhotoSlot(ctx, combinedPhotos[2] || combinedPhotos[0], 95, 685, 460, 250, 20, themeConfig.border);
-    } else if (selectedLayout === '2x2') {
-      drawPhotoSlot(ctx, combinedPhotos[0], 75, 160, 235, 360, 20, themeConfig.border);
-      drawPhotoSlot(ctx, combinedPhotos[1] || combinedPhotos[0], 340, 160, 235, 360, 20, themeConfig.border);
-      drawPhotoSlot(ctx, combinedPhotos[2] || combinedPhotos[0], 75, 540, 235, 360, 20, themeConfig.border);
-      drawPhotoSlot(ctx, combinedPhotos[3] || combinedPhotos[1] || combinedPhotos[0], 340, 540, 235, 360, 20, themeConfig.border);
-    }
 
-    ctx.beginPath();
-    ctx.moveTo(75, 960);
-    ctx.lineTo(575, 960);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = themeConfig.accent;
-    ctx.stroke();
+    // Helper untuk load image pakai Promise (menjamin gambar tidak gagal dimuat)
+    const loadImage = (src) => {
+      return new Promise((resolve) => {
+        if (!src) return resolve(null);
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = src;
+      });
+    };
 
-    ctx.fillStyle = themeConfig.border;
-    ctx.font = '16px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText('🎀  S E A L E D   W I T H   L O V E  🎀', canvas.width / 2, 995);
+    const drawSlot = async (photoSrc, x, y, width, height, radius) => {
+      const img = await loadImage(photoSrc);
+      if (!img) return;
 
-    ctx.fillStyle = '#57534e';
-    ctx.font = 'bold 16px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`👥 ${myName} & ${partnerName}`, 75, 1045);
-
-    ctx.textAlign = 'right';
-    const today = new Date();
-    ctx.fillText(`📅 ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`, 575, 1045);
-
-    setFinalStripUrl(canvas.toDataURL('image/png', 1.0));
-  };
-
-  const drawPhotoSlot = (ctx, photoSrc, x, y, width, height, radius, borderColor) => {
-    if (!photoSrc) return;
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = photoSrc;
-    img.onload = () => {
       ctx.save();
       ctx.beginPath();
       ctx.moveTo(x + radius, y);
@@ -434,10 +409,50 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.quadraticCurveTo(x, y, x + radius, y);
       ctx.closePath();
       ctx.lineWidth = 4;
-      ctx.strokeStyle = borderColor;
+      ctx.strokeStyle = themeConfig.border;
       ctx.stroke();
       ctx.restore();
     };
+
+    // Render Berdasarkan Layout dengan Sinkronisasi Promise
+    if (selectedLayout === '1x2') {
+      await drawSlot(combinedPhotos[0], 75, 160, 500, 360, 25);
+      await drawSlot(combinedPhotos[1] || combinedPhotos[0], 75, 540, 500, 360, 25);
+    } else if (selectedLayout === '1x3') {
+      await drawSlot(combinedPhotos[0], 95, 155, 460, 250, 20);
+      await drawSlot(combinedPhotos[1] || combinedPhotos[0], 95, 420, 460, 250, 20);
+      await drawSlot(combinedPhotos[2] || combinedPhotos[0], 95, 685, 460, 250, 20);
+    } else if (selectedLayout === '2x2') {
+      await drawSlot(combinedPhotos[0], 75, 160, 235, 360, 20);
+      await drawSlot(combinedPhotos[1] || combinedPhotos[0], 340, 160, 235, 360, 20);
+      await drawSlot(combinedPhotos[2] || combinedPhotos[0], 75, 540, 235, 360, 20);
+      await drawSlot(combinedPhotos[3] || combinedPhotos[1] || combinedPhotos[0], 340, 540, 235, 360, 20);
+    }
+
+    // Divider & Footer Stiker
+    ctx.beginPath();
+    ctx.moveTo(75, 960);
+    ctx.lineTo(575, 960);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = themeConfig.accent;
+    ctx.stroke();
+
+    ctx.fillStyle = themeConfig.border;
+    ctx.font = '16px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🎀  S E A L E D   W I T H   L O V E  🎀', canvas.width / 2, 995);
+
+    ctx.fillStyle = '#57534e';
+    ctx.font = 'bold 16px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`👥 ${myName} & ${partnerName}`, 75, 1045);
+
+    ctx.textAlign = 'right';
+    const today = new Date();
+    ctx.fillText(`📅 ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`, 575, 1045);
+
+    // Set Final URL setelah semua gambar selesai digambar
+    setFinalStripUrl(canvas.toDataURL('image/png', 1.0));
   };
 
   return (
@@ -801,10 +816,8 @@ export default function LiveLoveRoomWithPhotobooth() {
                 {boothStep === 'capturing' && (
                   <div className="space-y-3 w-full text-center my-auto">
                     <div className="relative w-full max-w-[280px] h-[210px] mx-auto bg-stone-900 rounded-2xl overflow-hidden border-4 border-rose-300 shadow-md flex items-center justify-center">
-                      {/* Video ditampilkan secara live agar kamera terlihat, bukan hitam */}
                       <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
                       
-                      {/* Overlay Countdown Angka Besar */}
                       {countdown !== null && (
                         <div className="absolute inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center pointer-events-none">
                           <span className="text-7xl font-black text-white drop-shadow-lg animate-bounce">{countdown}</span>
