@@ -412,11 +412,9 @@ export default function LiveLoveRoomWithPhotobooth() {
   // --- KIRIM HATI/PELUK HANYA KE PASANGAN ---
   const handleSendLoveTap = () => {
     if (!conn) {
-      alert("Belum terhubung dengan pasangan! Hubungkan room terlebih dahulu.");
       return;
     }
     conn.send({ type: 'love-tap' });
-    alert("💖 Berhasil mengirim Hati / Peluk ke Ayang! Cek layarnya ya!");
   };
 
   const handleLayoutChange = (layoutId) => {
@@ -448,7 +446,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       setCameraActive(true);
     } catch (err) {
       console.error("Gagal mengakses kamera:", err);
-      alert("Tidak dapat mengakses kamera. Pastikan izin kamera aktif!");
     }
   };
 
