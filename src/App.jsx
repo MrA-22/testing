@@ -679,8 +679,8 @@ export default function LiveLoveRoomWithPhotobooth() {
           </motion.div>
         )}
 
-        {/* DASHBOARD UTAMA */}
-        {(mode === 'dashboard' || isConnected) && (
+        {/* DASHBOARD UTAMA (FIX: HANYA MUNCUL JIKA MODE === 'dashboard') */}
+        {mode === 'dashboard' && (
           <motion.div
             key="dash"
             initial={{ opacity: 0, scale: 0.95 }}
