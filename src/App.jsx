@@ -60,7 +60,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   // Fitur Love Notes (Catatan Hati)
   const [notes, setNotes] = useState([]);
   const [inputNote, setInputNote] = useState('');
-
+audio
   // Fitur Photobooth Bergantian (Turn-Based) dengan Sinkronisasi Penuh
   const [selectedLayout, setSelectedLayout] = useState('1x2'); 
   const [selectedTheme, setSelectedTheme] = useState('rose'); 
@@ -680,19 +680,25 @@ export default function LiveLoveRoomWithPhotobooth() {
       </AnimatePresence>
 
       {/* AUDIO BACKGROUND MUSIC PLAYER */}
-      <audio ref={audioRef} src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf756.mp3?filename=lofi-study-112191.mp3" loop />
+      <audio ref={audioRef} src="/audio.mp3" loop />
       <div className="absolute top-4 right-4 z-40 flex gap-2">
         <button
-          onClick={() => {
-            if (isPlayingMusic) {
-              audioRef.current.pause();
-            } else {
-              audioRef.current.play();
-            }
-            setIsPlayingMusic(!isPlayingMusic);
-          }}
-          className="bg-white/90 backdrop-blur-md px-3 py-2 rounded-2xl shadow-md border border-rose-200 flex items-center gap-2 text-xs font-bold text-rose-600 hover:scale-105 transition cursor-pointer"
-        >
+            onClick={async () => {
+              try {
+                if (isPlayingMusic) {
+                  audioRef.current.pause();
+                  setIsPlayingMusic(false);
+                } else {
+                  await audioRef.current.play();
+                  setIsPlayingMusic(true);
+                }
+              } catch (err) {
+                console.log("Gagal memutar audio:", err);
+                setIsPlayingMusic(false);
+              }
+            }}
+            className="bg-white/90 backdrop-blur-md px-3 py-2 rounded-2xl shadow-md border border-rose-200 flex items-center gap-2 text-xs font-bold text-rose-600 hover:scale-105 transition cursor-pointer"
+          >
           <span>{isPlayingMusic ? '🎶 Pause' : '▶️ Music'}</span>
         </button>
       </div>
