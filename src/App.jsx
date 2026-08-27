@@ -1,616 +1,659 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Peer } from 'peerjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import html2canvas from 'html2canvas';
 
-// KOMPONEN ORNAMEN: Tema Biru/Indigo & Maskulin
-const FloatingOrnaments = React.memo(() => (
+// Ornamen Melayang Romantis
+const LiveOrnaments = React.memo(() => (
   <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-    {[...Array(15)].map((_, i) => (
+    {[...Array(12)].map((_, i) => (
       <motion.div
         key={i}
-        initial={{ y: "110vh", x: `${Math.random() * 100}vw`, opacity: 0.2 + Math.random() * 0.5 }}
+        initial={{ y: "110vh", x: `${Math.random() * 100}vw`, opacity: 0.2 + Math.random() * 0.4 }}
         animate={{ y: "-10vh", rotate: Math.random() * 360 }}
         transition={{
-          duration: 12 + Math.random() * 20,
+          duration: 12 + Math.random() * 15,
           repeat: Infinity,
           ease: "linear",
           delay: Math.random() * 10
         }}
-        className="absolute text-2xl drop-shadow-md"
-        style={{ fontSize: `${Math.random() * 20 + 20}px` }}
+        className="absolute text-xl sm:text-2xl"
+        style={{ fontSize: `${Math.random() * 15 + 20}px` }}
       >
-        {['💙', '✨', '🌌', '🚀', '🎮', '😎'][Math.floor(Math.random() * 6)]}
+        {['💖', '✨', '📸', '🌸', '💬', '✨'][Math.floor(Math.random() * 6)]}
       </motion.div>
     ))}
   </div>
 ));
 
-export default function BucinWebsiteCowok() {
-  const [step, setStep] = useState(1);
-  const [boyName, setBoyName] = useState('');
-  const [crushInput, setCrushInput] = useState('');
-  const [nameError, setNameError] = useState('');
-  const [errorCount, setErrorCount] = useState(0);
+export default function LiveLoveRoomWithPhotobooth() {
+  const [peer, setPeer] = useState(null);
+  const [conn, setConn] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
   
-  const [countdown, setCountdown] = useState(5);
+  // Setup Room & Nama
+  const [mode, setMode] = useState('menu'); // 'menu', 'create', 'join', 'waiting-host', 'connecting', 'dashboard'
+  const [roomCode, setRoomCode] = useState('');
+  const [inputCode, setInputCode] = useState('');
+  const [myName, setMyName] = useState('');
+  const [partnerName, setPartnerName] = useState('Ayang');
+  const [statusText, setStatusText] = useState('Menunggu koneksi...');
 
-  const [quizGombalAnswer, setQuizGombalAnswer] = useState('');
-  const [quizGombalError, setQuizGombalError] = useState('');
-  const [quizChoiceError, setQuizChoiceError] = useState('');
-  
-  const [foodChoice, setFoodChoice] = useState('');
-  const [dateChoice, setDateChoice] = useState('');
-  const [loveLanguage, setLoveLanguage] = useState('');
-  const [petName, setPetName] = useState('');
-  const [apologyStyle, setApologyStyle] = useState('');
-  const [movieChoice, setMovieChoice] = useState('');
-  const [rainChoice, setRainChoice] = useState('');
-  const [giftChoice, setGiftChoice] = useState('');
-  
-  const [firstImpression, setFirstImpression] = useState('');
-  const [kissReaction, setKissReaction] = useState('');
+  // Navigasi dalam Dashboard ('chat' atau 'photobooth')
+  const [activeTab, setActiveTab] = useState('chat');
 
-  const [loveInput, setLoveInput] = useState('');
-  const [loveError, setLoveError] = useState('');
-  const [promiseAnswer, setPromiseAnswer] = useState('');
-  const [promiseError, setPromiseError] = useState('');
+  // Fitur Interaktif Live Chat & Mood
+  const [messages, setMessages] = useState([]);
+  const [inputMessage, setInputMessage] = useState('');
+  const [partnerMood, setPartnerMood] = useState('😊 Normal / Senang');
+  const [myMood, setMyMood] = useState('😊 Normal / Senang');
 
-  // T&C Pra-Jadian Versi Cowok
-  const [terms, setTerms] = useState({
-    t1: false,
-    t2: false,
-    t3: false,
-    t4: false,
-  });
+  // Fitur Photobooth State
+  const [cameraActive, setCameraActive] = useState(false);
+  const [countdown, setCountdown] = useState(null);
+  const [myPhoto, setMyPhoto] = useState(null);
+  const [partnerPhoto, setPartnerPhoto] = useState(null);
+  const [boothStatus, setBoothStatus] = useState('idle'); // 'idle', 'countdown', 'captured', 'waiting', 'ready'
 
-  const [noQuizBtnPos, setNoQuizBtnPos] = useState({ x: 0, y: 0 });
-  const [noBtnPos, setNoBtnPos] = useState({ x: 0, y: 0 });
-  const [loveMeter, setLoveMeter] = useState(0);
-  const [isSaving, setIsSaving] = useState(false);
+  const videoRef = useRef(null);
+  const mediaStreamRef = useRef(null);
+  const messagesEndRef = useRef(null);
+  const photoboothResultRef = useRef(null);
 
-  const audioRef = useRef(null);
-  const finalCardRef = useRef(null);
-  
-  // NAMA TARGET (NAMA CEWEKNYA)
-  const targetName = "Alya"; // Ganti dengan nama target cewek yang diinginkan
-
-  const allTermsChecked = terms.t1 && terms.t2 && terms.t3 && terms.t4;
-
+  // Auto-scroll chat ke bawah
   useEffect(() => {
-    let timer;
-    if (step === 1.5) {
-      if (countdown > 0) {
-        timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      } else {
-        setStep(2);
-      }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  // 1. BUAT ROOM (HOST)
+  const handleCreateRoom = (e) => {
+    e.preventDefault();
+    if (!myName.trim()) {
+      alert('Masukkan nama kamu dulu ya!');
+      return;
     }
-    return () => clearTimeout(timer);
-  }, [step, countdown]);
+    const code = Math.floor(1000 + Math.random() * 9000).toString();
+    setRoomCode(code);
+    setMode('waiting-host');
 
-  const playSoundEffect = (type) => {
-    try {
-      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const osc = audioCtx.createOscillator();
-      const gain = audioCtx.createGain();
-      osc.connect(gain);
-      gain.connect(audioCtx.destination);
+    const newPeer = new Peer(`bucin-room-${code}`);
+    
+    newPeer.on('open', () => {
+      setStatusText(`Room aktif! Bagikan kode ${code} ke pasanganmu.`);
+    });
 
-      if (type === 'wrong') {
-        osc.type = 'sawtooth';
-        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.3);
-        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.3);
-      } else if (type === 'correct') {
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
-        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1);
-        osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2);
-        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-        osc.start();
-        osc.stop(audioCtx.currentTime + 0.4);
+    newPeer.on('connection', (connection) => {
+      setConn(connection);
+      setupConnection(connection);
+    });
+
+    setPeer(newPeer);
+  };
+
+  // 2. GABUNG ROOM (CLIENT)
+  const handleJoinRoom = (e) => {
+    e.preventDefault();
+    if (!myName.trim() || !inputCode.trim()) {
+      alert('Masukkan nama dan kode room!');
+      return;
+    }
+    setRoomCode(inputCode);
+    setMode('connecting');
+    setStatusText('Menghubungkan ke ruangan...');
+
+    const newPeer = new Peer();
+
+    newPeer.on('open', () => {
+      const connection = newPeer.connect(`bucin-room-${inputCode}`);
+      setConn(connection);
+      setupConnection(connection);
+    });
+
+    newPeer.on('error', () => {
+      alert('Gagal terhubung! Pastikan kode room benar.');
+      setMode('join');
+    });
+
+    setPeer(newPeer);
+  };
+
+  // Setup Listener Data Masuk dari Pasangan
+  const setupConnection = (connection) => {
+    connection.on('open', () => {
+      setIsConnected(true);
+      setStatusText('Terhubung dengan Ayang! ❤️');
+      connection.send({ type: 'init', name: myName, mood: myMood });
+    });
+
+    connection.on('data', (data) => {
+      if (data.type === 'init') {
+        setPartnerName(data.name);
+        setPartnerMood(data.mood);
+      } else if (data.type === 'chat') {
+        setMessages((prev) => [...prev, { sender: 'partner', text: data.text, time: data.time }]);
+      } else if (data.type === 'mood') {
+        setPartnerMood(data.mood);
+      } else if (data.type === 'love-tap') {
+        confetti({ particleCount: 60, spread: 80, origin: { y: 0.5 } });
+      } else if (data.type === 'photobooth-photo') {
+        setPartnerPhoto(data.photo);
       }
-    } catch (e) {
-      console.log('Audio Context Error:', e);
+    });
+
+    connection.on('close', () => {
+      setIsConnected(false);
+      setStatusText('Pasangan terputus / keluar room.');
+    });
+  };
+
+  // Kirim Pesan Chat Live
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!inputMessage.trim() || !conn) return;
+
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const msgObj = { type: 'chat', text: inputMessage, time: timeStr };
+
+    conn.send(msgObj);
+    setMessages((prev) => [...prev, { sender: 'me', text: inputMessage, time: timeStr }]);
+    setInputMessage('');
+  };
+
+  // Update & Kirim Mood Live
+  const handleMoodChange = (newMood) => {
+    setMyMood(newMood);
+    if (conn) {
+      conn.send({ type: 'mood', mood: newMood });
     }
   };
 
-  const funnyResponses = [
-    "SALAH BANGEEEET! Masa nama cewek secantik dia lupa?! 😤",
-    "Bukan itu woy! Ketik yang bener! 🙄",
-    "Dih, pura-pura lupa. Awas aja kalau ketahuan cewek lain! 🔥",
-    "Cepetan panggil nama tuan putri yang bener! 🤏",
-    `Capek ah salah terus, tak auto-correct aja jadi ${targetName} ya! 🤪`
-  ];
+  // Kirim "Love Tap"
+  const handleSendLoveTap = () => {
+    confetti({ particleCount: 50, spread: 70, origin: { y: 0.6 } });
+    if (conn) {
+      conn.send({ type: 'love-tap' });
+    }
+  };
 
-  const handleDownloadScreenshot = async () => {
-    if (!finalCardRef.current) return;
-    setIsSaving(true);
+  // --- PHOTOBOOTH LOGIC ---
+  const startCamera = async () => {
     try {
-      const canvas = await html2canvas(finalCardRef.current, {
-        scale: 2,
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      mediaStreamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+      setCameraActive(true);
+    } catch (err) {
+      console.error("Gagal mengakses kamera:", err);
+      alert("Tidak dapat mengakses kamera. Pastikan izin kamera aktif!");
+    }
+  };
+
+  const stopCamera = () => {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+    setCameraActive(false);
+  };
+
+  const triggerCountdownAndCapture = () => {
+    setCountdown(3);
+    setBoothStatus('countdown');
+
+    let count = 3;
+    const timer = setInterval(() => {
+      count -= 1;
+      if (count > 0) {
+        setCountdown(count);
+      } else {
+        clearInterval(timer);
+        setCountdown(null);
+        capturePhoto();
+      }
+    }, 1000);
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current) return;
+    const canvas = document.createElement('canvas');
+    canvas.width = 320;
+    canvas.height = 240;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(videoRef.current, 0, 0, canvas.width, canvas.height);
+    
+    // Kompres ke base64 JPEG ukuran kecil agar ringan dikirim via PeerJS
+    const photoData = canvas.toDataURL('image/jpeg', 0.6);
+    setMyPhoto(photoData);
+    setBoothStatus('waiting');
+    stopCamera();
+
+    // Kirim ke pasangan
+    if (conn) {
+      conn.send({ type: 'photobooth-photo', photo: photoData });
+    }
+  };
+
+  // Jika kedua foto sudah ada, ubah status ke ready
+  useEffect(() => {
+    if (myPhoto && partnerPhoto) {
+      setBoothStatus('ready');
+      confetti({ particleCount: 80, spread: 90, origin: { y: 0.5 } });
+    }
+  }, [myPhoto, partnerPhoto]);
+
+  const handleDownloadStrip = async () => {
+    if (!photoboothResultRef.current) return;
+    try {
+      const canvas = await html2canvas(photoboothResultRef.current, { scale: 2, backgroundColor: '#fff' });
       const image = canvas.toDataURL('image/png');
       const link = document.createElement('a');
       link.href = image;
-      link.download = `Bukti_Jadian_${boyName}_dan_${targetName}.png`;
+      link.download = `Photobooth_${myName}_dan_${partnerName}.png`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     } catch (err) {
       console.error(err);
-      alert("Gagal mengunduh otomatis. Silakan lakukan Screenshot manual!");
-    } finally {
-      setIsSaving(false);
+      alert("Gagal mengunduh otomatis. Silakan screenshot manual!");
     }
-  };
-
-  const startExperience = (e) => {
-    e.preventDefault();
-    if (!boyName.trim()) {
-      setNameError('Isi nama lu dulu dong Gantengku! 🫣');
-      return;
-    }
-    setNameError('');
-    if (audioRef.current) audioRef.current.play().catch(() => {});
-    playSoundEffect('correct');
-    setStep(1.5);
-  };
-
-  const handleNameSubmit = (e) => {
-    e.preventDefault();
-    const cleanInput = crushInput.trim().toLowerCase();
-    if (cleanInput.includes(targetName.toLowerCase())) {
-      setNameError('');
-      playSoundEffect('correct');
-      setStep(3);
-    } else {
-      playSoundEffect('wrong');
-      const nextCount = errorCount + 1;
-      setErrorCount(nextCount);
-      if (nextCount >= funnyResponses.length) {
-        setCrushInput(targetName);
-        setNameError(funnyResponses[funnyResponses.length - 1]);
-      } else {
-        setNameError(funnyResponses[nextCount - 1]);
-      }
-    }
-  };
-
-  const handleGombalSubmit = (e) => {
-    e.preventDefault();
-    const clean = quizGombalAnswer.trim().toLowerCase();
-    if (clean.includes('kesayangan') || clean.includes('sayang')) {
-      setQuizGombalError('');
-      playSoundEffect('correct');
-      setStep(4);
-    } else {
-      playSoundEffect('wrong');
-      setQuizGombalError('Salah! Jawabannya itu "Kesayangan" tauuu 🤪');
-    }
-  };
-
-  const handleChoiceQuiz = (isCorrect) => {
-    if (isCorrect) {
-      setQuizChoiceError('');
-      playSoundEffect('correct');
-      setStep(5);
-    } else {
-      playSoundEffect('wrong');
-      setQuizChoiceError(`Yee! Manisan senyumnya ${targetName} kemana-mana lah! 😜`);
-    }
-  };
-
-  const handleLoveSubmit = (e) => {
-    e.preventDefault();
-    if (loveInput.trim().length > 0) {
-      setLoveError('');
-      playSoundEffect('correct');
-      setStep(17); 
-    } else {
-      playSoundEffect('wrong');
-      setLoveError('Diisi dulu dong pesannya buat si cantik! 🥺💕');
-    }
-  };
-
-  const handlePromiseSubmit = (e) => {
-    e.preventDefault();
-    if (promiseAnswer.trim().toLowerCase().includes('janji')) {
-      setPromiseError('');
-      playSoundEffect('correct');
-      setStep(18); 
-    } else {
-      playSoundEffect('wrong');
-      setPromiseError("Harus ada kata 'Janji' dong Gantengku biar sah! 😜");
-    }
-  };
-
-  const moveNoQuizButton = () => {
-    playSoundEffect('wrong');
-    setNoQuizBtnPos({ x: Math.floor(Math.random() * 200) - 100, y: Math.floor(Math.random() * 200) - 100 });
-  };
-
-  const moveNoButton = () => {
-    playSoundEffect('wrong');
-    setNoBtnPos({ x: Math.floor(Math.random() * 200) - 100, y: Math.floor(Math.random() * 200) - 100 });
-  };
-
-  const randomInRange = (min, max) => Math.random() * (max - min) + min;
-
-  const handleAccept = () => {
-    playSoundEffect('correct');
-    setStep(21);
-    
-    let count = 0;
-    const timer = setInterval(() => {
-      count += 5;
-      if (count >= 100) {
-        setLoveMeter(100);
-        clearInterval(timer);
-      } else {
-        setLoveMeter(count);
-      }
-    }, 30);
-
-    const duration = 3 * 1000;
-    const animationEnd = Date.now() + duration;
-    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 100, colors: ['#3b82f6', '#6366f1', '#06b6d4'] };
-
-    const interval = setInterval(() => {
-      const timeLeft = animationEnd - Date.now();
-      if (timeLeft <= 0) return clearInterval(interval);
-      const particleCount = 50 * (timeLeft / duration);
-      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
-      confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
-    }, 250);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-200 via-indigo-100 to-cyan-200 flex items-center justify-center p-4 overflow-hidden relative font-sans">
-      <audio ref={audioRef} src="/sabda.mp3" loop />
-      <FloatingOrnaments />
+    <div className="min-h-screen bg-gradient-to-br from-rose-100 via-pink-100 to-purple-200 flex items-center justify-center p-4 overflow-hidden relative font-sans text-stone-800">
+      <LiveOrnaments />
 
       <AnimatePresence mode="wait">
         
-        {/* STEP 1 */}
-        {step === 1 && (
-          <motion.div key="step1" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, y: -50 }} className="bg-white/60 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(59,130,246,0.3)] border border-white/80 text-center max-w-md w-full space-y-6 relative z-10">
-            <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ repeat: Infinity, duration: 2 }} className="text-5xl drop-shadow-lg mb-2">💌</motion.div>
-            <h1 className="text-3xl font-extrabold text-indigo-700 tracking-wide drop-shadow-sm">Ada Tes Penting... 😎</h1>
-            <p className="text-gray-700 text-lg font-medium">Sebelum mulai, ketik dulu nama lu di bawah ini Gantengku!</p>
-            <form onSubmit={startExperience} className="space-y-4">
-              <input type="text" value={boyName} onChange={(e) => setBoyName(e.target.value)} placeholder="Tulis nama lu..." className="w-full px-5 py-3 rounded-full border-2 border-indigo-300 focus:border-indigo-500 focus:outline-none text-center text-gray-800 font-bold shadow-inner bg-white/80" />
-              {nameError && <p className="text-red-500 text-sm font-semibold animate-bounce">{nameError}</p>}
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} type="submit" className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold rounded-full shadow-lg transition text-lg">
-                Mulai Tesnya... 🚀
+        {/* MENU UTAMA */}
+        {mode === 'menu' && (
+          <motion.div
+            key="menu"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0 }}
+            className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-[0_15px_50px_rgba(244,63,94,0.15)] border border-rose-100 text-center max-w-md w-full space-y-6 relative z-10"
+          >
+            <div className="text-5xl mb-2">📸💞</div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">
+              Live Space & Photobooth
+            </h1>
+            <p className="text-stone-600 text-xs sm:text-sm leading-relaxed">
+              Ruang interaktif real-time. Ngobrol, ubah status mood, dan ambil foto photobooth bareng pasangan secara jarak jauh!
+            </p>
+
+            <div className="space-y-3 pt-2">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setMode('create')}
+                className="w-full py-4 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-2xl shadow-md transition cursor-pointer text-sm"
+              >
+                ✨ Buat Room Baru
               </motion.button>
-            </form>
-          </motion.div>
-        )}
-
-        {/* STEP 1.5 */}
-        {step === 1.5 && (
-          <motion.div key="step1.5" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} className="bg-white/60 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(59,130,246,0.3)] border border-white/80 text-center max-w-md w-full space-y-8 flex flex-col items-center relative z-10">
-            <div className="relative">
-              <div className="absolute inset-0 bg-blue-400 rounded-full blur-xl opacity-50 animate-pulse"></div>
-              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 3, ease: "linear" }} className="w-28 h-28 bg-gradient-to-tr from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-white text-5xl border-4 border-white relative z-10">🎵</motion.div>
-            </div>
-            <h2 className="text-2xl font-bold text-indigo-700 animate-pulse">Sabar Gantengku, tunggu musiknya jalan dulu... ✨</h2>
-            <div className="text-5xl font-black text-indigo-500 bg-white/90 w-20 h-20 rounded-full flex items-center justify-center border-4 border-indigo-200">{countdown}</div>
-          </motion.div>
-        )}
-
-        {/* STEP 2 */}
-        {step === 2 && (
-          <motion.div key="step2" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(59,130,246,0.3)] border border-white/80 text-center max-w-md w-full space-y-6 relative z-10">
-            <h2 className="text-2xl font-bold text-gray-800 leading-snug">
-              Kuis 1 untuk <span className="text-indigo-600 drop-shadow-sm">{boyName}</span>:<br/> Siapa nama cewek paling cantik & ngangenin di dunia ini? ✍️🫣
-            </h2>
-            <form onSubmit={handleNameSubmit} className="space-y-4">
-              <input type="text" value={crushInput} onChange={(e) => setCrushInput(e.target.value)} placeholder="Siapa ya? 😏" className="w-full px-5 py-3 rounded-full border-2 border-indigo-300 focus:border-indigo-500 focus:outline-none text-center text-gray-800 font-bold bg-white/80" />
-              {nameError && <motion.p initial={{ scale: 0.8 }} animate={{ scale: 1 }} className="text-red-500 text-sm font-bold bg-red-50 p-3 rounded-2xl border border-red-200">{nameError}</motion.p>}
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} type="submit" className="w-full py-3 bg-indigo-500 hover:bg-indigo-600 text-white font-bold rounded-full transition text-lg">Cek Jawaban ✨</motion.button>
-            </form>
-          </motion.div>
-        )}
-
-        {/* STEP 3 */}
-        {step === 3 && (
-          <motion.div key="step3" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(59,130,246,0.3)] border border-white/80 text-center max-w-md w-full space-y-6 relative z-10">
-            <h2 className="text-2xl font-bold text-gray-800">Kuis 2: Apa bedanya jam 12:00 siang sama si cantik {targetName}? ⏰</h2>
-            <p className="text-sm font-medium text-indigo-600 bg-indigo-50 py-2 rounded-xl">Hint: Kalau jam 12:00 itu Kesiangan, kalau dia itu...</p>
-            <form onSubmit={handleGombalSubmit} className="space-y-4">
-              <input type="text" value={quizGombalAnswer} onChange={(e) => setQuizGombalAnswer(e.target.value)} placeholder="Ketik tebakanmu..." className="w-full px-5 py-3 rounded-full border-2 border-indigo-300 focus:border-indigo-500 focus:outline-none text-center font-bold bg-white/80" />
-              {quizGombalError && <p className="text-red-500 text-sm font-bold bg-red-50 p-2 rounded-xl">{quizGombalError}</p>}
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} type="submit" className="w-full py-3 bg-indigo-500 text-white font-bold rounded-full">Jawab 💙</motion.button>
-            </form>
-          </motion.div>
-        )}
-
-        {/* STEP 4 */}
-        {step === 4 && (
-          <motion.div key="step4" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(59,130,246,0.3)] border border-white/80 text-center max-w-md w-full space-y-6 relative z-10">
-            <h2 className="text-2xl font-bold text-gray-800">Kuis 3: Seberapa manis rasa gula dibanding senyumannya {targetName}? 🍯</h2>
-            <div className="space-y-4 pt-2">
-              <motion.button onClick={() => handleChoiceQuiz(false)} className="w-full py-4 bg-white/80 text-indigo-700 font-bold rounded-2xl border border-indigo-300 cursor-pointer">Gula tetep lebih manis Gantengku! 🍦</motion.button>
-              <motion.button onClick={() => handleChoiceQuiz(true)} className="w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold rounded-2xl cursor-pointer">Jelas manisan senyum {targetName} lah, bikin salting! 🫣💙</motion.button>
-            </div>
-            {quizChoiceError && <p className="text-red-500 text-sm font-bold bg-red-50 p-3 rounded-2xl">{quizChoiceError}</p>}
-          </motion.div>
-        )}
-
-        {/* STEP 5 */}
-        {step === 5 && (
-          <motion.div key="step5" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl shadow-[0_10px_40px_rgba(59,130,246,0.3)] border border-white/80 text-center max-w-md w-full space-y-6 relative z-10">
-            <h2 className="text-2xl font-bold text-gray-800">Kuis 4: Nanti pas nge-date, lu bakal ngajak {targetName} makan apa? 🥩</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {['Steak / Grill Bareng 🥩', 'Sushi / Makanan Jejepangan 🍣', 'Cafe Aesthetic ☕', 'Pecel Lele / Nasi Padang! 🍛'].map((item, idx) => (
-                <motion.button key={idx} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => { setFoodChoice(item); playSoundEffect('correct'); setStep(6); }} className="py-4 px-2 bg-white text-indigo-700 font-bold rounded-2xl border-2 border-indigo-200 shadow-sm text-sm">{item}</motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* STEP 6 */}
-        {step === 6 && (
-          <motion.div key="step6" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl text-center max-w-md w-full space-y-6 relative z-10">
-            <h2 className="text-2xl font-bold text-gray-800">Kuis 5: Habis makan, lu bakal ngajak dia ngapain? 🛵</h2>
-            <div className="grid grid-cols-1 gap-3">
-              {['Nonton Bioskop 🍿', 'Sunmori / Motoran Malam Berdua 🛵', 'Main Timezone / Game Center 🕹️', 'Mabar Game Berdua 🎮'].map((item, idx) => (
-                <motion.button key={idx} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} onClick={() => { setDateChoice(item); playSoundEffect('correct'); setStep(7); }} className="w-full py-3 bg-white text-indigo-700 font-bold rounded-xl border border-indigo-300">{item}</motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* STEP 7 */}
-        {step === 7 && (
-          <motion.div key="step7" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl text-center max-w-md w-full space-y-6 relative z-10">
-            <h2 className="text-2xl font-bold text-gray-800">Kuis 6: Apa Love Language lu buat si dia? 🫂</h2>
-            <div className="grid grid-cols-1 gap-3">
-              {['Quality Time (Nemenin dia kemana aja) ⏳', 'Physical Touch (Gandeng & Elus kepalanya) 🧸', 'Words of Affirmation (Bawel muji cantik) 💬', 'Acts of Service (Siap jadi ojol pribadinya) 🛵'].map((item, idx) => (
-                <motion.button key={idx} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} onClick={() => { setLoveLanguage(item); playSoundEffect('correct'); setStep(8); }} className="w-full py-3 bg-indigo-50 text-indigo-800 font-bold rounded-xl border border-indigo-300 text-left px-5">{item}</motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* STEP 8 */}
-        {step === 8 && (
-          <motion.div key="step8" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl text-center max-w-md w-full space-y-6 relative z-10">
-            <h2 className="text-2xl font-bold text-gray-800">Kuis 7: Panggilan sayang dari lu buat dia apa nih? 📞</h2>
-            <div className="grid grid-cols-2 gap-3">
-              {['Sayang / Ay 💙', 'Beb / Babe 💋', 'Si Cantik ✨', 'Bos Besar 🫡'].map((item, idx) => (
-                <motion.button key={idx} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => { setPetName(item); playSoundEffect('correct'); setStep(9); }} className="w-full py-4 bg-white text-indigo-700 font-bold rounded-xl border border-indigo-300 text-sm">{item}</motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* STEP 9 */}
-        {step === 9 && (
-          <motion.div key="step9" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl text-center max-w-md w-full space-y-6 relative z-10">
-            <h2 className="text-2xl font-bold text-gray-800">Kuis 8: Kalau {targetName} lagi ngambek, cara lu bujuknya gimana? 🥺</h2>
-            <div className="grid grid-cols-1 gap-3">
-              {['Auto Beliin Seblak / Boba 🧋', 'Minta Maaf Sambil Meluk 🫂', 'Ngajak Jalan-jalan Biar Adem 🛵', 'Ngasih Kejutan Random 🎁'].map((item, idx) => (
-                <motion.button key={idx} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} onClick={() => { setApologyStyle(item); playSoundEffect('correct'); setStep(10); }} className="w-full py-3 bg-indigo-50 text-indigo-800 font-bold rounded-xl border border-indigo-300 text-left px-5">{item}</motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* STEP 10 */}
-        {step === 10 && (
-          <motion.div key="step10" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl text-center max-w-md w-full space-y-6 relative z-10">
-            <h2 className="text-2xl font-bold text-gray-800">Kuis 9: Kalau lagi santai nonton Netflix, lu rela nemenin dia nonton apa? 🎬</h2>
-            <div className="grid grid-cols-2 gap-3">
-              {['Drakor Romantis 💞', 'Film Horror Bareng 👻', 'Comedy Receh 🤣', 'Anime / Action ⚔️'].map((item, idx) => (
-                <motion.button key={idx} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => { setMovieChoice(item); playSoundEffect('correct'); setStep(11); }} className="w-full py-4 bg-white text-indigo-700 font-bold rounded-xl border border-indigo-300 text-sm">{item}</motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* STEP 11 */}
-        {step === 11 && (
-          <motion.div key="step11" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl text-center max-w-md w-full space-y-6 relative z-10">
-            <h2 className="text-2xl font-bold text-gray-800">Kuis 10: Tiba-tiba di jalan kehujanan deres banget! Reaksi lu cowok banget gimana? 🌧️</h2>
-            <div className="grid grid-cols-1 gap-3">
-              {['Kasih Jaket Lu Biar Dia Gak Kedinginan 🧥', 'Neduh Sambil Pelukan Tipis-tipis 🫣', 'Beli Jas Hujan Batman Berdua 🦇', 'Terobos Aja Sambil Ketawa-ketawa! 💦'].map((item, idx) => (
-                <motion.button key={idx} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} onClick={() => { setRainChoice(item); playSoundEffect('correct'); setStep(12); }} className="w-full py-3 bg-indigo-50 text-indigo-800 font-bold rounded-xl border border-indigo-300 text-left px-5">{item}</motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* STEP 12 */}
-        {step === 12 && (
-          <motion.div key="step12" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl text-center max-w-md w-full space-y-6 relative z-10">
-            <h2 className="text-2xl font-bold text-gray-800">Kuis 11: Seandainya {targetName} tiba-tiba mau ngasih hadiah dadakan, lu paling seneng dikasih apa? 🎁</h2>
-            <div className="grid grid-cols-1 gap-3">
-              {['Sepatu / Sneakers Keren 👟', 'Konsol Game Baru / Kaset PS 🎮', 'Jam Tangan ⌚', 'Dimasakin Makanan Kesukaan 🍳'].map((item, idx) => (
-                <motion.button key={idx} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} onClick={() => { setGiftChoice(item); playSoundEffect('correct'); setStep(13); }} className="w-full py-3 bg-white text-indigo-700 font-bold rounded-xl border border-indigo-300">{item}</motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* STEP 13 */}
-        {step === 13 && (
-          <motion.div key="step13" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl text-center max-w-md w-full space-y-6 relative z-10">
-            <h2 className="text-2xl font-bold text-gray-800">Kuis 12: Sebagai cowok sejati, seberapa besar sayang lu ke {targetName}? 🤭</h2>
-            <div className="grid grid-cols-2 gap-3">
-              {['100% Sayang! 😍', '1000% Sayang Banget! 🔥', 'Melebihi Batas Semesta ~ 🌌', 'Ga Bisa Jauh-jauh Dari Dia 😭'].map((item, idx) => (
-                <motion.button key={idx} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => { playSoundEffect('correct'); setStep(14); }} className="w-full py-4 bg-gradient-to-r from-blue-400 to-blue-600 text-white font-bold rounded-xl shadow-md text-sm">{item}</motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* STEP 14 */}
-        {step === 14 && (
-          <motion.div key="step14" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl text-center max-w-md w-full space-y-6 relative z-10">
-            <h2 className="text-2xl font-bold text-gray-800">Kuis 13: Jujur aja, pas pertama kali liat {targetName}, pikiran pertama lu apa? 💭</h2>
-            <div className="grid grid-cols-1 gap-3">
-              {['"Cantik juga nih cewek..." 😏', '"Keliatannya jutek, tapi penasaran" 🙄', '"Fix, ini mah calon bidadari gue!" 💍', '"Awalnya biasa aja... eh kecanduan" 🤤'].map((item, idx) => (
-                <motion.button key={idx} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} onClick={() => { setFirstImpression(item); playSoundEffect('correct'); setStep(15); }} className="w-full py-4 bg-white text-indigo-700 font-bold rounded-xl border border-indigo-300 text-sm px-4">{item}</motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* STEP 15 */}
-        {step === 15 && (
-          <motion.div key="step15" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl text-center max-w-md w-full space-y-6 relative z-10">
-            <h2 className="text-2xl font-bold text-gray-800">Kuis 14: Misal kita lagi berdua, terus tiba-tiba DIA yang nyium pipi lu duluan... lu ngapain? 💋</h2>
-            <div className="grid grid-cols-1 gap-3">
-              {['Kaget, salting brutal sampe error 🤖', 'Balas nyium balik dong! Cowok ga boleh kalah 🔥', 'Pura-pura cool padahal jantung disko 🕺', 'Senyum-senyum sok ganteng 😎'].map((item, idx) => (
-                <motion.button key={idx} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.95 }} onClick={() => { setKissReaction(item); playSoundEffect('correct'); setStep(16); }} className="w-full py-4 bg-indigo-50 text-indigo-800 font-bold rounded-xl border border-indigo-300 text-sm px-4">{item}</motion.button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* STEP 16 */}
-        {step === 16 && (
-          <motion.div key="step16" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl text-center max-w-md w-full space-y-6 relative z-10">
-            <h2 className="text-2xl font-bold text-gray-800">Kuis 15: Coba dong ketik satu pesen / janji manis buat si cantik {targetName}! 💌</h2>
-            <form onSubmit={handleLoveSubmit} className="space-y-4">
-              <input type="text" value={loveInput} onChange={(e) => setLoveInput(e.target.value)} placeholder="Ketik pesan dari hati..." className="w-full px-5 py-3 rounded-full border-2 border-indigo-300 focus:border-indigo-500 focus:outline-none text-center font-bold bg-white/80" />
-              {loveError && <p className="text-red-500 text-sm font-bold bg-red-50 p-2 rounded-xl">{loveError}</p>}
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} type="submit" className="w-full py-3 bg-indigo-500 text-white font-bold rounded-full">Kirim Bukti Cinta 💘</motion.button>
-            </form>
-          </motion.div>
-        )}
-
-        {/* STEP 17 */}
-        {step === 17 && (
-          <motion.div key="step17" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl text-center max-w-md w-full space-y-6 relative z-10">
-            <h2 className="text-2xl font-bold text-gray-800">Kuis Terakhir: Lu harus janji buat selalu lindungin dan bikin {targetName} seneng terus ya? 🥺</h2>
-            <form onSubmit={handlePromiseSubmit} className="space-y-4">
-              <input type="text" value={promiseAnswer} onChange={(e) => setPromiseAnswer(e.target.value)} placeholder="Ketik 'Iya Janji!' di sini Gantengku..." className="w-full px-5 py-3 rounded-full border-2 border-indigo-300 focus:border-indigo-500 text-center font-bold bg-white/80" />
-              {promiseError && <p className="text-red-500 text-sm font-bold bg-red-50 p-3 rounded-2xl">{promiseError}</p>}
-              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} type="submit" className="w-full py-3 bg-indigo-500 text-white font-bold rounded-full">Janji Boss! 🤝</motion.button>
-            </form>
-          </motion.div>
-        )}
-
-        {/* STEP 18 */}
-        {step === 18 && (
-          <motion.div key="step18" initial={{ opacity: 0, x: 100 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -100 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl text-center max-w-md w-full space-y-8 relative z-10">
-            <h2 className="text-2xl font-bold text-gray-800">Berarti fix ya, <span className="text-indigo-600 font-extrabold">{targetName}</span> itu cewek yang pengen banget lu jadiin Pasangan / temen hidup lu? ✨</h2>
-            <div className="flex justify-center items-center gap-6 min-h-[100px] w-full relative">
-              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={() => { playSoundEffect('correct'); setStep(19); }} className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold rounded-full shadow-lg z-10 text-lg">
-                Iya Fix Banget! 💙
-              </motion.button>
-              <motion.button initial={{ x: 0, y: 0 }} animate={{ x: noQuizBtnPos.x, y: noQuizBtnPos.y }} transition={{ type: "spring", stiffness: 350, damping: 20 }} onMouseEnter={moveNoQuizButton} onTouchStart={moveNoQuizButton} onClick={moveNoQuizButton} className="px-6 py-3 bg-gray-400 text-white font-bold rounded-full shadow-lg z-20">
-                Gak Yakin 😜
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setMode('join')}
+                className="w-full py-4 bg-white hover:bg-rose-50 text-rose-600 border-2 border-rose-200 font-bold rounded-2xl transition cursor-pointer text-sm"
+              >
+                🔗 Gabung ke Room Pasangan
               </motion.button>
             </div>
           </motion.div>
         )}
 
-        {/* STEP 19: T&C Versi Cowok */}
-        {step === 19 && (
-          <motion.div key="step19" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, x: -100 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl text-left max-w-md w-full space-y-6 relative z-10">
-            <div className="text-center mb-4">
-              <span className="text-4xl">📜</span>
-              <h2 className="text-2xl font-bold text-indigo-600 mt-2">Syarat & Ketentuan Pra-Jadian</h2>
-              <p className="text-sm text-gray-600 font-medium">Baca baik-baik & centang semua janjinya Gantengku!</p>
-            </div>
-            <div className="space-y-4 text-sm font-semibold text-gray-700">
-              <label className="flex items-start gap-3 cursor-pointer group">
-                <input type="checkbox" checked={terms.t1} onChange={(e) => { playSoundEffect('correct'); setTerms({...terms, t1: e.target.checked}) }} className="w-5 h-5 mt-0.5 accent-indigo-500" />
-                <span>Rela ngurangin waktu mabar / nongkrong demi ngabarin dan nemenin ayang. 🎮🙅‍♂️</span>
-              </label>
-              <label className="flex items-start gap-3 cursor-pointer group">
-                <input type="checkbox" checked={terms.t2} onChange={(e) => { playSoundEffect('correct'); setTerms({...terms, t2: e.target.checked}) }} className="w-5 h-5 mt-0.5 accent-indigo-500" />
-                <span>Dilarang keras genit, balas *story*, atau caper ke cewek lain. Mata dijaga! 👀❌</span>
-              </label>
-              <label className="flex items-start gap-3 cursor-pointer group">
-                <input type="checkbox" checked={terms.t3} onChange={(e) => { playSoundEffect('correct'); setTerms({...terms, t3: e.target.checked}) }} className="w-5 h-5 mt-0.5 accent-indigo-500" />
-                <span>Wajib inisiatif muji {targetName} "Cantik Banget" tiap hari tanpa disuruh. ✨</span>
-              </label>
-              <label className="flex items-start gap-3 cursor-pointer group">
-                <input type="checkbox" checked={terms.t4} onChange={(e) => { playSoundEffect('correct'); setTerms({...terms, t4: e.target.checked}) }} className="w-5 h-5 mt-0.5 accent-indigo-500" />
-                <span>Siap sedia jadi sandaran dan pendengar yang baik kalau ayang lagi *burnout* atau capek. 🫂</span>
-              </label>
-            </div>
-            <motion.button onClick={() => { if(allTermsChecked) { playSoundEffect('correct'); setStep(20); } else { playSoundEffect('wrong'); } }} className={`w-full py-4 font-bold rounded-full shadow-lg transition mt-4 ${allTermsChecked ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white' : 'bg-gray-300 text-gray-500'}`}>
-              {allTermsChecked ? "Saya Janji! Lanjut ✍️" : "Centang Dulu Semua Aturannya!"}
-            </motion.button>
+        {/* BUAT ROOM */}
+        {mode === 'create' && (
+          <motion.div
+            key="create"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -50 }}
+            className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-[0_15px_50px_rgba(244,63,94,0.15)] border border-rose-100 max-w-md w-full space-y-5 relative z-10 text-left"
+          >
+            <h2 className="text-xl font-bold text-stone-900 text-center">Buat Room Baru</h2>
+            <form onSubmit={handleCreateRoom} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1">Nama Kamu:</label>
+                <input 
+                  type="text"
+                  value={myName}
+                  onChange={(e) => setMyName(e.target.value)}
+                  placeholder="Cth: Arif"
+                  required
+                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:border-rose-400 focus:outline-none text-stone-900 font-medium bg-stone-50 text-sm"
+                />
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                className="w-full py-3.5 bg-rose-500 text-white font-bold rounded-2xl shadow-md text-sm cursor-pointer"
+              >
+                Generate Kode Room 🚀
+              </motion.button>
+              <button
+                type="button"
+                onClick={() => setMode('menu')}
+                className="w-full text-xs text-stone-400 hover:text-stone-700 font-medium text-center pt-2"
+              >
+                ← Kembali
+              </button>
+            </form>
           </motion.div>
         )}
 
-        {/* STEP 20 */}
-        {step === 20 && (
-          <motion.div key="step20" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.5 }} className="bg-white/70 backdrop-blur-xl p-8 rounded-3xl text-center max-w-md w-full space-y-8 relative z-10">
-            <h2 className="text-2xl font-bold text-gray-800">
-              Udah janji ya! <br/><br/> Nah, berhubung {targetName} lagi liat hasil tes ini... Lu beneran mau nyatain perasaan buat jadiin dia Pasangan selamanya? 🥺✨
-            </h2>
-            <div className="flex justify-center items-center gap-6 min-h-[100px] w-full relative">
-              <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }} onClick={handleAccept} className="px-6 py-3 bg-gradient-to-r from-green-400 to-green-600 text-white font-bold rounded-full shadow-lg z-10 text-lg">
-                PASTI MAU! 💙
-              </motion.button>
-              <motion.button initial={{ x: 0, y: 0 }} animate={{ x: noBtnPos.x, y: noBtnPos.y }} transition={{ type: "spring", stiffness: 350, damping: 20 }} onMouseEnter={moveNoButton} onTouchStart={moveNoButton} onClick={moveNoButton} className="px-6 py-3 bg-gray-400 text-white font-bold rounded-full shadow-lg z-20">
-                Gak Berani 😜
-              </motion.button>
+        {/* MENUNGGU PASANGAN (HOST) */}
+        {mode === 'waiting-host' && (
+          <motion.div
+            key="waiting"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-[0_15px_50px_rgba(244,63,94,0.15)] border border-rose-100 max-w-md w-full space-y-6 text-center relative z-10"
+          >
+            <div className="text-4xl animate-pulse">⏳</div>
+            <h3 className="text-lg font-bold text-stone-900">Bagikan Kode Ini ke Pasanganmu:</h3>
+            <div className="bg-rose-50 border-2 border-dashed border-rose-300 py-4 rounded-2xl">
+              <span className="text-4xl font-black text-rose-600 tracking-widest">{roomCode}</span>
             </div>
+            <p className="text-xs text-stone-500 animate-pulse">{statusText}</p>
+            {isConnected && (
+              <button
+                onClick={() => setMode('dashboard')}
+                className="w-full py-3.5 bg-green-500 text-white font-bold rounded-2xl shadow-md text-sm cursor-pointer"
+              >
+                Masuk ke Ruang Live Sekarang! 🎉
+              </button>
+            )}
+            <button
+              onClick={() => setMode('menu')}
+              className="text-xs text-stone-400 underline pt-2"
+            >
+              Batal / Keluar
+            </button>
           </motion.div>
         )}
 
-        {/* STEP 21: Final Reveal & Sertifikat */}
-        {step === 21 && (
-          <motion.div key="step21" initial={{ opacity: 0, scale: 0.2 }} animate={{ opacity: 1, scale: 1 }} transition={{ type: "spring", bounce: 0.5 }} className="bg-white/80 backdrop-blur-xl p-4 rounded-3xl shadow-2xl border border-white/80 text-center max-w-md w-full space-y-4 flex flex-col items-center max-h-[90vh] overflow-y-auto relative z-10">
-            
-            <div ref={finalCardRef} className="shrink-0 p-5 bg-white rounded-3xl w-full flex flex-col items-center space-y-4 border border-blue-100 shadow-[0_10px_30px_rgba(59,130,246,0.15)] relative overflow-hidden">
-              <div className="absolute -top-4 -left-4 text-5xl opacity-20">🚀</div>
-              <div className="absolute -bottom-4 -right-4 text-5xl opacity-20">✨</div>
+        {/* GABUNG ROOM */}
+        {mode === 'join' && (
+          <motion.div
+            key="join"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -50 }}
+            className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-[0_15px_50px_rgba(244,63,94,0.15)] border border-rose-100 max-w-md w-full space-y-5 relative z-10 text-left"
+          >
+            <h2 className="text-xl font-bold text-stone-900 text-center">Gabung ke Room Pasangan</h2>
+            <form onSubmit={handleJoinRoom} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1">Nama Kamu:</label>
+                <input 
+                  type="text"
+                  value={myName}
+                  onChange={(e) => setMyName(e.target.value)}
+                  placeholder="Cth: Rini"
+                  required
+                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:border-rose-400 focus:outline-none text-stone-900 font-medium bg-stone-50 text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-stone-600 mb-1">Masukkan 4 Digit Kode Room:</label>
+                <input 
+                  type="text"
+                  maxLength="4"
+                  value={inputCode}
+                  onChange={(e) => setInputCode(e.target.value)}
+                  placeholder="Cth: 4821"
+                  required
+                  className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:border-rose-400 focus:outline-none text-stone-900 font-bold text-center tracking-widest text-lg bg-stone-50"
+                />
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.98 }}
+                type="submit"
+                className="w-full py-3.5 bg-rose-500 text-white font-bold rounded-2xl shadow-md text-sm cursor-pointer"
+              >
+                Hubungkan Sekarang 🔗
+              </motion.button>
+              <button
+                type="button"
+                onClick={() => setMode('menu')}
+                className="w-full text-xs text-stone-400 hover:text-stone-700 font-medium text-center pt-2"
+              >
+                ← Kembali
+              </button>
+            </form>
+          </motion.div>
+        )}
 
-              <motion.h1 animate={{ scale: [1, 1.05, 1] }} transition={{ repeat: Infinity, duration: 2 }} className="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-indigo-600 drop-shadow-sm shrink-0">
-                BUKTI CINTA COWOK GENTLE! 🎉
-              </motion.h1>
+        {/* STATUS MENGHUBUNGKAN */}
+        {mode === 'connecting' && (
+          <motion.div key="conn" className="bg-white/80 p-8 rounded-3xl text-center space-y-4 max-w-sm w-full">
+            <div className="text-4xl animate-spin">💫</div>
+            <h3 className="font-bold text-stone-800">{statusText}</h3>
+            {isConnected && (
+              <button
+                onClick={() => setMode('dashboard')}
+                className="w-full py-3 bg-green-500 text-white font-bold rounded-xl text-sm"
+              >
+                Masuk Ruang Live ✨
+              </button>
+            )}
+          </motion.div>
+        )}
 
-              {/* Ukuran dan Foto Hati yang Sudah Di-Fix (Diubah jadi nuansa biru) */}
-              <div className="relative flex items-center justify-center my-4 shrink-0" style={{ width: '224px', height: '205px' }}>
-                <div className="absolute inset-0 bg-blue-400/50 blur-xl animate-pulse" style={{ clipPath: 'path("M 112,35 A 56,56 0 0,0 0,93 C 0,149 112,205 112,205 C 112,205 224,149 224,93 A 56,56 0 0,0 112,35 Z")' }}></div>
-                <img src="/alya.png" alt="Love" className="absolute object-cover z-10 filter drop-shadow-[0_10px_15px_rgba(59,130,246,0.5)]" style={{ width: '208px', height: '189px', clipPath: 'path("M 104,33 A 52,52 0 0,0 0,85 C 0,137 104,189 104,189 C 104,189 208,137 208,85 A 52,52 0 0,0 104,33 Z")' }} />
+        {/* DASHBOARD UTAMA: CHAT & PHOTOBOOTH TABS */}
+        {(mode === 'dashboard' || isConnected) && (
+          <motion.div
+            key="dash"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white/90 backdrop-blur-xl p-5 sm:p-6 rounded-3xl shadow-[0_15px_50px_rgba(244,63,94,0.15)] border border-rose-100 max-w-lg w-full space-y-4 relative z-10 flex flex-col h-[90vh]"
+          >
+            {/* Header Status & Navigation Tabs */}
+            <div className="flex justify-between items-center border-b border-stone-100 pb-3 shrink-0">
+              <div>
+                <span className="text-[10px] uppercase tracking-widest text-green-600 font-bold flex items-center gap-1">
+                  <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Terhubung Live
+                </span>
+                <h2 className="text-sm font-bold text-stone-900">{myName} & {partnerName}</h2>
               </div>
 
-              <div className="w-full shrink-0 bg-blue-100 rounded-full h-5 overflow-hidden relative shadow-inner border border-blue-200">
-                <motion.div className="bg-gradient-to-r from-blue-500 to-indigo-500 h-full flex items-center justify-center text-[10px] sm:text-xs font-bold text-white shadow-[0_0_10px_rgba(255,255,255,0.5)]" style={{ width: `${loveMeter}%` }}>
-                  Keseriusan {boyName} ke {targetName}: {loveMeter}%
-                </motion.div>
-              </div>
-
-              <div className="bg-gradient-to-br from-blue-50 to-white p-4 rounded-2xl border border-blue-200 text-left space-y-2 w-full text-xs text-gray-800 shadow-sm relative leading-relaxed shrink-0">
-                <p className="font-extrabold text-indigo-700 text-sm border-b border-blue-200 pb-1">📜 Fakta Kebucinan {boyName}:</p>
-                
-                <p>Nanti fix bakal ngajak {targetName} makan <span className="font-bold text-indigo-600">{foodChoice}</span>, trus lanjut <span className="font-bold text-indigo-600">{dateChoice}</span> bareng. Kalau milih film Netflix pastinya bakal nemenin nonton <span className="font-bold text-indigo-600">{movieChoice}</span>!</p>
-                
-                <p>Pas di jalan kehujanan, si cowok sejati ini bakal <span className="font-bold text-indigo-600">{rainChoice}</span>. Kalau {targetName} ngambek? Santai, dia udah janji bakal <span className="font-bold text-indigo-600">{apologyStyle}</span>.</p>
-                
-                <p>Ternyata *love language*-nya ke kamu itu <span className="font-bold text-indigo-600">{loveLanguage}</span>. Oh iya, *first impression*-nya dia pas pertama ketemu kamu itu <span className="font-bold text-indigo-600">{firstImpression}</span>! Kalau dicium duluan, reaksinya bakal <span className="font-bold text-indigo-600">{kissReaction}</span> 🤪</p>
-                
-                <p>Dia bakal panggil kamu <span className="font-bold text-indigo-600">{petName}</span>, dan diem-diem dia pengen banget dikasih <span className="font-bold text-indigo-600">{giftChoice}</span> 🎁 (Semoga diwujudin ya!).</p>
-
-                <p className="italic text-indigo-700/90 bg-indigo-100/60 p-2 rounded-lg border border-indigo-200">
-                  "{loveInput}" — {boyName} 💙
-                </p>
+              {/* Tabs Switcher */}
+              <div className="flex bg-stone-100 p-1 rounded-xl text-xs font-bold">
+                <button
+                  onClick={() => setActiveTab('chat')}
+                  className={`px-3 py-1.5 rounded-lg transition ${activeTab === 'chat' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}
+                >
+                  💬 Chat
+                </button>
+                <button
+                  onClick={() => {
+                    setActiveTab('photobooth');
+                    if (!cameraActive && !myPhoto) startCamera();
+                  }}
+                  className={`px-3 py-1.5 rounded-lg transition ${activeTab === 'photobooth' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}
+                >
+                  📸 Photobooth
+                </button>
               </div>
             </div>
 
-            <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} disabled={isSaving} onClick={handleDownloadScreenshot} className="shrink-0 w-full py-4 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-bold rounded-full shadow-lg transition cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 text-base">
-              {isSaving ? "Sedang Menyimpan..." : "📸 Simpan Sertifikat (PNG)"}
-            </motion.button>
+            {/* TAB 1: CHAT & MOOD */}
+            {activeTab === 'chat' && (
+              <div className="flex-1 flex flex-col space-y-3 overflow-hidden">
+                <div className="grid grid-cols-2 gap-2 shrink-0">
+                  <select
+                    value={myMood}
+                    onChange={(e) => handleMoodChange(e.target.value)}
+                    className="px-3 py-2 rounded-xl border border-stone-200 text-xs font-semibold bg-stone-50 text-stone-800 focus:outline-none"
+                  >
+                    <option value="😊 Senang">😊 Senang</option>
+                    <option value="🥺 Lagi Kangen">🥺 Lagi Kangen</option>
+                    <option value="☕ Lagi Santai">☕ Lagi Santai</option>
+                    <option value="😴 Mengantuk">😴 Mengantuk</option>
+                    <option value="😡 Lagi Ngambek">😡 Lagi Ngambek</option>
+                  </select>
+
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handleSendLoveTap}
+                    className="py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer"
+                  >
+                    💖 Kirim Hati / Peluk
+                  </motion.button>
+                </div>
+
+                <div className="flex-1 bg-stone-50 border border-stone-200/80 rounded-2xl p-3 overflow-y-auto space-y-2.5 flex flex-col">
+                  {messages.length === 0 ? (
+                    <div className="my-auto text-center text-xs text-stone-400">
+                      Kirim sapaan pertamamu ke {partnerName}! 👋
+                    </div>
+                  ) : (
+                    messages.map((m, idx) => (
+                      <div
+                        key={idx}
+                        className={`flex flex-col max-w-[80%] ${m.sender === 'me' ? 'ml-auto items-end' : 'mr-auto items-start'}`}
+                      >
+                        <div
+                          className={`px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-medium ${
+                            m.sender === 'me'
+                              ? 'bg-rose-500 text-white rounded-br-none shadow-sm'
+                              : 'bg-white text-stone-800 border border-stone-200 rounded-bl-none shadow-sm'
+                          }`}
+                        >
+                          {m.text}
+                        </div>
+                        <span className="text-[9px] text-stone-400 mt-0.5 px-1">{m.time}</span>
+                      </div>
+                    ))
+                  )}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <form onSubmit={handleSendMessage} className="flex gap-2 shrink-0">
+                  <input
+                    type="text"
+                    value={inputMessage}
+                    onChange={(e) => setInputMessage(e.target.value)}
+                    placeholder={`Ketik pesan ke ${partnerName}...`}
+                    className="flex-1 px-4 py-3 rounded-2xl border border-stone-200 focus:border-rose-400 focus:outline-none text-stone-900 font-medium bg-stone-50 text-xs sm:text-sm"
+                  />
+                  <motion.button
+                    whileTap={{ scale: 0.95 }}
+                    type="submit"
+                    className="px-5 py-3 bg-stone-900 text-white font-semibold rounded-2xl text-xs sm:text-sm shadow-sm cursor-pointer"
+                  >
+                    Kirim ✈️
+                  </motion.button>
+                </form>
+              </div>
+            )}
+
+            {/* TAB 2: PHOTOBOOTH BARENG */}
+            {activeTab === 'photobooth' && (
+              <div className="flex-1 flex flex-col items-center justify-center space-y-4 overflow-y-auto p-1">
+                
+                {/* 1. KONDISI BELUM FOTO (Live Camera Preview) */}
+                {!myPhoto && (
+                  <div className="space-y-3 w-full text-center">
+                    <div className="relative w-full max-w-[280px] h-[210px] mx-auto bg-black rounded-2xl overflow-hidden border-4 border-rose-200 shadow-md">
+                      <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover -scale-x-100" />
+                      
+                      {/* Countdown Overlay */}
+                      {countdown !== null && (
+                        <div className="absolute inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center">
+                          <span className="text-7xl font-black text-white animate-bounce">{countdown}</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-stone-500">Posisikan wajahmu dengan manis di depan kamera!</p>
+
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={triggerCountdownAndCapture}
+                      disabled={countdown !== null}
+                      className="px-6 py-3 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-2xl shadow-md text-sm cursor-pointer disabled:opacity-50"
+                    >
+                      📸 Ambil Foto Sekarang!
+                    </motion.button>
+                  </div>
+                )}
+
+                {/* 2. KONDISI SUDAH FOTO, MENUNGGU PASANGAN */}
+                {myPhoto && boothStatus === 'waiting' && (
+                  <div className="space-y-4 text-center my-auto">
+                    <div className="w-24 h-24 mx-auto rounded-xl overflow-hidden border-2 border-rose-300 shadow">
+                      <img src={myPhoto} alt="My Photo" className="w-full h-full object-cover" />
+                    </div>
+                    <div className="space-y-1">
+                      <div className="text-3xl animate-spin">⏳</div>
+                      <h3 className="font-bold text-stone-800 text-sm">Foto kamu berhasil diambil!</h3>
+                      <p className="text-xs text-stone-500 animate-pulse">Menunggu foto dari {partnerName}...</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. KONDISI KEDUANYA SUDAH LENGKAP (TAMPILKAN HASIL PHOTOBOOTH STRIP) */}
+                {boothStatus === 'ready' && (
+                  <div className="space-y-3 w-full flex flex-col items-center my-auto">
+                    
+                    {/* Hasil Strip Photobooth yang akan di-download */}
+                    <div 
+                      ref={photoboothResultRef} 
+                      className="bg-white p-4 rounded-2xl shadow-xl border-4 border-rose-200 flex flex-col items-center space-y-3 w-[260px] text-center"
+                    >
+                      <div className="text-[10px] uppercase tracking-widest font-extrabold text-rose-500">
+                        Our Photobooth Date 📸✨
+                      </div>
+
+                      {/* Foto Kamu */}
+                      <div className="w-full h-[140px] rounded-xl overflow-hidden border border-rose-100 shadow-inner">
+                        <img src={myPhoto} alt="My Capture" className="w-full h-full object-cover" />
+                      </div>
+
+                      {/* Foto Pasangan */}
+                      <div className="w-full h-[140px] rounded-xl overflow-hidden border border-rose-100 shadow-inner">
+                        <img src={partnerPhoto} alt="Partner Capture" className="w-full h-full object-cover" />
+                      </div>
+
+                      <div className="pt-1 border-t border-rose-100 w-full flex justify-between items-center text-[10px] font-bold text-stone-400">
+                        <span>{myName} & {partnerName}</span>
+                        <span>{new Date().toLocaleDateString()}</span>
+                      </div>
+                    </div>
+
+                    {/* Tombol Download & Ulangi */}
+                    <div className="flex gap-2 w-full pt-1">
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={handleDownloadStrip}
+                        className="flex-1 py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs cursor-pointer"
+                      >
+                        📥 Download Strip (PNG)
+                      </motion.button>
+                      <button
+                        onClick={() => {
+                          setMyPhoto(null);
+                          setPartnerPhoto(null);
+                          setBoothStatus('idle');
+                          startCamera();
+                        }}
+                        className="px-4 py-3 bg-stone-100 text-stone-600 font-bold rounded-xl text-xs hover:bg-stone-200 transition cursor-pointer"
+                      >
+                        Ulangi 🔄
+                      </button>
+                    </div>
+
+                  </div>
+                )}
+
+              </div>
+            )}
+
           </motion.div>
         )}
 
