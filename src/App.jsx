@@ -42,11 +42,16 @@ export default function LiveLoveRoomWithPhotobooth() {
   // Navigasi Dashboard Tabs
   const [activeTab, setActiveTab] = useState('chat');
 
-  // Fitur Live Chat & Mood
+  // Fitur Live Chat, Mood, & Voice Note
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [partnerMood, setPartnerMood] = useState('😊 Normal / Senang');
   const [myMood, setMyMood] = useState('😊 Normal / Senang');
+  
+  // Voice Note States
+  const [isRecording, setIsRecording] = useState(false);
+  const mediaRecorderAudioRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   // Fitur Love Notes (Catatan Hati)
   const [notes, setNotes] = useState([]);
@@ -232,6 +237,8 @@ export default function LiveLoveRoomWithPhotobooth() {
         setPartnerMood(data.mood);
       } else if (data.type === 'chat') {
         setMessages((prev) => [...prev, { sender: 'partner', text: data.text, time: data.time }]);
+      } else if (data.type === 'chat-voice') {
+        setMessages((prev) => [...prev, { sender: 'partner', audio: data.audio, time: data.time, isVoice: true }]);
       } else if (data.type === 'mood') {
         setPartnerMood(data.mood);
       } else if (data.type === 'love-tap') {
@@ -275,6 +282,56 @@ export default function LiveLoveRoomWithPhotobooth() {
     conn.send(msgObj);
     setMessages((prev) => [...prev, { sender: 'me', text: inputMessage, time: timeStr }]);
     setInputMessage('');
+  };
+
+  // --- REKAM & KIRIM VOICE NOTE ---
+  const startAudioRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderAudioRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = () => {
+          const base64Audio = reader.result;
+          const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const voiceMsg = {
+            type: 'chat-voice',
+            audio: base64Audio,
+            time: timeStr
+          };
+          if (conn) {
+            conn.send(voiceMsg);
+          }
+          setMessages((prev) => [...prev, { sender: 'me', audio: base64Audio, time: timeStr, isVoice: true }]);
+        };
+
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Gagal akses mikrofon:", err);
+      alert("Tidak dapat mengakses mikrofon. Pastikan izin mikrofon diizinkan di browser!");
+    }
+  };
+
+  const stopAudioRecording = () => {
+    if (mediaRecorderAudioRef.current && isRecording) {
+      mediaRecorderAudioRef.current.stop();
+      setIsRecording(false);
+    }
   };
 
   const handleSendNote = (e) => {
@@ -326,7 +383,7 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   const startCamera = async () => {
     try {
-      if (mediaStreamRef.current) return; // Kalau sudah aktif, jangan buka ulang
+      if (mediaStreamRef.current) return;
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }, 
         audio: false 
@@ -369,7 +426,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  // Sinkronisasi Langkah & Giliran Berkelanjutan
   useEffect(() => {
     if (boothStep === 'capturing') {
       runStep();
@@ -386,7 +442,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       return;
     }
 
-    // Tentukan siapa yang bertugas memotret di step ini (Bergantian Genap / Ganjil)
     const myTurn = (currentStep % 2 === 0 && isLeader) || (currentStep % 2 !== 0 && !isLeader);
 
     if (myTurn) {
@@ -422,7 +477,6 @@ export default function LiveLoveRoomWithPhotobooth() {
         }
       }, 1000);
     } else {
-      // Jika bukan giliran saya, matikan kamera agar tidak bentrok, lalu tunggu foto dikirim pasangan
       stopCamera();
     }
   };
@@ -644,7 +698,7 @@ export default function LiveLoveRoomWithPhotobooth() {
           </motion.div>
         )}
 
-        {/* DASHBOARD UTAMA DENGAN TOMBOL KELUAR SESI */}
+        {/* DASHBOARD UTAMA */}
         {mode === 'dashboard' && (
           <motion.div key="dash" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white/95 backdrop-blur-xl p-4 sm:p-5 rounded-3xl shadow-2xl border border-rose-100 max-w-lg w-full space-y-3 relative z-10 flex flex-col h-[92vh]">
             
@@ -676,7 +730,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             </div>
 
-            {/* TAB 1: CHAT */}
+            {/* TAB 1: CHAT & VOICE NOTE */}
             {activeTab === 'chat' && (
               <div className="flex-1 flex flex-col space-y-3 overflow-hidden">
                 <div className="grid grid-cols-2 gap-2 shrink-0">
@@ -692,11 +746,18 @@ export default function LiveLoveRoomWithPhotobooth() {
 
                 <div className="flex-1 bg-stone-50 border border-stone-200/80 rounded-2xl p-3 overflow-y-auto space-y-2.5 flex flex-col">
                   {messages.length === 0 ? (
-                    <div className="my-auto text-center text-xs text-stone-400">Kirim sapaan pertamamu ke {partnerName}! 👋</div>
+                    <div className="my-auto text-center text-xs text-stone-400">Kirim sapaan atau voice note pertamamu ke {partnerName}! 👋</div>
                   ) : (
                     messages.map((m, idx) => (
-                      <div key={idx} className={`flex flex-col max-w-[80%] ${m.sender === 'me' ? 'ml-auto items-end' : 'mr-auto items-start'}`}>
-                        <div className={`px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-medium ${m.sender === 'me' ? 'bg-rose-500 text-white rounded-br-none shadow-sm' : 'bg-white text-stone-800 border border-stone-200 rounded-bl-none shadow-sm'}`}>{m.text}</div>
+                      <div key={idx} className={`flex flex-col max-w-[85%] ${m.sender === 'me' ? 'ml-auto items-end' : 'mr-auto items-start'}`}>
+                        {m.isVoice ? (
+                          <div className={`p-2.5 rounded-2xl shadow-sm border ${m.sender === 'me' ? 'bg-rose-500 text-white border-rose-600 rounded-br-none' : 'bg-white text-stone-800 border-stone-200 rounded-bl-none'}`}>
+                            <div className="text-[10px] font-bold mb-1 opacity-80">{m.sender === 'me' ? '🎤 Voice Note Kamu' : `🎤 Voice Note ${partnerName}`}</div>
+                            <audio controls src={m.audio} className="w-44 sm:w-52 h-8" />
+                          </div>
+                        ) : (
+                          <div className={`px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-medium ${m.sender === 'me' ? 'bg-rose-500 text-white rounded-br-none shadow-sm' : 'bg-white text-stone-800 border border-stone-200 rounded-bl-none shadow-sm'}`}>{m.text}</div>
+                        )}
                         <span className="text-[9px] text-stone-400 mt-0.5 px-1">{m.time}</span>
                       </div>
                     ))
@@ -704,14 +765,23 @@ export default function LiveLoveRoomWithPhotobooth() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                <form onSubmit={handleSendMessage} className="flex gap-2 shrink-0">
-                  <input type="text" value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} placeholder={`Ketik pesan ke ${partnerName}...`} className="flex-1 px-4 py-3 rounded-2xl border border-stone-200 focus:border-rose-400 focus:outline-none text-stone-900 font-medium bg-stone-50 text-xs sm:text-sm" />
-                  <button type="submit" className="px-5 py-3 bg-stone-900 text-white font-semibold rounded-2xl text-xs sm:text-sm shadow-sm cursor-pointer">Kirim ✈️</button>
+                {/* Chat & Voice Input Form */}
+                <form onSubmit={handleSendMessage} className="flex gap-2 shrink-0 items-center">
+                  <button
+                    type="button"
+                    onClick={isRecording ? stopAudioRecording : startAudioRecording}
+                    className={`p-3 rounded-2xl text-white font-bold text-xs transition cursor-pointer flex items-center justify-center shrink-0 shadow-sm ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-rose-500 hover:bg-rose-600'}`}
+                    title={isRecording ? "Klik untuk Berhenti & Kirim Voice Note" : "Rekam Voice Note"}
+                  >
+                    {isRecording ? '⏹️' : '🎙️'}
+                  </button>
+                  <input type="text" value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} placeholder={isRecording ? "Sedang merekam suara... 🎙️" : `Ketik pesan ke ${partnerName}...`} disabled={isRecording} className="flex-1 px-4 py-3 rounded-2xl border border-stone-200 focus:border-rose-400 focus:outline-none text-stone-900 font-medium bg-stone-50 text-xs sm:text-sm" />
+                  <button type="submit" disabled={isRecording} className="px-4 py-3 bg-stone-900 hover:bg-stone-800 text-white font-semibold rounded-2xl text-xs sm:text-sm shadow-sm cursor-pointer">Kirim ✈️</button>
                 </form>
               </div>
             )}
 
-            {/* TAB 2: COUNTER JADIAN (ANNIVERSARY) */}
+            {/* TAB 2: COUNTER JADIAN */}
             {activeTab === 'counter' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-4 overflow-y-auto p-4 text-center">
                 <div className="text-4xl">💖⏳</div>
@@ -744,7 +814,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 3: QUIZ SEBERAPA KENAL */}
+            {/* TAB 3: QUIZ */}
             {activeTab === 'quiz' && (
               <div className="flex-1 flex flex-col space-y-3 overflow-y-auto p-2">
                 <div className="text-center shrink-0">
@@ -780,7 +850,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 4: BUCKET LIST & DATE IDEAS */}
+            {/* TAB 4: BUCKET LIST */}
             {activeTab === 'bucket' && (
               <div className="flex-1 flex flex-col space-y-3 overflow-y-auto p-2">
                 <div className="text-center shrink-0">
@@ -788,7 +858,6 @@ export default function LiveLoveRoomWithPhotobooth() {
                   <p className="text-[11px] text-stone-500">Rencanakan momen seru bersama pasanganmu!</p>
                 </div>
 
-                {/* Random Date Idea Generator */}
                 <div className="bg-gradient-to-r from-rose-500 to-pink-500 text-white p-3.5 rounded-2xl shadow-sm text-center space-y-2">
                   <p className="text-xs font-bold uppercase tracking-wider opacity-90">🎲 Putar Ide Kencan Hari Ini</p>
                   <p className="text-xs font-medium bg-white/20 p-2.5 rounded-xl">{randomDateIdea}</p>
@@ -803,7 +872,6 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </button>
                 </div>
 
-                {/* Bucket List Checklist */}
                 <div className="space-y-2 pt-1">
                   <h4 className="font-bold text-stone-800 text-xs">📋 Our Bucket List:</h4>
                   <form onSubmit={(e) => {
@@ -941,7 +1009,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                     </div>
                     <div className="flex gap-2 w-full max-w-[260px] pt-1">
                       <a href={finalStripUrl} download={`Photobooth_${myName}_dan_${partnerName}.png`} className="flex-1 py-3 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs text-center block cursor-pointer hover:scale-105 transition">📥 Download Strip (PNG)</a>
-                      <button onClick={() => { setAllPhotos([]); setFinalStripUrl(null); setBoothStep('select-layout'); }} className="px-4 py-3 bg-stone-200 text-stone-600 font-bold rounded-xl text-xs hover:bg-stone-300 transition cursor-pointer">Ulangi sinyal🔄</button>
+                      <button onClick={() => { setAllPhotos([]); setFinalStripUrl(null); setBoothStep('select-layout'); }} className="px-4 py-3 bg-stone-200 text-stone-600 font-bold rounded-xl text-xs hover:bg-stone-300 transition cursor-pointer">Ulangi 🔄</button>
                     </div>
                   </div>
                 )}
