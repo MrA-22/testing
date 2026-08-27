@@ -42,7 +42,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   // Navigasi Dashboard Tabs
   const [activeTab, setActiveTab] = useState('chat');
 
-  // Fitur Live Chat, Mood, & Voice Note
+  // Fitur Live Chat, Mood, Voice Note, & Kado Virtual
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [partnerMood, setPartnerMood] = useState('😊 Normal / Senang');
@@ -53,8 +53,9 @@ export default function LiveLoveRoomWithPhotobooth() {
   const mediaRecorderAudioRef = useRef(null);
   const audioChunksRef = useRef([]);
 
-  // Animasi Floating Love Effect
+  // Animasi Floating Love & Gift Effect
   const [floatingHearts, setFloatingHearts] = useState([]);
+  const [activeGiftPopup, setActiveGiftPopup] = useState(null);
 
   // Fitur Love Notes (Catatan Hati)
   const [notes, setNotes] = useState([]);
@@ -242,6 +243,8 @@ export default function LiveLoveRoomWithPhotobooth() {
         setMessages((prev) => [...prev, { sender: 'partner', text: data.text, time: data.time }]);
       } else if (data.type === 'chat-voice') {
         setMessages((prev) => [...prev, { sender: 'partner', audio: data.audio, time: data.time, isVoice: true }]);
+      } else if (data.type === 'virtual-gift') {
+        showGiftPopup(data.giftName, data.giftEmoji, data.sender);
       } else if (data.type === 'mood') {
         setPartnerMood(data.mood);
       } else if (data.type === 'love-tap') {
@@ -336,6 +339,28 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
+  // --- KADOKU / VIRTUAL GIFT SYSTEM ---
+  const sendVirtualGift = (giftName, giftEmoji) => {
+    showGiftPopup(giftName, giftEmoji, myName);
+    if (conn) {
+      conn.send({ type: 'virtual-gift', giftName, giftEmoji, sender: myName });
+    }
+  };
+
+  const showGiftPopup = (giftName, giftEmoji, sender) => {
+    confetti({
+      particleCount: 120,
+      spread: 120,
+      origin: { y: 0.5 },
+      colors: ['#ff4d6d', '#ffd166', '#06d6a0', '#118ab2', '#ef476f']
+    });
+
+    setActiveGiftPopup({ sender, giftName, giftEmoji });
+    setTimeout(() => {
+      setActiveGiftPopup(null);
+    }, 3500);
+  };
+
   const handleSendNote = (e) => {
     e.preventDefault();
     if (!inputNote.trim()) return;
@@ -362,7 +387,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  // --- EFEK ANIMASI LOVE & CONFETTI KUSTOM ---
   const triggerLoveEffect = () => {
     confetti({
       particleCount: 80,
@@ -623,7 +647,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     <div className="min-h-screen bg-gradient-to-br from-rose-100 via-pink-100 to-purple-200 flex items-center justify-center p-4 overflow-hidden relative font-sans text-stone-800">
       <LiveOrnaments />
 
-      {/* FLOATING HEARTS OVERLAY (SAAT TOMBOL HATI/PELUK DITEKAN) */}
+      {/* FLOATING HEARTS OVERLAY */}
       <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
         {floatingHearts.map((h) => (
           <motion.div
@@ -637,6 +661,26 @@ export default function LiveLoveRoomWithPhotobooth() {
           </motion.div>
         ))}
       </div>
+
+      {/* VIRTUAL GIFT POPUP OVERLAY */}
+      <AnimatePresence>
+        {activeGiftPopup && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5, y: -50 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.8, y: 50 }}
+            className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs pointer-events-none"
+          >
+            <div className="bg-white/95 border-2 border-rose-300 p-6 rounded-3xl shadow-2xl text-center max-w-xs w-full space-y-3">
+              <div className="text-6xl animate-bounce">{activeGiftPopup.giftEmoji}</div>
+              <h3 className="text-lg font-black text-rose-600">Kado Spesial Datang! 🎁</h3>
+              <p className="text-xs font-semibold text-stone-700">
+                <span className="text-rose-500 font-bold">{activeGiftPopup.sender}</span> mengirimkanmu <span className="font-bold underline">{activeGiftPopup.giftName}</span>! ❤️
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* AUDIO BACKGROUND MUSIC PLAYER */}
       <audio ref={audioRef} src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf756.mp3?filename=lofi-study-112191.mp3" loop />
@@ -768,7 +812,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             </div>
 
-            {/* TAB 1: CHAT & VOICE NOTE */}
+            {/* TAB 1: CHAT, VOICE NOTE, & KADO VIRTUAL */}
             {activeTab === 'chat' && (
               <div className="flex-1 flex flex-col space-y-3 overflow-hidden">
                 <div className="grid grid-cols-2 gap-2 shrink-0">
@@ -782,9 +826,18 @@ export default function LiveLoveRoomWithPhotobooth() {
                   <button onClick={handleSendLoveTap} className="py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer hover:scale-105 transition">💖 Kirim Hati / Peluk</button>
                 </div>
 
+                {/* Kirim Kado Virtual Cepat */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 shrink-0 text-xs">
+                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider shrink-0">Kado:</span>
+                  <button onClick={() => sendVirtualGift("Bunga Mawar", "🌹")} className="px-2.5 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 rounded-xl font-bold shrink-0 transition">🌹 Bunga</button>
+                  <button onClick={() => sendVirtualGift("Cokelat Manis", "🍫")} className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-xl font-bold shrink-0 transition">🍫 Cokelat</button>
+                  <button onClick={() => sendVirtualGift("Cincin Romantis", "💍")} className="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-xl font-bold shrink-0 transition">💍 Cincin</button>
+                  <button onClick={() => sendVirtualGift("Boneka Beruang", "🧸")} className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl font-bold shrink-0 transition">🧸 Boneka</button>
+                </div>
+
                 <div className="flex-1 bg-stone-50 border border-stone-200/80 rounded-2xl p-3 overflow-y-auto space-y-2.5 flex flex-col">
                   {messages.length === 0 ? (
-                    <div className="my-auto text-center text-xs text-stone-400">Kirim sapaan atau voice note pertamamu ke {partnerName}! 👋</div>
+                    <div className="my-auto text-center text-xs text-stone-400">Kirim sapaan, voice note, atau kado virtual ke {partnerName}! 👋</div>
                   ) : (
                     messages.map((m, idx) => (
                       <div key={idx} className={`flex flex-col max-w-[85%] ${m.sender === 'me' ? 'ml-auto items-end' : 'mr-auto items-start'}`}>
