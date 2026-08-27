@@ -638,7 +638,7 @@ export default function BucinWebsite() {
                   }}
                 ></div>
                 <img 
-                  src="/i2.png" 
+                  src="/i3.png" 
                   alt="Love"
                   className="w-60 h-60 object-cover relative z-10 drop-shadow-2xl"
                   style={{
