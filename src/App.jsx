@@ -1304,26 +1304,12 @@ export default function LiveLoveRoomWithPhotobooth() {
             {activeTab === 'photobooth' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-3 overflow-y-auto p-1">
                 
-                {/* 1. PILIH LAYOUT & LATAR BELAKANG PEMANDANGAN */}
+                {/* 1. PILIH LAYOUT */}
                 {boothStep === 'select-layout' && (
                   <div className="space-y-3 w-full max-w-xs text-left my-auto">
                     <div className="text-center">
                       <h3 className="font-bold text-stone-900 text-base">Photobooth Kamera Ganda 📸</h3>
-                      <p className="text-xs text-stone-500">Pilih latar belakang pemandangan studio alam kalian!</p>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-stone-600 mb-1">Pilih Latar Pemandangan Studio:</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { id: 'beach', label: '🏖️ Pantai Tropis' },
-                          { id: 'mountain', label: '⛰️ Gunung Sejuk' },
-                          { id: 'river', label: '🌊 Sungai & Alam' },
-                          { id: 'sunset', label: '🌅 Sunset Romantis' },
-                          { id: 'garden', label: '🌸 Taman Bunga' }
-                        ].map((bg) => (
-                          <button key={bg.id} onClick={() => handleBgChange(bg.id)} className={`py-2 px-2 rounded-xl text-xs font-bold border transition cursor-pointer ${studioBackground === bg.id ? 'bg-rose-500 text-white border-rose-500 shadow-sm' : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'}`}>{bg.label}</button>
-                        ))}
-                      </div>
+                      <p className="text-xs text-stone-500">Muka kalian berdua akan muncul live dalam satu studio menyatu!</p>
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-stone-600 mb-1">Pilih Layout:</label>
@@ -1335,7 +1321,20 @@ export default function LiveLoveRoomWithPhotobooth() {
                           { id: 'polaroid', label: '🖼️ Polaroid' },
                           { id: 'photocard', label: '💳 Photocard' }
                         ].map((layout) => (
-                          <button key={layout.id} onClick={() => handleLayoutChange(layout.id)} className={`py-2 px-2 rounded-xl text-xs font-bold border transition cursor-pointer ${selectedLayout === layout.id ? 'bg-stone-900 text-white border-stone-900 shadow-sm' : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'}`}>{layout.label}</button>
+                          <button key={layout.id} onClick={() => handleLayoutChange(layout.id)} className={`py-2 px-2 rounded-xl text-xs font-bold border transition cursor-pointer ${selectedLayout === layout.id ? 'bg-rose-500 text-white border-rose-500 shadow-sm' : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'}`}>{layout.label}</button>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-stone-600 mb-1">Pilih Tema Warna:</label>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { id: 'rose', label: '🌸 Rose Pink' },
+                          { id: 'purple', label: '💜 Lilac Dream' },
+                          { id: 'peach', label: '🍑 Warm Peach' },
+                          { id: 'mono', label: '🖤 Aesthetic Mono' }
+                        ].map((theme) => (
+                          <button key={theme.id} onClick={() => handleThemeChange(theme.id)} className={`py-2 px-2 rounded-xl text-xs font-bold border transition cursor-pointer ${selectedTheme === theme.id ? 'bg-stone-900 text-white border-stone-900 shadow-sm' : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'}`}>{theme.label}</button>
                         ))}
                       </div>
                     </div>
@@ -1343,13 +1342,35 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* 2. TAHAP LIVE PREVIEW & STUDIO WIDESCREEN DENGAN LATAR PEMANDANGAN */}
+                {/* 2. TAHAP LIVE PREVIEW DENGAN PEMILIHAN LATAR PEMANDANGAN */}
                 {boothStep === 'preview' && (
                   <div className="space-y-3 w-full text-center my-auto">
-                    <p className="text-xs font-bold text-stone-700">✨ Atur Pose Terbaikmu di Studio Alam Bersama! ✨</p>
+                    <p className="text-xs font-bold text-stone-700">✨ Atur Pose & Pilih Latar Pemandangan Live! ✨</p>
                     
-                    {/* BINGKAI STUDIO WIDESCREEN DENGAN LATAR PEMANDANGAN MENYATU */}
-                    <div className={`relative ${getStudioBgClass()} border-2 border-white rounded-3xl shadow-xl max-w-[390px] mx-auto overflow-hidden flex h-[190px]`}>
+                    {/* PILIHAN LATAR PEMANDANGAN SAAT KAMERA TERBUKA */}
+                    <div className="bg-white/90 border border-stone-200 p-2.5 rounded-2xl max-w-[390px] mx-auto space-y-1.5 shadow-xs text-left">
+                      <label className="block text-[11px] font-bold text-stone-700 text-center">🎨 Pilih Latar Pemandangan Kamera:</label>
+                      <div className="grid grid-cols-5 gap-1.5">
+                        {[
+                          { id: 'beach', label: '🏖️ Pantai' },
+                          { id: 'mountain', label: '⛰️ Gunung' },
+                          { id: 'river', label: '🌊 Sungai' },
+                          { id: 'sunset', label: '🌅 Sunset' },
+                          { id: 'garden', label: '🌸 Taman' }
+                        ].map((bg) => (
+                          <button 
+                            key={bg.id} 
+                            onClick={() => handleBgChange(bg.id)} 
+                            className={`py-1.5 px-1 rounded-xl text-[10px] font-bold border transition cursor-pointer ${studioBackground === bg.id ? 'bg-rose-500 text-white border-rose-500 shadow-sm' : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'}`}
+                          >
+                            {bg.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* BINGKAI STUDIO WIDESCREEN DENGAN LATAR PEMANDANGAN */}
+                    <div className={`relative ${getStudioBgClass()} border-2 border-white rounded-3xl shadow-xl max-w-[390px] mx-auto overflow-hidden flex h-[165px]`}>
                       {/* Video Kamu (Kiri) */}
                       <div className="relative w-1/2 h-full overflow-hidden">
                         <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
@@ -1384,7 +1405,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                     </div>
 
                     <div className="flex gap-2 max-w-[320px] mx-auto pt-1">
-                      <button onClick={() => setBoothStep('select-layout')} className="py-2.5 px-3 bg-stone-200 text-stone-700 font-bold rounded-xl text-xs">← Ganti Studio / Layout</button>
+                      <button onClick={() => setBoothStep('select-layout')} className="py-2.5 px-3 bg-stone-200 text-stone-700 font-bold rounded-xl text-xs">← Ganti Layout</button>
                       <button 
                         onClick={handleToggleReady} 
                         className={`flex-1 py-2.5 font-bold rounded-xl shadow-md text-xs cursor-pointer transition ${iAmReady ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-gradient-to-r from-rose-500 to-pink-600 text-white animate-pulse'}`}
