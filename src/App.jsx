@@ -61,17 +61,21 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [notes, setNotes] = useState([]);
   const [inputNote, setInputNote] = useState('');
 
-  // Fitur Photobooth Kamera Ganda & Editor
+  // Fitur Photobooth Live Preview, Ready Check & Dual Camera
   const [selectedLayout, setSelectedLayout] = useState('1x2'); 
   const [selectedTheme, setSelectedTheme] = useState('rose'); 
   const [cameraActive, setCameraActive] = useState(false);
   const [countdown, setCountdown] = useState(null);
   const [allPhotos, setAllPhotos] = useState([]);
   const allPhotosRef = useRef([]);
-  const [boothStep, setBoothStep] = useState('select-layout'); 
+  const [boothStep, setBoothStep] = useState('select-layout'); // 'select-layout' | 'preview' | 'capturing' | 'ready'
   const [currentStep, setCurrentStep] = useState(0);
   const [finalStripUrl, setFinalStripUrl] = useState(null);
   
+  // Ready States (Saling Menunggu)
+  const [iAmReady, setIAmReady] = useState(false);
+  const [partnerIsReady, setPartnerIsReady] = useState(false);
+
   // Editor States (Caption & Sticker)
   const [stripCaption, setStripCaption] = useState('Our Sweet Moment Together ❤️');
   const [selectedSticker, setSelectedSticker] = useState('🧸');
@@ -82,6 +86,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const currentCallRef = useRef(null);
+  const peerInstanceRef = useRef(null);
 
   // --- FITUR COUNTER JADIAN ---
   const [anniversaryDate, setAnniversaryDate] = useState(() => localStorage.getItem('bucin_anniversary') || '2024-01-01');
@@ -134,6 +139,21 @@ export default function LiveLoveRoomWithPhotobooth() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  // Memastikan elemen video selalu terhubung dengan stream (Mencegah Layar Hitam)
+  useEffect(() => {
+    if (localStreamRef.current && localVideoRef.current) {
+      localVideoRef.current.srcObject = localStreamRef.current;
+      localVideoRef.current.play().catch(e => console.log(e));
+    }
+  }, [boothStep, localStreamRef.current]);
+
+  useEffect(() => {
+    if (remoteStream && remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = remoteStream;
+      remoteVideoRef.current.play().catch(e => console.log(e));
+    }
+  }, [boothStep, remoteStream]);
+
   useEffect(() => {
     const interval = setInterval(() => {
       const start = new Date(anniversaryDate);
@@ -161,7 +181,13 @@ export default function LiveLoveRoomWithPhotobooth() {
   // --- KELOLA WEBRTC STREAM KAMERA ---
   const startDualCameraStream = async () => {
     try {
-      if (localStreamRef.current) return localStreamRef.current;
+      if (localStreamRef.current) {
+        if (localVideoRef.current && !localVideoRef.current.srcObject) {
+          localVideoRef.current.srcObject = localStreamRef.current;
+          localVideoRef.current.play().catch(e => console.log(e));
+        }
+        return localStreamRef.current;
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }, 
         audio: false 
@@ -172,6 +198,19 @@ export default function LiveLoveRoomWithPhotobooth() {
         await localVideoRef.current.play().catch(e => console.log("Play interrupted:", e));
       }
       setCameraActive(true);
+
+      if (peerInstanceRef.current && conn && conn.peer) {
+        const call = peerInstanceRef.current.call(conn.peer, stream);
+        currentCallRef.current = call;
+        call.on('stream', (remoteStreamFeed) => {
+          setRemoteStream(remoteStreamFeed);
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = remoteStreamFeed;
+            remoteVideoRef.current.play().catch(e => console.log(e));
+          }
+        });
+      }
+
       return stream;
     } catch (err) {
       console.error("Gagal mengakses kamera:", err);
@@ -224,6 +263,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     setMode('waiting-host');
 
     const newPeer = new Peer(`bucin-room-${code}`);
+    peerInstanceRef.current = newPeer;
     
     newPeer.on('open', () => {
       setStatusText(`Room aktif! Bagikan kode ${code} ke pasanganmu.`);
@@ -262,6 +302,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     setStatusText('Menghubungkan ke ruangan...');
 
     const newPeer = new Peer();
+    peerInstanceRef.current = newPeer;
 
     newPeer.on('open', async () => {
       const connection = newPeer.connect(`bucin-room-${inputCode}`);
@@ -307,7 +348,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       setStatusText('Terhubung dengan Ayang! ❤️');
       connection.send({ type: 'init', name: myName, mood: myMood });
 
-      // Inisiasi Video Call WebRTC
       const stream = await startDualCameraStream();
       if (stream && connection.peer) {
         const call = currentPeerInstance.call(connection.peer, stream);
@@ -345,12 +385,17 @@ export default function LiveLoveRoomWithPhotobooth() {
       } else if (data.type === 'pb-config-sync') {
         setSelectedLayout(data.layout);
         setSelectedTheme(data.theme);
-      } else if (data.type === 'pb-dual-start') {
+      } else if (data.type === 'pb-preview-mode') {
         setSelectedLayout(data.layout);
         setSelectedTheme(data.theme);
-        setCurrentStep(0);
-        setAllPhotos([]);
+        setBoothStep('preview');
+        setIAmReady(false);
+        setPartnerIsReady(false);
+      } else if (data.type === 'pb-ready-status') {
+        setPartnerIsReady(data.ready);
+      } else if (data.type === 'pb-start-countdown') {
         setBoothStep('capturing');
+        setCurrentStep(0);
       } else if (data.type === 'pb-dual-snapshot') {
         const updated = [...allPhotosRef.current, data.photo];
         setAllPhotos(updated);
@@ -519,13 +564,45 @@ export default function LiveLoveRoomWithPhotobooth() {
     return 2;
   };
 
-  const handleInitiateCapture = async () => {
+  // Masuk ke tahap live preview kamera ganda
+  const handleOpenLivePreview = async () => {
     await startDualCameraStream();
+    setAllPhotos([]);
+    setBoothStep('preview');
+    setIAmReady(false);
+    setPartnerIsReady(false);
+    if (conn) {
+      conn.send({ type: 'pb-preview-mode', layout: selectedLayout, theme: selectedTheme });
+    }
+  };
+
+  // Menekan tombol "Mulai" (Ready check)
+  const handleToggleReady = () => {
+    const nextStatus = !iAmReady;
+    setIAmReady(nextStatus);
+    if (conn) {
+      conn.send({ type: 'pb-ready-status', ready: nextStatus });
+    }
+
+    // Jika setelah ditekan keduanya sudah ready, mulai hitung mundur secara sinkron
+    if (nextStatus && partnerIsReady) {
+      triggerStartCountdown();
+    }
+  };
+
+  // Cek otomatis jika partner sudah ready terlebih dahulu, lalu user menyusul klik ready
+  useEffect(() => {
+    if (boothStep === 'preview' && iAmReady && partnerIsReady) {
+      triggerStartCountdown();
+    }
+  }, [iAmReady, partnerIsReady, boothStep]);
+
+  const triggerStartCountdown = () => {
+    setBoothStep('capturing');
     setCurrentStep(0);
     setAllPhotos([]);
-    setBoothStep('capturing');
     if (conn) {
-      conn.send({ type: 'pb-dual-start', layout: selectedLayout, theme: selectedTheme });
+      conn.send({ type: 'pb-start-countdown' });
     }
   };
 
@@ -544,7 +621,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       return;
     }
 
-    await startDualCameraStream();
     setCountdown(3);
     let count = 3;
     const timer = setInterval(() => {
@@ -555,25 +631,23 @@ export default function LiveLoveRoomWithPhotobooth() {
         clearInterval(timer);
         setCountdown(null);
 
-        // Gabungkan Video Kamu dan Pasangan Menjadi Satu Bingkai Foto Bersamaan
         if (localVideoRef.current) {
           const canvas = document.createElement('canvas');
           canvas.width = 960;
           canvas.height = 480;
           const ctx = canvas.getContext('2d');
 
-          // Gambar Video Lokal (Kiri)
+          // Video Lokal (Kiri)
           ctx.save();
           ctx.translate(480, 0);
           ctx.scale(-1, 1);
           ctx.drawImage(localVideoRef.current, 0, 0, 480, 480);
           ctx.restore();
 
-          // Gambar Video Pasangan (Kanan) jika ada
+          // Video Pasangan (Kanan)
           if (remoteVideoRef.current && remoteStream) {
             ctx.drawImage(remoteVideoRef.current, 480, 0, 480, 480);
           } else {
-            // Placeholder jika pasangan belum aktif kameranya
             ctx.fillStyle = '#fce7f3';
             ctx.fillRect(480, 0, 480, 480);
             ctx.fillStyle = '#881337';
@@ -589,7 +663,9 @@ export default function LiveLoveRoomWithPhotobooth() {
           if (conn) {
             conn.send({ type: 'pb-dual-snapshot', step: currentStep, photo: photoData });
           }
-          setCurrentStep(prev => prev + 1);
+
+          const nextStep = currentStep + 1;
+          setCurrentStep(nextStep);
         }
       }
     }, 1000);
@@ -742,7 +818,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     setFinalStripUrl(canvas.toDataURL('image/png', 1.0));
   };
 
-  // Update canvas ketika user mengedit caption atau stiker secara live
   useEffect(() => {
     if (boothStep === 'ready' && allPhotos.length > 0) {
       generatePhotoboothCanvas(allPhotos);
@@ -1151,14 +1226,16 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 6: PHOTOBOOTH KAMERA GANDA & EDITOR */}
+            {/* TAB 6: PHOTOBOOTH KAMERA GANDA & READY CHECK */}
             {activeTab === 'photobooth' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-3 overflow-y-auto p-1">
+                
+                {/* 1. PILIH LAYOUT */}
                 {boothStep === 'select-layout' && (
                   <div className="space-y-3 w-full max-w-xs text-left my-auto">
                     <div className="text-center">
                       <h3 className="font-bold text-stone-900 text-base">Photobooth Kamera Ganda 📸</h3>
-                      <p className="text-xs text-stone-500">Kamera kamu & pasangan akan tampil bersamaan!</p>
+                      <p className="text-xs text-stone-500">Muka kalian berdua akan muncul live bersamaan!</p>
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-stone-600 mb-1">Pilih Layout:</label>
@@ -1187,41 +1264,90 @@ export default function LiveLoveRoomWithPhotobooth() {
                         ))}
                       </div>
                     </div>
-                    <button onClick={handleInitiateCapture} className="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-2xl shadow-md text-xs cursor-pointer mt-1">Mulai Foto Bersama Sekaligus! 🎬</button>
+                    <button onClick={handleOpenLivePreview} className="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-2xl shadow-md text-xs cursor-pointer mt-1">Buka Kamera Live Bersama 🎥</button>
                   </div>
                 )}
 
+                {/* 2. TAHAP LIVE PREVIEW & SALING MENUNGGU (READY CHECK) */}
+                {boothStep === 'preview' && (
+                  <div className="space-y-3 w-full text-center my-auto">
+                    <p className="text-xs font-bold text-stone-700">✨ Cek Pose & Senyum Manis Kalian Dulu! ✨</p>
+                    <div className="grid grid-cols-2 gap-2 w-full max-w-[360px] mx-auto">
+                      {/* Kamera Kamu */}
+                      <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-rose-400 h-[170px] flex items-center justify-center shadow-md">
+                        <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
+                        <span className="absolute bottom-1 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">Kamu ({myName})</span>
+                      </div>
+                      {/* Kamera Pasangan */}
+                      <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-pink-400 h-[170px] flex items-center justify-center shadow-md">
+                        <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                        <span className="absolute bottom-1 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">{partnerName}</span>
+                        {!remoteStream && (
+                          <div className="absolute inset-0 bg-stone-900/80 flex items-center justify-center p-2">
+                            <span className="text-[11px] text-pink-200 font-medium animate-pulse text-center">Menunggu {partnerName} masuk kamera...</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Status Saling Menunggu */}
+                    <div className="bg-stone-50 border border-stone-200 p-2.5 rounded-2xl max-w-[320px] mx-auto text-xs space-y-1">
+                      <div className="flex justify-between items-center px-2">
+                        <span>Status Kamu:</span>
+                        <span className={`font-bold ${iAmReady ? 'text-emerald-600' : 'text-amber-600'}`}>{iAmReady ? '✔️ Siap!' : '⏳ Belum Siap'}</span>
+                      </div>
+                      <div className="flex justify-between items-center px-2">
+                        <span>Status {partnerName}:</span>
+                        <span className={`font-bold ${partnerIsReady ? 'text-emerald-600' : 'text-amber-600'}`}>{partnerIsReady ? '✔️ Siap!' : '⏳ Belum Siap'}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 max-w-[320px] mx-auto pt-1">
+                      <button onClick={() => setBoothStep('select-layout')} className="py-2.5 px-3 bg-stone-200 text-stone-700 font-bold rounded-xl text-xs">← Ganti Layout</button>
+                      <button 
+                        onClick={handleToggleReady} 
+                        className={`flex-1 py-2.5 font-bold rounded-xl shadow-md text-xs cursor-pointer transition ${iAmReady ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-gradient-to-r from-rose-500 to-pink-600 text-white animate-pulse'}`}
+                      >
+                        {iAmReady ? 'Batal Siap ❌' : '✨ Mulai / Saya Sudah Siap!'}
+                      </button>
+                    </div>
+                    {iAmReady && !partnerIsReady && (
+                      <p className="text-[11px] text-rose-500 font-medium animate-pulse">Menunggu {partnerName} menekan tombol mulai juga...</p>
+                    )}
+                  </div>
+                )}
+
+                {/* 3. TAHAP KAPTUR / HITUNG MUNDUR */}
                 {boothStep === 'capturing' && (
                   <div className="space-y-3 w-full text-center my-auto">
                     <div className="grid grid-cols-2 gap-2 w-full max-w-[340px] mx-auto">
-                      {/* Kamera Kamu */}
-                      <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-rose-300 h-[140px] flex items-center justify-center">
+                      <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-rose-300 h-[150px] flex items-center justify-center">
                         <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
-                        <span className="absolute bottom-1 left-2 bg-black/50 text-white text-[9px] px-1.5 py-0.5 rounded">Kamu ({myName})</span>
+                        <span className="absolute bottom-1 left-2 bg-black/50 text-white text-[9px] px-1.5 py-0.5 rounded">Kamu</span>
                       </div>
-                      {/* Kamera Pasangan */}
-                      <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-pink-300 h-[140px] flex items-center justify-center">
+                      <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-pink-300 h-[150px] flex items-center justify-center">
                         <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
                         <span className="absolute bottom-1 left-2 bg-black/50 text-white text-[9px] px-1.5 py-0.5 rounded">{partnerName}</span>
                       </div>
                     </div>
 
                     {countdown !== null && (
-                      <div className="text-6xl font-black text-rose-600 animate-bounce">{countdown}</div>
+                      <div className="text-7xl font-black text-rose-600 animate-bounce">{countdown}</div>
                     )}
                     <p className="text-xs font-semibold text-rose-600 animate-pulse">
-                      Bersiaplah! Mengambil foto bersama ({currentStep + 1}/{getRequiredPhotosCount()})...
+                      Menjepret foto bersama ({currentStep + 1}/{getRequiredPhotosCount()})...
                     </p>
                   </div>
                 )}
 
+                {/* 4. TAHAP HASIL & EDITOR */}
                 {boothStep === 'ready' && finalStripUrl && (
                   <div className="space-y-2 w-full flex flex-col items-center my-auto pt-1">
-                    <div className="w-[190px] drop-shadow-xl">
+                    <div className="w-[180px] drop-shadow-xl">
                       <img src={finalStripUrl} alt="Hasil Photobooth" className="w-full h-auto object-contain rounded-xl" />
                     </div>
 
-                    {/* EDITOR LANGSUNG (Keduaya bisa edit caption & stiker) */}
+                    {/* STUDIO EDITOR */}
                     <div className="bg-stone-50 border border-stone-200 p-2.5 rounded-2xl w-full max-w-[280px] space-y-2 text-left">
                       <p className="text-[11px] font-bold text-stone-700 text-center">✨ Studio Editor Foto Bersama</p>
                       <div>
