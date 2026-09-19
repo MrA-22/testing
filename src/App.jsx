@@ -584,13 +584,11 @@ export default function LiveLoveRoomWithPhotobooth() {
       conn.send({ type: 'pb-ready-status', ready: nextStatus });
     }
 
-    // Jika setelah ditekan keduanya sudah ready, mulai hitung mundur secara sinkron
     if (nextStatus && partnerIsReady) {
       triggerStartCountdown();
     }
   };
 
-  // Cek otomatis jika partner sudah ready terlebih dahulu, lalu user menyusul klik ready
   useEffect(() => {
     if (boothStep === 'preview' && iAmReady && partnerIsReady) {
       triggerStartCountdown();
@@ -632,31 +630,81 @@ export default function LiveLoveRoomWithPhotobooth() {
         setCountdown(null);
 
         if (localVideoRef.current) {
+          // Membuat kanvas berukuran 800x600 dengan latar belakang studio photobooth yang menyatu
           const canvas = document.createElement('canvas');
-          canvas.width = 960;
-          canvas.height = 480;
+          canvas.width = 800;
+          canvas.height = 600;
           const ctx = canvas.getContext('2d');
 
-          // Video Lokal (Kiri)
+          // Latar belakang gradasi estetik yang menyatu
+          const grad = ctx.createLinearGradient(0, 0, 800, 600);
+          grad.addColorStop(0, '#fff1f2');
+          grad.addColorStop(1, '#ffe4e6');
+          ctx.fillStyle = grad;
+          ctx.fillRect(0, 0, 800, 600);
+
+          // Header Photobooth di dalam frame foto
+          ctx.fillStyle = '#881337';
+          ctx.font = 'bold 20px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText(`✨ ${myName} & ${partnerName} ✨`, 400, 38);
+
+          // Gambar Video Lokal (Kiri dengan sudut melengkung dan shadow elegan)
           ctx.save();
-          ctx.translate(480, 0);
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.18)';
+          ctx.shadowBlur = 20;
+          ctx.beginPath();
+          ctx.roundRect(40, 60, 340, 460, 20);
+          ctx.clip();
+          ctx.translate(380, 0);
           ctx.scale(-1, 1);
-          ctx.drawImage(localVideoRef.current, 0, 0, 480, 480);
+          ctx.drawImage(localVideoRef.current, 0, 0, 340, 460);
           ctx.restore();
 
-          // Video Pasangan (Kanan)
+          // Border halus untuk kotak kiri
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(40, 60, 340, 460, 20);
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = '#fda4af';
+          ctx.stroke();
+          ctx.restore();
+
+          // Gambar Video Pasangan (Kanan dengan sudut melengkung dan shadow elegan)
+          ctx.save();
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.18)';
+          ctx.shadowBlur = 20;
+          ctx.beginPath();
+          ctx.roundRect(420, 60, 340, 460, 20);
+          ctx.clip();
           if (remoteVideoRef.current && remoteStream) {
-            ctx.drawImage(remoteVideoRef.current, 480, 0, 480, 480);
+            ctx.drawImage(remoteVideoRef.current, 420, 60, 340, 460);
           } else {
             ctx.fillStyle = '#fce7f3';
-            ctx.fillRect(480, 0, 480, 480);
+            ctx.fillRect(420, 60, 340, 460);
             ctx.fillStyle = '#881337';
-            ctx.font = 'bold 20px sans-serif';
+            ctx.font = 'bold 18px sans-serif';
             ctx.textAlign = 'center';
-            ctx.fillText(`Menunggu ${partnerName}...`, 720, 240);
+            ctx.fillText(`Menunggu ${partnerName}...`, 590, 290);
           }
+          ctx.restore();
 
-          const photoData = canvas.toDataURL('image/jpeg', 0.85);
+          // Border halus untuk kotak kanan
+          ctx.save();
+          ctx.beginPath();
+          ctx.roundRect(420, 60, 340, 460, 20);
+          ctx.lineWidth = 4;
+          ctx.strokeStyle = '#fda4af';
+          ctx.stroke();
+          ctx.restore();
+
+          // Footer / Ornamen bawah di dalam frame foto
+          ctx.fillStyle = '#9f1239';
+          ctx.font = '16px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.fillText('💖 Our Sweet Love Story 💖', 400, 555);
+
+          const photoData = canvas.toDataURL('image/jpeg', 0.9);
           const updated = [...allPhotosRef.current, photoData];
           setAllPhotos(updated);
 
@@ -697,17 +745,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.beginPath();
       ctx.roundRect(x, y, width, height, radius);
       ctx.clip();
-      const imgRatio = img.width / img.height;
-      const targetRatio = width / height;
-      let sWidth = img.width, sHeight = img.height, sX = 0, sY = 0;
-      if (imgRatio > targetRatio) {
-        sWidth = img.height * targetRatio;
-        sX = (img.width - sWidth) / 2;
-      } else {
-        sHeight = img.width / targetRatio;
-        sY = (img.height - sHeight) / 2;
-      }
-      ctx.drawImage(img, sX, sY, sWidth, sHeight, x, y, width, height);
+      ctx.drawImage(img, x, y, width, height);
       ctx.restore();
       ctx.save();
       ctx.beginPath();
@@ -1235,7 +1273,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                   <div className="space-y-3 w-full max-w-xs text-left my-auto">
                     <div className="text-center">
                       <h3 className="font-bold text-stone-900 text-base">Photobooth Kamera Ganda 📸</h3>
-                      <p className="text-xs text-stone-500">Muka kalian berdua akan muncul live bersamaan!</p>
+                      <p className="text-xs text-stone-500">Muka kalian berdua akan muncul live dalam satu studio menyatu!</p>
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-stone-600 mb-1">Pilih Layout:</label>
@@ -1264,34 +1302,39 @@ export default function LiveLoveRoomWithPhotobooth() {
                         ))}
                       </div>
                     </div>
-                    <button onClick={handleOpenLivePreview} className="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-2xl shadow-md text-xs cursor-pointer mt-1">Buka Kamera Live Bersama 🎥</button>
+                    <button onClick={handleOpenLivePreview} className="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-2xl shadow-md text-xs cursor-pointer mt-1">Buka Studio Kamera Live 🎥</button>
                   </div>
                 )}
 
-                {/* 2. TAHAP LIVE PREVIEW & SALING MENUNGGU (READY CHECK) */}
+                {/* 2. TAHAP LIVE PREVIEW & STUDIO FRAME YANG MENYATU */}
                 {boothStep === 'preview' && (
                   <div className="space-y-3 w-full text-center my-auto">
-                    <p className="text-xs font-bold text-stone-700">✨ Cek Pose & Senyum Manis Kalian Dulu! ✨</p>
-                    <div className="grid grid-cols-2 gap-2 w-full max-w-[360px] mx-auto">
-                      {/* Kamera Kamu */}
-                      <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-rose-400 h-[170px] flex items-center justify-center shadow-md">
-                        <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
-                        <span className="absolute bottom-1 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">Kamu ({myName})</span>
-                      </div>
-                      {/* Kamera Pasangan */}
-                      <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-pink-400 h-[170px] flex items-center justify-center shadow-md">
-                        <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
-                        <span className="absolute bottom-1 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">{partnerName}</span>
-                        {!remoteStream && (
-                          <div className="absolute inset-0 bg-stone-900/80 flex items-center justify-center p-2">
-                            <span className="text-[11px] text-pink-200 font-medium animate-pulse text-center">Menunggu {partnerName} masuk kamera...</span>
-                          </div>
-                        )}
+                    <p className="text-xs font-bold text-stone-700">✨ Atur Pose Terbaikmu di Studio Bersama! ✨</p>
+                    
+                    {/* STUDIO CONTAINER DENGAN LATAR BELAKANG MENYATU */}
+                    <div className="bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 border-2 border-rose-200 p-3 rounded-3xl shadow-lg max-w-[380px] mx-auto space-y-2">
+                      <div className="text-[11px] font-bold text-rose-700 tracking-wide">💖 {myName} & {partnerName} Studio 💖</div>
+                      <div className="grid grid-cols-2 gap-2.5">
+                        {/* Kamera Kamu */}
+                        <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-rose-300 h-[160px] flex items-center justify-center shadow-inner">
+                          <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
+                          <span className="absolute bottom-1.5 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">Kamu ({myName})</span>
+                        </div>
+                        {/* Kamera Pasangan */}
+                        <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-pink-300 h-[160px] flex items-center justify-center shadow-inner">
+                          <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                          <span className="absolute bottom-1.5 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded-full font-semibold">{partnerName}</span>
+                          {!remoteStream && (
+                            <div className="absolute inset-0 bg-stone-900/80 flex items-center justify-center p-2">
+                              <span className="text-[11px] text-pink-200 font-medium animate-pulse text-center">Menunggu {partnerName} masuk kamera...</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
 
                     {/* Status Saling Menunggu */}
-                    <div className="bg-stone-50 border border-stone-200 p-2.5 rounded-2xl max-w-[320px] mx-auto text-xs space-y-1">
+                    <div className="bg-white/80 border border-stone-200 p-2 rounded-2xl max-w-[320px] mx-auto text-xs space-y-1 shadow-xs">
                       <div className="flex justify-between items-center px-2">
                         <span>Status Kamu:</span>
                         <span className={`font-bold ${iAmReady ? 'text-emerald-600' : 'text-amber-600'}`}>{iAmReady ? '✔️ Siap!' : '⏳ Belum Siap'}</span>
@@ -1320,14 +1363,16 @@ export default function LiveLoveRoomWithPhotobooth() {
                 {/* 3. TAHAP KAPTUR / HITUNG MUNDUR */}
                 {boothStep === 'capturing' && (
                   <div className="space-y-3 w-full text-center my-auto">
-                    <div className="grid grid-cols-2 gap-2 w-full max-w-[340px] mx-auto">
-                      <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-rose-300 h-[150px] flex items-center justify-center">
-                        <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
-                        <span className="absolute bottom-1 left-2 bg-black/50 text-white text-[9px] px-1.5 py-0.5 rounded">Kamu</span>
-                      </div>
-                      <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-pink-300 h-[150px] flex items-center justify-center">
-                        <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
-                        <span className="absolute bottom-1 left-2 bg-black/50 text-white text-[9px] px-1.5 py-0.5 rounded">{partnerName}</span>
+                    <div className="bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 border-2 border-rose-200 p-3 rounded-3xl shadow-lg max-w-[360px] mx-auto space-y-2">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-rose-300 h-[150px] flex items-center justify-center">
+                          <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
+                          <span className="absolute bottom-1 left-2 bg-black/50 text-white text-[9px] px-1.5 py-0.5 rounded">Kamu</span>
+                        </div>
+                        <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-pink-300 h-[150px] flex items-center justify-center">
+                          <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                          <span className="absolute bottom-1 left-2 bg-black/50 text-white text-[9px] px-1.5 py-0.5 rounded">{partnerName}</span>
+                        </div>
                       </div>
                     </div>
 
@@ -1335,7 +1380,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                       <div className="text-7xl font-black text-rose-600 animate-bounce">{countdown}</div>
                     )}
                     <p className="text-xs font-semibold text-rose-600 animate-pulse">
-                      Menjepret foto bersama ({currentStep + 1}/{getRequiredPhotosCount()})...
+                      Menjepret foto studio bersama ({currentStep + 1}/{getRequiredPhotosCount()})...
                     </p>
                   </div>
                 )}
