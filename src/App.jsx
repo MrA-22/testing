@@ -553,7 +553,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     return 2;
   };
 
-  // Render Pemandangan & Bingkai Potret Bersih (Estetik & Konsisten Tanpa Cacat Tumpukan Piksel)
+  // Fungsi untuk melukis pemandangan dan potret video secara kemas dan estetik di atas kanvas
   const drawCompositeScene = (ctx, width, height) => {
     // 1. Latar Belakang Pemandangan
     let grad = ctx.createLinearGradient(0, 0, width, height);
@@ -571,50 +571,66 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, width, height);
 
-    const cardW = width * 0.42;
-    const cardH = height * 0.78;
-    const yPos = (height - cardH) / 2;
+    // 2. Bingkai Potret Estetik untuk Kamu (Sisi Kiri)
+    const cardWidth = width * 0.42;
+    const cardHeight = height * 0.78;
+    const yPos = (height - cardHeight) / 2;
 
-    // 2. Bingkai Potret Kamu (Kiri)
+    // Potret Kamu
     ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-    ctx.shadowBlur = 20;
     ctx.beginPath();
-    ctx.roundRect(width * 0.05, yPos, cardW, cardH, 25);
-    ctx.fillStyle = '#ffffff';
-    ctx.fill();
+    ctx.roundRect(width * 0.05, yPos, cardWidth, cardHeight, 25);
     ctx.clip();
-
     if (localVideoRef.current && localVideoRef.current.readyState >= 2) {
       ctx.save();
-      ctx.translate(width * 0.05 + cardW, yPos);
+      ctx.translate(width * 0.05 + cardWidth, 0);
       ctx.scale(-1, 1);
-      ctx.drawImage(localVideoRef.current, 0, 0, cardW, cardH);
+      ctx.drawImage(localVideoRef.current, 0, yPos, cardWidth, cardHeight);
       ctx.restore();
     }
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#ffffff';
+    ctx.stroke();
     ctx.restore();
 
-    // 3. Bingkai Potret Pasangan (Kanan)
-    ctx.save();
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-    ctx.shadowBlur = 20;
+    // Label Nama Kamu
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
     ctx.beginPath();
-    ctx.roundRect(width * 0.53, yPos, cardW, cardH, 25);
-    ctx.fillStyle = '#ffffff';
+    ctx.roundRect(width * 0.08, yPos + cardHeight - 38, cardWidth * 0.6, 26, 12);
     ctx.fill();
-    ctx.clip();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText(myName || 'Kamu', width * 0.11, yPos + cardHeight - 21);
 
+    // 3. Potret Pasangan (Sisi Kanan)
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(width * 0.53, yPos, cardWidth, cardHeight, 25);
+    ctx.clip();
     if (remoteVideoRef.current && remoteStream && remoteVideoRef.current.readyState >= 2) {
-      ctx.drawImage(remoteVideoRef.current, width * 0.53, yPos, cardW, cardH);
+      ctx.drawImage(remoteVideoRef.current, width * 0.53, yPos, cardWidth, cardHeight);
     } else {
-      ctx.fillStyle = '#f3f4f6';
-      ctx.fillRect(width * 0.53, yPos, cardW, cardH);
-      ctx.fillStyle = '#6b7280';
-      ctx.font = 'bold 16px sans-serif';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.fillRect(width * 0.53, yPos, cardWidth, cardHeight);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`Menunggu ${partnerName}...`, width * 0.53 + cardW / 2, yPos + cardH / 2);
+      ctx.fillText(`Menunggu ${partnerName}...`, width * 0.74, height / 2);
+      ctx.textAlign = 'left';
     }
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = '#ffffff';
+    ctx.stroke();
     ctx.restore();
+
+    // Label Nama Pasangan
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.beginPath();
+    ctx.roundRect(width * 0.56, yPos + cardHeight - 38, cardWidth * 0.6, 26, 12);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.fillText(partnerName || 'Ayang', width * 0.59, yPos + cardHeight - 21);
   };
 
   // Loop Render Live Preview ke Kanvas
@@ -634,7 +650,7 @@ export default function LiveLoveRoomWithPhotobooth() {
         if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       };
     }
-  }, [boothStep, studioBackground, remoteStream]);
+  }, [boothStep, studioBackground, remoteStream, myName, partnerName]);
 
   const handleOpenLivePreview = async () => {
     await startDualCameraStream();
@@ -1140,7 +1156,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 6: PHOTOBOOTH KAMERA GANDA */}
+            {/* TAB 6: PHOTOBOOTH KAMERA GANDA & VIRTUAL BACKGROUND */}
             {activeTab === 'photobooth' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-3 overflow-y-auto p-1">
                 
@@ -1149,7 +1165,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                   <div className="space-y-3 w-full max-w-xs text-left my-auto">
                     <div className="text-center">
                       <h3 className="font-bold text-stone-900 text-base">Photobooth Kamera Ganda 📸</h3>
-                      <p className="text-xs text-stone-500">Tampil bersih & rapi dengan latar belakang pemandangan indah!</p>
+                      <p className="text-xs text-stone-500">Pilih layout photobooth bersama pasangan!</p>
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-stone-600 mb-1">Pilih Layout:</label>
@@ -1169,7 +1185,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* 2. TAHAP LIVE PREVIEW */}
+                {/* 2. TAHAP LIVE PREVIEW DENGAN PEMANDANGAN & POTRET BERSIH */}
                 {boothStep === 'preview' && (
                   <div className="space-y-3 w-full text-center my-auto">
                     <p className="text-xs font-bold text-stone-700">✨ Pilih Latar Belakang Pemandangan ✨</p>
@@ -1196,13 +1212,13 @@ export default function LiveLoveRoomWithPhotobooth() {
                       </div>
                     </div>
 
-                    {/* VIDEO & REMOTE VIDEO TERSEMBUNYI UNTUK SUMBER KANVAS */}
+                    {/* VIDEO TERSEMBUNYI UNTUK SUMBER KANVAS */}
                     <div className="hidden">
                       <video ref={localVideoRef} autoPlay playsInline muted />
                       <video ref={remoteVideoRef} autoPlay playsInline />
                     </div>
 
-                    {/* KANVAS PREVIEW DENGAN BINGKAI BERSIH */}
+                    {/* KANVAS UTAMA PREVIEW */}
                     <div className="relative rounded-3xl shadow-xl max-w-[390px] mx-auto overflow-hidden h-[180px] bg-black">
                       <canvas ref={previewCanvasRef} width={640} height={360} className="w-full h-full object-cover" />
                       {!remoteStream && (
