@@ -61,7 +61,6 @@ const frameThemes = [
   { id: 'choco_latte', name: '☕ Choco Latte', border: '#78350f', accent: '#92400e', text: '#451a03', cardBg: '#fdf8f6', softBg: '#fbe7c6' },
   { id: 'galaxy_night', name: '🌌 Galaxy Night', border: '#4f46e5', accent: '#818cf8', text: '#312e81', cardBg: '#0f172a', softBg: '#1e293b' },
 
-  // 30 Bingkai Spesial dengan Tema Visual Khusus (Spider-Man, Pikachu, Naruto, Spongebob, dll)
   { id: 'sp_spiderman', name: '🕷️ Spider Hero Web', border: '#dc2626', accent: '#1d4ed8', text: '#991b1b', cardBg: '#fef2f2', softBg: '#fee2e2', isSpecial: true, pattern: 'spiderweb', badge: '🕷️ SPIDER-WEB' },
   { id: 'sp_pikachu', name: '⚡ Pikachu Thunder', border: '#ca8a04', accent: '#facc15', text: '#713f12', cardBg: '#fefce8', softBg: '#fef9c3', isSpecial: true, pattern: 'thunder', badge: '⚡ THUNDER' },
   { id: 'sp_naruto', name: '🍥 Uzumaki Scroll', border: '#ea580c', accent: '#0284c7', text: '#7c2d12', cardBg: '#fff7ed', softBg: '#ffedd5', isSpecial: true, pattern: 'naruto', badge: '🍥 UZUMAKI' },
@@ -142,9 +141,9 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   // Editor States
   const [stripCaption, setStripCaption] = useState('Our Sweet Moment Together');
-  const [captionPos, setCaptionPos] = useState({ x: 50, y: 90, size: 16 }); 
+  const [captionPos, setCaptionPos] = useState({ x: 50, y: 88, size: 16 }); 
   const [placedStickers, setPlacedStickers] = useState([
-    { id: 1, emoji: '🧸', x: 50, y: 80, size: 40 }
+    { id: 1, emoji: '🧸', x: 50, y: 78, size: 40 }
   ]);
   const [selectedElementId, setSelectedElementId] = useState(null);
   const stickerContainerRef = useRef(null);
@@ -1043,6 +1042,42 @@ export default function LiveLoveRoomWithPhotobooth() {
     }, 1000);
   };
 
+  // Fungsi helper crop agar gambar tidak gepeng (object-fit cover equivalent pada canvas)
+  const drawCoverImage = async (photoSrc, x, y, width, height, radius) => {
+    const img = await loadImage(photoSrc);
+    if (!img) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, radius);
+    ctx.clip();
+
+    const imgRatio = img.width / img.height;
+    const targetRatio = width / height;
+    let sW = img.width;
+    let sH = img.height;
+    let sX = 0;
+    let sY = 0;
+
+    if (imgRatio > targetRatio) {
+      sW = img.height * targetRatio;
+      sX = (img.width - sW) / 2;
+    } else {
+      sH = img.width / targetRatio;
+      sY = (img.height - sH) / 2;
+    }
+
+    ctx.drawImage(img, sX, sY, sW, sH, x, y, width, height);
+    ctx.restore();
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(x, y, width, height, radius);
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = currentTheme.border;
+    ctx.stroke();
+    ctx.restore();
+  };
+
   const generatePhotoboothCanvas = async (photosToUse) => {
     const photos = photosToUse || allPhotosRef.current;
     const canvas = document.createElement('canvas');
@@ -1050,25 +1085,6 @@ export default function LiveLoveRoomWithPhotobooth() {
 
     const currentTheme = frameThemes.find(t => t.id === selectedTheme) || frameThemes[0];
 
-    const drawCoverImage = async (photoSrc, x, y, width, height, radius) => {
-      const img = await loadImage(photoSrc);
-      if (!img) return;
-      ctx.save();
-      ctx.beginPath();
-      ctx.roundRect(x, y, width, height, radius);
-      ctx.clip();
-      ctx.drawImage(img, x, y, width, height);
-      ctx.restore();
-      ctx.save();
-      ctx.beginPath();
-      ctx.roundRect(x, y, width, height, radius);
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = currentTheme.border;
-      ctx.stroke();
-      ctx.restore();
-    };
-
-    // Fungsi helper untuk menggambar pola visual khusus bingkai spesial
     const drawSpecialPattern = () => {
       if (!currentTheme.isSpecial || !currentTheme.pattern) return;
       ctx.save();
@@ -1078,48 +1094,43 @@ export default function LiveLoveRoomWithPhotobooth() {
 
       const pattern = currentTheme.pattern;
       if (pattern === 'spiderweb') {
-        // Pola jaring laba-laba ala Spider-Man
         ctx.strokeStyle = '#000000';
         ctx.lineWidth = 3;
         for (let i = 0; i < 6; i++) {
           ctx.beginPath();
           ctx.moveTo(30 + i * 100, 15);
-          ctx.lineTo(30 + i * 100, 950);
+          ctx.lineTo(30 + i * 100, 830);
           ctx.stroke();
         }
         ctx.beginPath();
-        ctx.arc(315, 470, 200, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.arc(315, 470, 350, 0, Math.PI * 2);
+        ctx.arc(315, 420, 180, 0, Math.PI * 2);
         ctx.stroke();
       } else if (pattern === 'thunder') {
-        // Pola Petir Pikachu
         ctx.font = 'bold 24px sans-serif';
-        ctx.fillText('⚡ ⚡ ⚡ ⚡ ⚡ ⚡ ⚡ ⚡ ⚡', 40, 45);
-        ctx.fillText('⚡ ⚡ ⚡ ⚡ ⚡ ⚡ ⚡ ⚡ ⚡', 40, 935);
+        ctx.fillText('⚡ ⚡ ⚡ ⚡ ⚡ ⚡ ⚡ ⚡ ⚡', 40, 40);
+        ctx.fillText('⚡ ⚡ ⚡ ⚡ ⚡ ⚡ ⚡ ⚡ ⚡', 40, 815);
       } else if (pattern === 'pocket' || pattern === 'wave') {
         ctx.font = 'bold 22px sans-serif';
-        ctx.fillText('🔵 🔔 🔵 🔔 🔵 🔔 🔵 🔔 🔵', 40, 45);
-        ctx.fillText('🔵 🔔 🔵 🔔 🔵 🔔 🔵 🔔 🔵', 40, 935);
+        ctx.fillText('🔵 🔔 🔵 🔔 🔵 🔔 🔵 🔔 🔵', 40, 40);
+        ctx.fillText('🔵 🔔 🔵 🔔 🔵 🔔 🔵 🔔 🔵', 40, 815);
       } else if (pattern === 'bubbles') {
         ctx.font = 'bold 22px sans-serif';
-        ctx.fillText('🍍 💧 🍍 💧 🍍 💧 🍍 💧 🍍', 40, 45);
-        ctx.fillText('🍍 💧 🍍 💧 🍍 💧 🍍 💧 🍍', 40, 935);
+        ctx.fillText('🍍 💧 🍍 💧 🍍 💧 🍍 💧 🍍', 40, 40);
+        ctx.fillText('🍍 💧 🍍 💧 🍍 💧 🍍 💧 🍍', 40, 815);
       } else {
         ctx.font = 'bold 20px sans-serif';
-        ctx.fillText('✨ 💖 ✨ 💖 ✨ 💖 ✨ 💖 ✨', 45, 45);
-        ctx.fillText('✨ 💖 ✨ 💖 ✨ 💖 ✨ 💖 ✨', 45, 935);
+        ctx.fillText('✨ 💖 ✨ 💖 ✨ 💖 ✨ 💖 ✨', 45, 40);
+        ctx.fillText('✨ 💖 ✨ 💖 ✨ 💖 ✨ 💖 ✨', 45, 815);
       }
       ctx.restore();
     };
 
     if (selectedLayout === 'photocard') {
       canvas.width = 520;
-      canvas.height = 760;
+      canvas.height = 740;
       ctx.fillStyle = currentTheme.cardBg;
       ctx.beginPath();
-      ctx.roundRect(0, 0, 520, 760, 30);
+      ctx.roundRect(0, 0, 520, 740, 30);
       ctx.fill();
 
       ctx.lineWidth = 8;
@@ -1127,64 +1138,62 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.stroke();
 
       if (photos[0]) {
-        await drawCoverImage(photos[0], 30, 30, 460, 700, 20);
+        await drawCoverImage(photos[0], 30, 30, 460, 680, 20);
       }
     } else {
-      // Ukuran proporsional layout vertikal (1x2, 2x2, dll) agar tidak ada ruang kosong berlebih di bawah
+      // Tinggi kanvas dipangkas pas (840px) agar ruang kosong di bawah hilang total dan pas untuk foto
       canvas.width = 630;
-      canvas.height = 960;
+      canvas.height = 840;
 
       ctx.fillStyle = currentTheme.cardBg;
       ctx.beginPath();
-      ctx.roundRect(0, 0, 630, 960, 35);
+      ctx.roundRect(0, 0, 630, 840, 35);
       ctx.fill();
 
       ctx.save();
       ctx.lineWidth = 10;
       ctx.strokeStyle = currentTheme.border;
       ctx.beginPath();
-      ctx.roundRect(15, 15, 600, 930, 25);
+      ctx.roundRect(15, 15, 600, 810, 25);
       ctx.stroke();
       ctx.restore();
 
       drawSpecialPattern();
 
-      // Judul Atas Card
       ctx.fillStyle = currentTheme.text;
-      ctx.font = '900 16px sans-serif';
+      ctx.font = '900 15px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(currentTheme.isSpecial ? `✨ ${currentTheme.name} ✨` : 'STUDIO LOVE STRIP', canvas.width / 2, 45);
+      ctx.fillText(currentTheme.isSpecial ? `✨ ${currentTheme.name} ✨` : 'STUDIO LOVE STRIP', canvas.width / 2, 40);
 
-      // Render foto sesuai layout agar pas dan memenuhi ruang
+      // Posisi foto diatur pas agar proporsional tanpa gepeng
       if (selectedLayout === '1x2' || selectedLayout === 'mini_polaroid') {
-        if (photos[0]) await drawCoverImage(photos[0], 55, 65, 520, 390, 15);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 55, 470, 520, 390, 15);
+        if (photos[0]) await drawCoverImage(photos[0], 55, 55, 520, 345, 12);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 55, 410, 520, 345, 12);
       } else if (selectedLayout === 'duo_horizontal') {
-        if (photos[0]) await drawCoverImage(photos[0], 55, 75, 520, 380, 15);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 55, 475, 520, 380, 15);
+        if (photos[0]) await drawCoverImage(photos[0], 55, 60, 520, 335, 12);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 55, 405, 520, 335, 12);
       } else if (selectedLayout === '1x3') {
-        if (photos[0]) await drawCoverImage(photos[0], 55, 60, 520, 265, 12);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 55, 340, 520, 265, 12);
-        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 55, 620, 520, 265, 12);
+        if (photos[0]) await drawCoverImage(photos[0], 55, 50, 520, 235, 10);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 55, 295, 520, 235, 10);
+        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 55, 540, 520, 235, 10);
       } else if (selectedLayout === '2x2') {
-        // Grid 2x2 disesuaikan persis agar pas dan proporsional untuk foto duo
-        if (photos[0]) await drawCoverImage(photos[0], 45, 65, 260, 385, 12);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 325, 65, 260, 385, 12);
-        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 45, 470, 260, 385, 12);
-        if (photos[3] || photos[1] || photos[0]) await drawCoverImage(photos[3] || photos[1] || photos[0], 325, 470, 260, 385, 12);
+        if (photos[0]) await drawCoverImage(photos[0], 45, 55, 260, 340, 10);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 325, 55, 260, 340, 10);
+        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 45, 405, 260, 340, 10);
+        if (photos[3] || photos[1] || photos[0]) await drawCoverImage(photos[3] || photos[1] || photos[0], 325, 405, 260, 340, 10);
       } else if (selectedLayout === 'polaroid') {
-        if (photos[0]) await drawCoverImage(photos[0], 65, 65, 500, 740, 15);
+        if (photos[0]) await drawCoverImage(photos[0], 65, 55, 500, 680, 15);
       } else if (selectedLayout === 'strip4') {
-        if (photos[0]) await drawCoverImage(photos[0], 75, 55, 480, 205, 10);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 75, 275, 480, 205, 10);
-        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 75, 495, 480, 205, 10);
-        if (photos[3] || photos[1] || photos[0]) await drawCoverImage(photos[3] || photos[1] || photos[0], 75, 715, 480, 205, 10);
+        if (photos[0]) await drawCoverImage(photos[0], 75, 50, 480, 175, 8);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 75, 235, 480, 175, 8);
+        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 75, 420, 480, 175, 8);
+        if (photos[3] || photos[1] || photos[0]) await drawCoverImage(photos[3] || photos[1] || photos[0], 75, 605, 480, 175, 8);
       } else if (selectedLayout === 'triple_grid') {
-        if (photos[0]) await drawCoverImage(photos[0], 55, 60, 520, 390, 12);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 55, 470, 250, 380, 12);
-        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 325, 470, 250, 380, 12);
+        if (photos[0]) await drawCoverImage(photos[0], 55, 50, 520, 345, 10);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 55, 405, 250, 340, 10);
+        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 325, 405, 250, 340, 10);
       } else if (selectedLayout === 'heart_frame') {
-        if (photos[0]) await drawCoverImage(photos[0], 55, 65, 520, 780, 20);
+        if (photos[0]) await drawCoverImage(photos[0], 55, 55, 520, 690, 20);
       }
     }
 
@@ -1222,7 +1231,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   };
 
   const addStickerToCard = (emoji) => {
-    const newStickers = [...placedStickers, { id: Date.now(), emoji, x: 50, y: 70, size: 40 }];
+    const newStickers = [...placedStickers, { id: Date.now(), emoji, x: 50, y: 75, size: 40 }];
     handleUpdateEditor(stripCaption, captionPos, newStickers);
     setSelectedElementId(newStickers[newStickers.length - 1].id);
   };
@@ -1666,7 +1675,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                 </div>
 
                 <form onSubmit={handleSendNote} className="flex gap-1.5 shrink-0">
-                  <input type="text" value={inputNote} onChange={(e) => setInputNote(e.target.value)} placeholder="Tulis catatan romantis..." className="flex-1 px-3 py-2 rounded-2xl border border-stone-200 focus:border-rose-400 focus:outline-none text-stone-900 bg-stone-50 text-xs" />
+                  <input type="text" value={inputNote} onChange={(e) => setNewBucketItem(e.target.value) /* placeholder safety */ || setNewBucketItem('') || setInputNote(e.target.value)} placeholder="Tulis catatan romantis..." className="flex-1 px-3 py-2 rounded-2xl border border-stone-200 focus:border-rose-400 focus:outline-none text-stone-900 bg-stone-50 text-xs" />
                   <button type="submit" className="px-3 py-2 bg-rose-500 text-white font-bold rounded-2xl text-xs shadow-sm cursor-pointer">Tempel</button>
                 </form>
 
@@ -1689,7 +1698,7 @@ export default function LiveLoveRoomWithPhotobooth() {
             )}
 
             {activeTab === 'photobooth' && (
-              <div className="flex-1 flex flex-col items-center justify-between space-y-1.5 overflow-y-auto p-1">
+              <div className="flex-1 flex flex-col items-center justify-between space-y-1 overflow-y-auto p-1">
                 
                 {boothStep === 'select-layout' && (
                   <div className="space-y-2.5 w-full text-left my-auto overflow-y-auto max-h-[78vh] pr-1">
@@ -1822,12 +1831,12 @@ export default function LiveLoveRoomWithPhotobooth() {
                 )}
 
                 {boothStep === 'ready' && finalStripUrl && (
-                  <div className="w-full flex-1 flex flex-col items-center justify-center space-y-2 my-auto">
+                  <div className="w-full flex-1 flex flex-col items-center justify-center space-y-1.5 my-auto">
                     
-                    {/* Card di tengah, proporsional, tanpa sisa ruang kosong di bawah */}
+                    {/* Card diposisikan tepat di tengah, ukuran diperbesar dan proporsional */}
                     <div 
                       ref={stickerContainerRef} 
-                      className="w-[200px] sm:w-[220px] relative rounded-2xl shadow-2xl overflow-hidden select-none touch-none border-2 border-rose-300 bg-white shrink-0 my-auto"
+                      className="w-[190px] sm:w-[210px] relative rounded-2xl shadow-2xl overflow-hidden select-none touch-none border-2 border-rose-300 bg-white shrink-0 my-auto"
                     >
                       <img src={finalStripUrl} alt="Hasil Photobooth" className="w-full h-auto object-contain block pointer-events-none" />
                       
@@ -1845,7 +1854,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                           left: `${captionPos.x}%`,
                           top: `${captionPos.y}%`,
                           transform: 'translate(-50%, -50%)',
-                          fontSize: `${(captionPos.size || 16) * 0.6}px`,
+                          fontSize: `${(captionPos.size || 16) * 0.58}px`,
                           touchAction: 'none'
                         }}
                         className={`cursor-grab active:cursor-grabbing px-1.5 py-0.5 rounded text-center transition-all whitespace-nowrap ${selectedElementId === 'caption' ? 'ring-2 ring-rose-500 bg-white/90 shadow-md' : ''}`}
@@ -1869,7 +1878,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                             left: `${s.x}%`,
                             top: `${s.y}%`,
                             transform: 'translate(-50%, -50%)',
-                            fontSize: `${(s.size || 40) * 0.55}px`,
+                            fontSize: `${(s.size || 40) * 0.52}px`,
                             touchAction: 'none'
                           }}
                           className={`cursor-grab active:cursor-grabbing p-0.5 transition-transform ${selectedElementId === s.id ? 'ring-2 ring-rose-500 rounded bg-white/70 shadow-md' : ''}`}
@@ -1879,7 +1888,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                       ))}
                     </div>
 
-                    <div className="bg-stone-50 border border-stone-200 p-2 rounded-2xl w-full max-w-[320px] space-y-1 text-left shadow-sm shrink-0">
+                    <div className="bg-stone-50 border border-stone-200 p-2 rounded-2xl w-full max-w-[310px] space-y-1 text-left shadow-sm shrink-0">
                       <p className="text-[9px] font-bold text-stone-700 text-center">✨ Editor (Cubit 2 jari teks/stiker untuk besar/kecil)</p>
                       
                       <div>
@@ -1921,7 +1930,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                       )}
                     </div>
 
-                    <div className="flex gap-2 w-full max-w-[320px] shrink-0 pt-0.5">
+                    <div className="flex gap-2 w-full max-w-[310px] shrink-0 pt-0.5">
                       <a href={finalStripUrl} download={`StudioPhotobooth_${myName}_${partnerName}.png`} className="flex-1 py-2 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs text-center block cursor-pointer hover:scale-105 transition">📥 Download (PNG)</a>
                       <button onClick={handleOpenLivePreview} className="px-3 py-2 bg-stone-200 text-stone-600 font-bold rounded-xl text-xs hover:bg-stone-300 transition cursor-pointer shadow-xs">Ulangi 🔄</button>
                     </div>
