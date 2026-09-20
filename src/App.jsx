@@ -13,7 +13,27 @@ const bgThemes = {
   kyoto: { name: 'Kyoto Bamboo', emoji: '🎋', type: 'image', url: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80' },
   london: { name: 'London Big Ben', emoji: '🇬🇧', type: 'image', url: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=1200&q=80' },
   venice: { name: 'Venice Canal', emoji: '🛶', type: 'image', url: 'https://images.unsplash.com/photo-1514896856522-8f35f299c8bf?auto=format&fit=crop&w=1200&q=80' },
-  la: { name: 'Los Angeles', emoji: '🌴', type: 'image', url: 'https://images.unsplash.com/photo-1534190760960-a298ff1e1548?auto=format&fit=crop&w=1200&q=80' }
+  la: { name: 'Los Angeles', emoji: '🌴', type: 'image', url: 'https://images.unsplash.com/photo-1534190760960-a298ff1e1548?auto=format&fit=crop&w=1200&q=80' },
+  bali: { name: 'Bali Resort', emoji: '🌺', type: 'image', url: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80' },
+  aurora: { name: 'Aurora Norway', emoji: '🌌', type: 'image', url: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=1200&q=80' },
+  amsterdam: { name: 'Amsterdam', emoji: '🚲', type: 'image', url: 'https://images.unsplash.com/photo-1512470876302-972faa2aa9a4?auto=format&fit=crop&w=1200&q=80' },
+  cappadocia: { name: 'Cappadocia', emoji: '🎈', type: 'image', url: 'https://images.unsplash.com/photo-1641128324970-23021dd0668d?auto=format&fit=crop&w=1200&q=80' },
+  tajmahal: { name: 'Taj Mahal', emoji: '🕌', type: 'image', url: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=1200&q=80' },
+  sydney: { name: 'Sydney Opera', emoji: '🇦🇺', type: 'image', url: 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=1200&q=80' },
+  dubai: { name: 'Dubai Skyline', emoji: '🏙️', type: 'image', url: 'https://images.unsplash.com/photo-1512453979798-5ea266f8880c?auto=format&fit=crop&w=1200&q=80' },
+  rome: { name: 'Rome Colosseum', emoji: '🏛️', type: 'image', url: 'https://images.unsplash.com/photo-1552832230-c0197dd311b5?auto=format&fit=crop&w=1200&q=80' },
+  prague: { name: 'Prague Bridge', emoji: '🏰', type: 'image', url: 'https://images.unsplash.com/photo-1541849546-216549ae216d?auto=format&fit=crop&w=1200&q=80' },
+  hawaii: { name: 'Hawaii Beach', emoji: '🏄', type: 'image', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80' },
+  maldives: { name: 'Maldives Overwater', emoji: '🏝️', type: 'image', url: 'https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=1200&q=80' },
+  iceland: { name: 'Iceland Waterfall', emoji: '🌊', type: 'image', url: 'https://images.unsplash.com/photo-1504893524553-eef25d3a958e?auto=format&fit=crop&w=1200&q=80' },
+  ibiza: { name: 'Ibiza Sunset', emoji: '🌅', type: 'image', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80' },
+  banff: { name: 'Banff National Park', emoji: '🌲', type: 'image', url: 'https://images.unsplash.com/photo-1503614472-8c93d56e92ce?auto=format&fit=crop&w=1200&q=80' },
+  rio: { name: 'Rio de Janeiro', emoji: '🇧🇷', type: 'image', url: 'https://images.unsplash.com/photo-1483729558449-99ef09a8c325?auto=format&fit=crop&w=1200&q=80' },
+  cuba: { name: 'Havana Cuba', emoji: '🚗', type: 'image', url: 'https://images.unsplash.com/photo-1508401616614-b7c3d995c57a?auto=format&fit=crop&w=1200&q=80' },
+  marrakech: { name: 'Marrakech Morocco', emoji: '🏜️', type: 'image', url: 'https://images.unsplash.com/photo-1539650116574-75c1c38541e2?auto=format&fit=crop&w=1200&q=80' },
+  fiordland: { name: 'New Zealand Fiord', emoji: '🏔️', type: 'image', url: 'https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?auto=format&fit=crop&w=1200&q=80' },
+  osaka: { name: 'Osaka Castle', emoji: '🏯', type: 'image', url: 'https://images.unsplash.com/photo-1590559899731-a388b15264e2?auto=format&fit=crop&w=1200&q=80' },
+  lisbon: { name: 'Lisbon Tram', emoji: '🚊', type: 'image', url: 'https://images.unsplash.com/photo-1513603131605-e14112e47264?auto=format&fit=crop&w=1200&q=80' }
 };
 
 const layoutOptions = [
@@ -30,6 +50,7 @@ const layoutOptions = [
 ];
 
 const frameThemes = [
+  // 15 Pilihan Warna & Gradasi Cantik
   { id: 'rose', name: '🌸 Rose Pink', border: '#f43f5e', accent: '#fb7185', text: '#881337', cardBg: '#ffffff', softBg: '#fff1f2' },
   { id: 'purple', name: '💜 Lilac Dream', border: '#9333ea', accent: '#a855f7', text: '#581c87', cardBg: '#ffffff', softBg: '#faf5ff' },
   { id: 'peach', name: '🍑 Warm Peach', border: '#ea580c', accent: '#f97316', text: '#7c2d12', cardBg: '#ffffff', softBg: '#fff7ed' },
@@ -40,7 +61,12 @@ const frameThemes = [
   { id: 'neon_cyber', name: '⚡ Neon Cyber', border: '#db2777', accent: '#f43f5e', text: '#831843', cardBg: '#18181b', softBg: '#27272a' },
   { id: 'choco_latte', name: '☕ Choco Latte', border: '#78350f', accent: '#92400e', text: '#451a03', cardBg: '#fdf8f6', softBg: '#fbe7c6' },
   { id: 'galaxy_night', name: '🌌 Galaxy Night', border: '#4f46e5', accent: '#818cf8', text: '#312e81', cardBg: '#0f172a', softBg: '#1e293b' },
-  
+  { id: 'ruby_red', name: '❤️ Ruby Red', border: '#991b1b', accent: '#ef4444', text: '#450a0a', cardBg: '#fff5f5', softBg: '#fee2e2' },
+  { id: 'emerald', name: '💎 Emerald Shine', border: '#065f46', accent: '#10b981', text: '#022c22', cardBg: '#f0fdf4', softBg: '#d1fae5' },
+  { id: 'golden_sun', name: '⭐ Golden Sun', border: '#b45309', accent: '#f59e0b', text: '#451a03', cardBg: '#fffbeb', softBg: '#fef3c7' },
+  { id: 'lavender_mist', name: '🦄 Lavender Mist', border: '#6d28d9', accent: '#8b5cf6', text: '#2e1065', cardBg: '#f5f3ff', softBg: '#ede9fe' },
+  { id: 'mint_sparkle', name: '🍃 Mint Sparkle', border: '#0f766e', accent: '#14b8a6', text: '#042f2e', cardBg: '#f0fdfa', softBg: '#ccfbf1' },
+
   // 5 Frame Spesial (Gaya Bingkai Dekoratif, Anime, Lucu)
   { id: 'special_chibi', name: '🍡 Special: Chibi Kawaii', border: '#ec4899', accent: '#f472b6', text: '#be185d', cardBg: '#fff1f2', softBg: '#ffe4e6', isSpecial: true, badge: '🍡 CHIBI' },
   { id: 'special_anime', name: '🌸 Special: Sakura Anime', border: '#f43f5e', accent: '#fb7185', text: '#881337', cardBg: '#fffdfd', softBg: '#ffe4e6', isSpecial: true, badge: '✨ SAKURA' },
@@ -1645,7 +1671,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                   <div className="space-y-2.5 w-full text-left my-auto overflow-y-auto max-h-[78vh] pr-1">
                     <div className="text-center">
                       <h3 className="font-bold text-stone-900 text-sm">Photobooth Studio Bersama 📸</h3>
-                      <p className="text-[11px] text-stone-500">Pilih 10 Layout & 15 Tema Frame Spesial Anime/Lucu!</p>
+                      <p className="text-[11px] text-stone-500">Pilih 10 Layout & 20 Pilihan Warna/Tema Frame!</p>
                     </div>
 
                     <div>
@@ -1658,7 +1684,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-stone-600 mb-1">Pilih Tema Frame & Dekorasi Spesial:</label>
+                      <label className="block text-[11px] font-bold text-stone-600 mb-1">Pilih Tema Warna & Frame Spesial (20 Pilihan):</label>
                       <div className="grid grid-cols-2 gap-1 max-h-[140px] overflow-y-auto pr-1">
                         {frameThemes.map((theme) => (
                           <button key={theme.id} onClick={() => handleThemeChange(theme.id)} className={`py-1.5 px-2 rounded-xl text-[10px] font-bold border transition cursor-pointer flex items-center justify-between ${selectedTheme === theme.id ? 'bg-stone-900 text-white border-stone-900 shadow-sm' : theme.isSpecial ? 'bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100' : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'}`}>
@@ -1675,7 +1701,7 @@ export default function LiveLoveRoomWithPhotobooth() {
 
                 {boothStep === 'preview' && (
                   <div className="space-y-2.5 w-full text-center my-auto">
-                    <p className="text-[11px] font-bold text-stone-700">✨ Atur Pose & Background Secara Real-Time! ✨</p>
+                    <p className="text-[11px] font-bold text-stone-700">✨ Atur Pose & Pilih dari 30 Destinasi Wisata Dunia! ✨</p>
                     
                     <div className="bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 border-2 border-rose-200 p-2.5 rounded-3xl shadow-lg max-w-[420px] mx-auto space-y-2">
                       <div className="flex justify-between items-center px-1">
@@ -1712,17 +1738,17 @@ export default function LiveLoveRoomWithPhotobooth() {
                       </div>
 
                       <div className="pt-0.5">
-                        <span className="block text-[9px] font-bold text-stone-500 uppercase tracking-wider mb-1">Background Pilihan:</span>
-                        <div className="grid grid-cols-5 gap-1 max-h-[90px] overflow-y-auto pr-1">
+                        <span className="block text-[9px] font-bold text-stone-500 uppercase tracking-wider mb-1">Pilih dari 30 Destinasi Wisata Dunia:</span>
+                        <div className="grid grid-cols-5 gap-1 max-h-[110px] overflow-y-auto pr-1">
                           {Object.keys(bgThemes).map((key) => {
                             const bg = bgThemes[key];
                             return (
                               <button
                                 key={key}
                                 onClick={() => handleCameraBgChange(key)}
-                                className={`py-1 px-1 rounded-xl text-[9px] font-bold border transition cursor-pointer flex flex-col items-center gap-0.5 ${cameraBgTheme === key ? 'bg-rose-500 text-white border-rose-500 shadow-md scale-105' : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50'}`}
+                                className={`py-1.5 px-1 rounded-xl text-[9px] font-bold border transition cursor-pointer flex flex-col items-center gap-0.5 ${cameraBgTheme === key ? 'bg-rose-500 text-white border-rose-500 shadow-md scale-105' : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50'}`}
                               >
-                                <span className="text-[11px]">{bg.emoji}</span>
+                                <span className="text-xs">{bg.emoji}</span>
                                 <span className="text-[7px] truncate w-full">{bg.name}</span>
                               </button>
                             );
