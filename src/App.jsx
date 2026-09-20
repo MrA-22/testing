@@ -108,9 +108,10 @@ export default function LiveLoveRoomWithPhotobooth() {
   const currentCallRef = useRef(null);
   const peerInstanceRef = useRef(null);
 
-  // Canvas Refs untuk 1 Frame Studio Bersama (Real-time 60fps tanpa delay)
+  // Canvas & MediaPipe Refs untuk 1 Frame Studio Bersama (Tanpa Delay)
   const previewCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
+  const selfieSegmentationRef = useRef(null);
   const bgImageLoadedRef = useRef(null);
 
   // --- FITUR COUNTER JADIAN ---
@@ -148,6 +149,29 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   const messagesEndRef = useRef(null);
 
+  // Load MediaPipe Selfie Segmentation Script dengan Optimasi
+  useEffect(() => {
+    const script1 = document.createElement('script');
+    script1.src = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js";
+    script1.async = true;
+    script1.onload = async () => {
+      if (window.SelfieSegmentation) {
+        const segmentation = new window.SelfieSegmentation({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
+        });
+        segmentation.setOptions({ modelSelection: 1 });
+        segmentation.onResults(onMediaPipeResults);
+        await segmentation.initialize();
+        selfieSegmentationRef.current = segmentation;
+      }
+    };
+    document.body.appendChild(script1);
+
+    return () => {
+      if (script1.parentNode) script1.parentNode.removeChild(script1);
+    };
+  }, []);
+
   // Muat gambar background tema aktif
   useEffect(() => {
     const img = new Image();
@@ -165,86 +189,15 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   }, [boothStep, cameraActive]);
 
-  // Real-time Render Loop 1 Frame Studio Bersama (Zero Delay & Crisp Quality)
+  // Real-time Render Loop MediaPipe & Komposisi 1 Frame Studio
   useEffect(() => {
     if (boothStep === 'preview' || boothStep === 'capturing') {
-      const renderLoop = () => {
-        const canvas = previewCanvasRef.current;
-        if (canvas) {
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            ctx.save();
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            const w = canvas.width;
-            const h = canvas.height;
-            const halfW = w / 2;
-
-            // 1. Gambar Background Studio di Seluruh Kanvas
-            if (bgImageLoadedRef.current) {
-              ctx.drawImage(bgImageLoadedRef.current, 0, 0, w, h);
-            } else {
-              ctx.fillStyle = '#111';
-              ctx.fillRect(0, 0, w, h);
-            }
-
-            // Lapisan transparan tipis agar video lebih kontras dengan background
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
-            ctx.fillRect(0, 0, w, h);
-
-            // 2. Render SISI KIRI: KAMU (Real-time, tanpa delay)
-            if (localVideoRef.current && localVideoRef.current.readyState >= 2) {
-              ctx.save();
-              ctx.beginPath();
-              // Tanpa kotak/sekat, langsung menyatu di frame kiri
-              ctx.rect(0, 0, halfW, h);
-              ctx.clip();
-
-              // Efek Mirror Camera Kamu
-              ctx.translate(halfW, 0);
-              ctx.scale(-1, 1);
-              ctx.drawImage(localVideoRef.current, 0, 0, halfW, h);
-              ctx.restore();
-            }
-
-            // 3. Render SISI KANAN: PASANGAN (Real-time dari WebRTC)
-            if (remoteVideoRef.current && remoteVideoRef.current.readyState >= 2 && remoteStream) {
-              ctx.save();
-              ctx.beginPath();
-              ctx.rect(halfW, 0, halfW, h);
-              ctx.clip();
-              ctx.drawImage(remoteVideoRef.current, halfW, 0, halfW, h);
-              ctx.restore();
-            } else {
-              // Placeholder jika pasangan belum masuk
-              ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-              ctx.fillRect(halfW, 0, halfW, h);
-              ctx.fillStyle = '#ffffff';
-              ctx.font = 'bold 16px sans-serif';
-              ctx.textAlign = 'center';
-              ctx.fillText(`Menunggu ${partnerName}...`, halfW + (halfW / 2), h / 2);
-            }
-
-            // 4. Label Nama Estetik di Dalam Frame (Tanpa Bingkai Kotak)
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-            ctx.beginPath();
-            ctx.roundRect(25, h - 50, 140, 36, 12);
-            ctx.fill();
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 13px sans-serif';
-            ctx.textAlign = 'left';
-            ctx.fillText(`👤 Kamu (${myName})`, 35, h - 28);
-
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-            ctx.beginPath();
-            ctx.roundRect(halfW + 25, h - 50, 150, 36, 12);
-            ctx.fill();
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 13px sans-serif';
-            ctx.textAlign = 'left';
-            ctx.fillText(`👤 ${partnerName}`, halfW + 35, h - 28);
-
-            ctx.restore();
+      const renderLoop = async () => {
+        if (localVideoRef.current && selfieSegmentationRef.current && localVideoRef.current.readyState >= 2) {
+          try {
+            await selfieSegmentationRef.current.send({ image: localVideoRef.current });
+          } catch (e) {
+            console.error(e);
           }
         }
         animationFrameRef.current = requestAnimationFrame(renderLoop);
@@ -260,7 +213,87 @@ export default function LiveLoveRoomWithPhotobooth() {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [boothStep, cameraActive, cameraBgTheme, remoteStream, myName, partnerName]);
+  }, [boothStep, cameraActive, cameraBgTheme]);
+
+  // Fungsi Komposisi: Latar Belakang Virtual di Belakang Badan (Tanpa Delay & Tanpa Sekat Bingkai)
+  const onMediaPipeResults = (results) => {
+    const canvas = previewCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.save();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const w = canvas.width;
+    const h = canvas.height;
+    const halfW = w / 2;
+
+    // 1. Gambar Background Virtual di Seluruh Kanvas Utama
+    if (bgImageLoadedRef.current) {
+      ctx.drawImage(bgImageLoadedRef.current, 0, 0, w, h);
+    } else {
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    // 2. Render SISI KIRI: KAMU (Badan di Depan, Latar Virtual di Belakang)
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = halfW;
+    tempCanvas.height = h;
+    const tCtx = tempCanvas.getContext('2d');
+
+    // Gambar video kamu (mirror) ke kanvas sementara
+    tCtx.save();
+    tCtx.translate(halfW, 0);
+    tCtx.scale(-1, 1);
+    if (localVideoRef.current && localVideoRef.current.readyState >= 2) {
+      tCtx.drawImage(localVideoRef.current, 0, 0, halfW, h);
+    }
+    tCtx.restore();
+
+    // Potong menggunakan mask MediaPipe (hanya ambil bagian tubuh kamu)
+    tCtx.globalCompositeOperation = 'destination-in';
+    tCtx.drawImage(results.segmentationMask, 0, 0, halfW, h);
+
+    // Tempelkan hasil potongan tubuh kamu di atas background virtual sisi kiri
+    ctx.drawImage(tempCanvas, 0, 0, halfW, h, 0, 0, halfW, h);
+
+
+    // 3. Render SISI KANAN: PASANGAN (Real-time WebRTC Stream)
+    if (remoteVideoRef.current && remoteVideoRef.current.readyState >= 2 && remoteStream) {
+      ctx.drawImage(remoteVideoRef.current, halfW, 0, halfW, h);
+    } else {
+      // Placeholder jika pasangan belum masuk
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      ctx.fillRect(halfW, 0, halfW, h);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 15px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Menunggu ${partnerName}...`, halfW + (halfW / 2), h / 2);
+    }
+
+    // 4. Label Nama Estetik di Dalam Frame (Tanpa Kotak/Sekat Pemisah)
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.beginPath();
+    ctx.roundRect(20, h - 45, 130, 32, 10);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`👤 Kamu (${myName})`, 30, h - 25);
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.beginPath();
+    ctx.roundRect(halfW + 20, h - 45, 140, 32, 10);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`👤 ${partnerName}`, halfW + 30, h - 25);
+
+    ctx.restore();
+  };
 
   useEffect(() => {
     localStorage.setItem('bucin_mode', mode);
@@ -1421,7 +1454,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* 2. TAHAP LIVE PREVIEW (1 FRAME LEBAR TANPA DELAY & TANPA BINGKAI SEKAT) */}
+                {/* 2. TAHAP LIVE PREVIEW (1 FRAME LEBAR TERGABUNG TANPA BINGKAI SEKAT) */}
                 {boothStep === 'preview' && (
                   <div className="space-y-3 w-full text-center my-auto">
                     <p className="text-xs font-bold text-stone-700">✨ Atur Pose Terbaik di Studio {bgThemes[cameraBgTheme]?.name}! ✨</p>
@@ -1429,7 +1462,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                     <div className="bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 border-2 border-rose-200 p-3 rounded-3xl shadow-lg max-w-[480px] mx-auto space-y-2">
                       <div className="text-[11px] font-bold text-rose-700 tracking-wide">💖 {myName} & {partnerName} • {bgThemes[cameraBgTheme]?.emoji} {bgThemes[cameraBgTheme]?.name} 💖</div>
                       
-                      {/* 1 Canvas Tunggal Tergabung Real-time 60fps (Tanpa Delay & Tanpa Sekat Bingkai) */}
+                      {/* 1 Canvas Tunggal Tergabung Real-time MediaPipe (Tanpa Delay & Tanpa Sekat Bingkai) */}
                       <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-rose-300 h-[220px] flex items-center justify-center shadow-inner">
                         <video ref={localVideoRef} autoPlay playsInline muted className="hidden" />
                         <video ref={remoteVideoRef} autoPlay playsInline className="hidden" />
