@@ -102,10 +102,13 @@ export default function LiveLoveRoomWithPhotobooth() {
   const currentCallRef = useRef(null);
   const peerInstanceRef = useRef(null);
 
-  // Canvas & MediaPipe Refs
+  // Canvas & Dual MediaPipe Refs
   const previewCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
-  const selfieSegmentationRef = useRef(null);
+  const localSegmentationRef = useRef(null);
+  const remoteSegmentationRef = useRef(null);
+  const localResultsRef = useRef(null);
+  const remoteResultsRef = useRef(null);
   const bgImageLoadedRef = useRef(null);
   const [isSegmentationLoaded, setIsSegmentationLoaded] = useState(false);
 
@@ -144,20 +147,35 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   const messagesEndRef = useRef(null);
 
-  // Load MediaPipe Selfie Segmentation via CDN Script
+  // Load Dual MediaPipe Selfie Segmentation via CDN Script (untuk Kamu & Pasangan)
   useEffect(() => {
     const script = document.createElement('script');
     script.src = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js";
     script.async = true;
     script.onload = async () => {
       if (window.SelfieSegmentation) {
-        const segmentation = new window.SelfieSegmentation({
+        // 1. Segmentation untuk Kamu (Local)
+        const segLocal = new window.SelfieSegmentation({
           locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
         });
-        segmentation.setOptions({ modelSelection: 1 });
-        segmentation.onResults(onMediaPipeResults);
-        await segmentation.initialize();
-        selfieSegmentationRef.current = segmentation;
+        segLocal.setOptions({ modelSelection: 1 });
+        segLocal.onResults((results) => {
+          localResultsRef.current = results;
+        });
+        await segLocal.initialize();
+        localSegmentationRef.current = segLocal;
+
+        // 2. Segmentation untuk Pasangan (Remote)
+        const segRemote = new window.SelfieSegmentation({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
+        });
+        segRemote.setOptions({ modelSelection: 1 });
+        segRemote.onResults((results) => {
+          remoteResultsRef.current = results;
+        });
+        await segRemote.initialize();
+        remoteSegmentationRef.current = segRemote;
+
         setIsSegmentationLoaded(true);
       }
     };
@@ -200,19 +218,40 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   }, [remoteStream, boothStep]);
 
-  // Real-time Render Loop AI & Komposisi Studio
+  // Real-time Render Loop AI Dual Background Removal & Komposisi Studio
   useEffect(() => {
     if ((boothStep === 'preview' || boothStep === 'capturing') && isSegmentationLoaded) {
       const renderLoop = async () => {
-        const video = localVideoRef.current;
-        const segmentation = selfieSegmentationRef.current;
-        if (video && segmentation && video.readyState >= 2) {
+        const localVid = localVideoRef.current;
+        const remoteVid = remoteVideoRef.current;
+        const localSeg = localSegmentationRef.current;
+        const remoteSeg = remoteSegmentationRef.current;
+
+        // Kirim frame video lokal ke AI segmentasi
+        if (localVid && localSeg && localVid.readyState >= 2) {
           try {
-            await segmentation.send({ image: video });
+            await localSeg.send({ image: localVid });
           } catch (e) {
             console.error(e);
           }
         }
+
+        // Kirim frame video pasangan ke AI segmentasi
+        const activeRemoteStream = remoteStream || remoteStreamRef.current;
+        if (remoteVid && remoteSeg && activeRemoteStream && remoteVid.readyState >= 2) {
+          try {
+            if (remoteVid.paused) {
+              await remoteVid.play().catch(e => console.log(e));
+            }
+            await remoteSeg.send({ image: remoteVid });
+          } catch (e) {
+            console.error(e);
+          }
+        }
+
+        // Render hasil komposisi ke canvas utama
+        drawCompositeFrame();
+
         animationFrameRef.current = requestAnimationFrame(renderLoop);
       };
       renderLoop();
@@ -226,7 +265,7 @@ export default function LiveLoveRoomWithPhotobooth() {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [boothStep, isSegmentationLoaded, cameraBgTheme]);
+  }, [boothStep, isSegmentationLoaded, cameraBgTheme, remoteStream, partnerName, myName]);
 
   // Fungsi Helper Presisi untuk Menghitung Crop Rasio Video & Masker AI
   const getVideoCropParams = (video, destW, destH) => {
@@ -253,27 +292,8 @@ export default function LiveLoveRoomWithPhotobooth() {
     return { sX, sY, sW, sH };
   };
 
-  const drawVideoCover = (ctx, video, destX, destY, destW, destH, mirror = false) => {
-    if (!video) return;
-    const { sX, sY, sW, sH } = getVideoCropParams(video, destW, destH);
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(destX, destY, destW, destH);
-    ctx.clip();
-
-    if (mirror) {
-      ctx.translate(destX + destW, destY);
-      ctx.scale(-1, 1);
-      ctx.drawImage(video, sX, sY, sW, sH, 0, 0, destW, destH);
-    } else {
-      ctx.drawImage(video, sX, sY, sW, sH, destX, destY, destW, destH);
-    }
-    ctx.restore();
-  };
-
-  // Hasil Masking AI & Render 1 Frame Studio Bersama
-  const onMediaPipeResults = (results) => {
+  // Render Frame Gabungan Studio (Kamu & Pasangan dengan Background Removal Keduanya)
+  const drawCompositeFrame = () => {
     const canvas = previewCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -294,10 +314,11 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillRect(0, 0, w, h);
     }
 
-    // 2. SISI KIRI: KAMU (Masker AI & Video diselaraskan koordinat crop-nya)
-    if (localVideoRef.current && localVideoRef.current.readyState >= 2) {
-      const video = localVideoRef.current;
-      const { sX, sY, sW, sH } = getVideoCropParams(video, halfW, h);
+    // 2. SISI KIRI: KAMU (Local Video + AI Masking)
+    const localVid = localVideoRef.current;
+    const localRes = localResultsRef.current;
+    if (localVid && localVid.readyState >= 2) {
+      const { sX, sY, sW, sH } = getVideoCropParams(localVid, halfW, h);
 
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = halfW;
@@ -307,35 +328,60 @@ export default function LiveLoveRoomWithPhotobooth() {
       tCtx.save();
       tCtx.translate(halfW, 0);
       tCtx.scale(-1, 1);
-      tCtx.drawImage(video, sX, sY, sW, sH, 0, 0, halfW, h);
+      tCtx.drawImage(localVid, sX, sY, sW, sH, 0, 0, halfW, h);
       tCtx.restore();
 
-      const maskCanvas = document.createElement('canvas');
-      maskCanvas.width = halfW;
-      maskCanvas.height = h;
-      const mCtx = maskCanvas.getContext('2d');
+      if (localRes && localRes.segmentationMask) {
+        const maskCanvas = document.createElement('canvas');
+        maskCanvas.width = halfW;
+        maskCanvas.height = h;
+        const mCtx = maskCanvas.getContext('2d');
 
-      mCtx.save();
-      mCtx.translate(halfW, 0);
-      mCtx.scale(-1, 1);
-      mCtx.drawImage(results.segmentationMask, sX, sY, sW, sH, 0, 0, halfW, h);
-      mCtx.restore();
+        mCtx.save();
+        mCtx.translate(halfW, 0);
+        mCtx.scale(-1, 1);
+        mCtx.drawImage(localRes.segmentationMask, sX, sY, sW, sH, 0, 0, halfW, h);
+        mCtx.restore();
 
-      tCtx.globalCompositeOperation = 'destination-in';
-      tCtx.drawImage(maskCanvas, 0, 0);
+        tCtx.globalCompositeOperation = 'destination-in';
+        tCtx.drawImage(maskCanvas, 0, 0);
+      }
 
       ctx.drawImage(tempCanvas, 0, 0);
     }
 
-    // 3. SISI KANAN: PASANGAN (WebRTC Remote Video Stream)
-    const activeRemoteVideo = remoteVideoRef.current;
+    // 3. SISI KANAN: PASANGAN (Remote Video Stream + AI Masking)
+    const remoteVid = remoteVideoRef.current;
+    const remoteRes = remoteResultsRef.current;
     const activeRemoteStream = remoteStream || remoteStreamRef.current;
 
-    if (activeRemoteVideo && activeRemoteStream) {
-      if (activeRemoteVideo.paused) {
-        activeRemoteVideo.play().catch(e => console.log(e));
+    if (remoteVid && activeRemoteStream && remoteVid.readyState >= 2) {
+      const { sX, sY, sW, sH } = getVideoCropParams(remoteVid, halfW, h);
+
+      const tempCanvasR = document.createElement('canvas');
+      tempCanvasR.width = halfW;
+      tempCanvasR.height = h;
+      const rCtx = tempCanvasR.getContext('2d');
+
+      rCtx.save();
+      rCtx.drawImage(remoteVid, sX, sY, sW, sH, 0, 0, halfW, h);
+      rCtx.restore();
+
+      if (remoteRes && remoteRes.segmentationMask) {
+        const maskCanvasR = document.createElement('canvas');
+        maskCanvasR.width = halfW;
+        maskCanvasR.height = h;
+        const rmCtx = maskCanvasR.getContext('2d');
+
+        rmCtx.save();
+        rmCtx.drawImage(remoteRes.segmentationMask, sX, sY, sW, sH, 0, 0, halfW, h);
+        rmCtx.restore();
+
+        rCtx.globalCompositeOperation = 'destination-in';
+        rCtx.drawImage(maskCanvasR, 0, 0);
       }
-      drawVideoCover(ctx, activeRemoteVideo, halfW, 0, halfW, h, false);
+
+      ctx.drawImage(tempCanvasR, halfW, 0);
     } else {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
       ctx.fillRect(halfW, 0, halfW, h);
@@ -451,7 +497,6 @@ export default function LiveLoveRoomWithPhotobooth() {
   const handleReconnectCall = async () => {
     const stream = await initializeCameraAndCall();
     if (stream && conn && conn.peer) {
-      // Kirim sinyal data juga agar pasangan tahu untuk merefresh panggilan
       conn.send({ type: 'request-video-sync' });
       alert("Permintaan sinkronisasi video dikirim ke pasangan! 🔄");
     }
@@ -638,7 +683,6 @@ export default function LiveLoveRoomWithPhotobooth() {
         setBoothStep('preview');
         setIAmReady(false);
         setPartnerIsReady(false);
-        // Otomatis aktifkan kamera dan panggil balik saat masuk preview
         await initializeCameraAndCall();
       } else if (data.type === 'request-video-sync') {
         if (localStreamRef.current && currentPeerInstance && connection.peer) {
