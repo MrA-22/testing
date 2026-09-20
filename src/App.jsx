@@ -108,7 +108,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   const currentCallRef = useRef(null);
   const peerInstanceRef = useRef(null);
 
-  // Canvas & MediaPipe Refs untuk 1 Frame Studio Bersama (Tanpa Delay)
+  // Canvas & MediaPipe Refs untuk 1 Frame Studio Bersama
   const previewCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
   const selfieSegmentationRef = useRef(null);
@@ -149,7 +149,7 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   const messagesEndRef = useRef(null);
 
-  // Load MediaPipe Selfie Segmentation Script dengan Optimasi
+  // Load MediaPipe Selfie Segmentation Script
   useEffect(() => {
     const script1 = document.createElement('script');
     script1.src = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js";
@@ -215,7 +215,44 @@ export default function LiveLoveRoomWithPhotobooth() {
     };
   }, [boothStep, cameraActive, cameraBgTheme]);
 
-  // Fungsi Komposisi: Latar Belakang Virtual di Belakang Badan (Tanpa Delay & Tanpa Sekat Bingkai)
+  // Fungsi Helper untuk Menggambar Video dengan Cover (Object-fit: Cover) agar tidak gepeng/melar
+  const drawVideoCover = (ctx, video, destX, destY, destW, destH, mirror = false) => {
+    if (!video || video.readyState < 2) return;
+    const vW = video.videoWidth || 640;
+    const vH = video.videoHeight || 480;
+
+    const vdRatio = vW / vH;
+    const cnRatio = destW / destH;
+
+    let sW = vW;
+    let sH = vH;
+    let sX = 0;
+    let sY = 0;
+
+    if (vdRatio > cnRatio) {
+      sW = sH * cnRatio;
+      sX = (vW - sW) / 2;
+    } else {
+      sH = sW / cnRatio;
+      sY = (vH - sH) / 2;
+    }
+
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(destX, destY, destW, destH);
+    ctx.clip();
+
+    if (mirror) {
+      ctx.translate(destX + destW, destY);
+      ctx.scale(-1, 1);
+      ctx.drawImage(video, sX, sY, sW, sH, 0, 0, destW, destH);
+    } else {
+      ctx.drawImage(video, sX, sY, sW, sH, destX, destY, destW, destH);
+    }
+    ctx.restore();
+  };
+
+  // Fungsi Komposisi Utama: Latar Belakang Virtual di Belakang Badan (Tanpa Distorsi & Tanpa Delay)
   const onMediaPipeResults = (results) => {
     const canvas = previewCanvasRef.current;
     if (!canvas) return;
@@ -237,35 +274,31 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillRect(0, 0, w, h);
     }
 
-    // 2. Render SISI KIRI: KAMU (Badan di Depan, Latar Virtual di Belakang)
+    // 2. Render SISI KIRI: KAMU (Badan di Depan, Latar Virtual di Belakang dengan Rasio Sempurna)
     const tempCanvas = document.createElement('canvas');
     tempCanvas.width = halfW;
     tempCanvas.height = h;
     const tCtx = tempCanvas.getContext('2d');
 
-    // Gambar video kamu (mirror) ke kanvas sementara
-    tCtx.save();
-    tCtx.translate(halfW, 0);
-    tCtx.scale(-1, 1);
+    // Gambar video kamu dengan cover ratio ke canvas sementara
     if (localVideoRef.current && localVideoRef.current.readyState >= 2) {
-      tCtx.drawImage(localVideoRef.current, 0, 0, halfW, h);
+      drawVideoCover(tCtx, localVideoRef.current, 0, 0, halfW, h, true);
     }
-    tCtx.restore();
 
     // Potong menggunakan mask MediaPipe (hanya ambil bagian tubuh kamu)
     tCtx.globalCompositeOperation = 'destination-in';
     tCtx.drawImage(results.segmentationMask, 0, 0, halfW, h);
 
     // Tempelkan hasil potongan tubuh kamu di atas background virtual sisi kiri
-    ctx.drawImage(tempCanvas, 0, 0, halfW, h, 0, 0, halfW, h);
+    ctx.drawImage(tempCanvas, 0, 0);
 
 
-    // 3. Render SISI KANAN: PASANGAN (Real-time WebRTC Stream)
+    // 3. Render SISI KANAN: PASANGAN (Real-time WebRTC Stream dengan Cover Ratio agar Terlihat Jelas)
     if (remoteVideoRef.current && remoteVideoRef.current.readyState >= 2 && remoteStream) {
-      ctx.drawImage(remoteVideoRef.current, halfW, 0, halfW, h);
+      drawVideoCover(ctx, remoteVideoRef.current, halfW, 0, halfW, h, false);
     } else {
       // Placeholder jika pasangan belum masuk
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
       ctx.fillRect(halfW, 0, halfW, h);
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 15px sans-serif';
@@ -1460,7 +1493,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                     <p className="text-xs font-bold text-stone-700">✨ Atur Pose Terbaik di Studio {bgThemes[cameraBgTheme]?.name}! ✨</p>
                     
                     <div className="bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 border-2 border-rose-200 p-3 rounded-3xl shadow-lg max-w-[480px] mx-auto space-y-2">
-                      <div className="text-[11px] font-bold text-rose-700 tracking-wide">💖 {myName} & {partnerName} • {bgThemes[cameraBgTheme]?.emoji} {bgThemes[cameraBgTheme]?.name} 💖</div>
+                      <div className="text-[11px] font-bold text-rose-700 tracking-wide">💖 ${myName} &${partnerName} • ${bgThemes[cameraBgTheme]?.emoji}${bgThemes[cameraBgTheme]?.name} 💖</div>
                       
                       {/* 1 Canvas Tunggal Tergabung Real-time MediaPipe (Tanpa Delay & Tanpa Sekat Bingkai) */}
                       <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-rose-300 h-[220px] flex items-center justify-center shadow-inner">
