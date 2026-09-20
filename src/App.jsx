@@ -1011,10 +1011,10 @@ export default function LiveLoveRoomWithPhotobooth() {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
-    let themeConfig = { border: '#f43f5e', accent: '#fb7185', text: '#881337', cardBg: '#ffffff' };
-    if (selectedTheme === 'purple') themeConfig = { border: '#9333ea', accent: '#a855f7', text: '#581c87', cardBg: '#ffffff' };
-    else if (selectedTheme === 'peach') themeConfig = { border: '#ea580c', accent: '#f97316', text: '#7c2d12', cardBg: '#ffffff' };
-    else if (selectedTheme === 'mono') themeConfig = { border: '#292524', accent: '#78716c', text: '#1c1917', cardBg: '#ffffff' };
+    let themeConfig = { border: '#f43f5e', accent: '#fb7185', text: '#881337', cardBg: '#ffffff', softBg: '#fff1f2' };
+    if (selectedTheme === 'purple') themeConfig = { border: '#9333ea', accent: '#a855f7', text: '#581c87', cardBg: '#ffffff', softBg: '#faf5ff' };
+    else if (selectedTheme === 'peach') themeConfig = { border: '#ea580c', accent: '#f97316', text: '#7c2d12', cardBg: '#ffffff', softBg: '#fff7ed' };
+    else if (selectedTheme === 'mono') themeConfig = { border: '#292524', accent: '#78716c', text: '#1c1917', cardBg: '#ffffff', softBg: '#f5f5f4' };
 
     const drawCoverImage = async (photoSrc, x, y, width, height, radius) => {
       const img = await loadImage(photoSrc);
@@ -1070,10 +1070,35 @@ export default function LiveLoveRoomWithPhotobooth() {
     } else {
       canvas.width = 630;
       canvas.height = 1230;
+
+      // Background Card dengan gradasi lembut agar tidak polos
       ctx.fillStyle = themeConfig.cardBg;
       ctx.beginPath();
       ctx.roundRect(0, 0, 630, 1230, 40);
       ctx.fill();
+
+      // Ornamen Background di area bawah agar tidak kosong / hampa
+      ctx.save();
+      ctx.fillStyle = themeConfig.softBg;
+      ctx.beginPath();
+      ctx.roundRect(25, 930, 580, 230, 25);
+      ctx.fill();
+      ctx.strokeStyle = themeConfig.accent;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([6, 6]);
+      ctx.stroke();
+      ctx.restore();
+
+      // Efek Hati Kecil Transparan sebagai pola hiasan aesthetic
+      ctx.save();
+      ctx.fillStyle = themeConfig.accent;
+      ctx.globalAlpha = 0.25;
+      ctx.font = '18px sans-serif';
+      ctx.fillText('❤️', 70, 970);
+      ctx.fillText('✨', 540, 980);
+      ctx.fillText('💖', 100, 1120);
+      ctx.fillText('⭐', 500, 1100);
+      ctx.restore();
 
       ctx.lineWidth = 10;
       ctx.strokeStyle = themeConfig.border;
@@ -1113,18 +1138,18 @@ export default function LiveLoveRoomWithPhotobooth() {
       const captionX = (captionPos.x / 100) * canvas.width;
       const captionY = (captionPos.y / 100) * canvas.height;
       ctx.fillStyle = themeConfig.border;
-      ctx.font = 'bold 16px sans-serif';
+      ctx.font = 'bold 18px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(stripCaption, captionX, captionY);
 
       ctx.fillStyle = '#57534e';
       ctx.font = 'bold 15px sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText(`👥 ${myName} & ${partnerName}`, 40, 1180);
+      ctx.fillText(`👥 ${myName} & ${partnerName}`, 45, 1185);
 
       ctx.textAlign = 'right';
       const today = new Date();
-      ctx.fillText(`📅 ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`, 590, 1180);
+      ctx.fillText(`📅 ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`, 585, 1185);
     }
 
     setFinalStripUrl(canvas.toDataURL('image/png', 1.0));
@@ -1301,7 +1326,7 @@ export default function LiveLoveRoomWithPhotobooth() {
             <form onSubmit={handleCreateRoom} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-stone-600 mb-1">Nama Kamu:</label>
-                <input type="text" value={myName} onChange={(e) => setMyName(e.target.value)} placeholder="Cth: Arif" required className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:border-rose-400 focus:outline-none text-stone-900 font-medium bg-stone-50 text-sm" />
+                <input type="text" value={myName} onChange={(e) => setMyName(e.target.value)} placeholder="Cth: Goreng" required className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:border-rose-400 focus:outline-none text-stone-900 font-medium bg-stone-50 text-sm" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-stone-600 mb-1">Tanggal Jadian (Anniversary):</label>
@@ -1334,7 +1359,7 @@ export default function LiveLoveRoomWithPhotobooth() {
             <form onSubmit={handleJoinRoom} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-stone-600 mb-1">Nama Kamu:</label>
-                <input type="text" value={myName} onChange={(e) => setMyName(e.target.value)} placeholder="Cth: Rini" required className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:border-rose-400 focus:outline-none text-stone-900 font-medium bg-stone-50 text-sm" />
+                <input type="text" value={myName} onChange={(e) => setMyName(e.target.value)} placeholder="Cth: Ayam" required className="w-full px-4 py-3 rounded-2xl border border-stone-200 focus:border-rose-400 focus:outline-none text-stone-900 font-medium bg-stone-50 text-sm" />
               </div>
               <div>
                 <label className="block text-xs font-semibold text-stone-600 mb-1">Masukkan 4 Digit Kode Room:</label>
