@@ -3,29 +3,6 @@ import { Peer } from 'peerjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
-// Ornamen Melayang Romantis
-const LiveOrnaments = React.memo(() => (
-  <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-    {[...Array(12)].map((_, i) => (
-      <motion.div
-        key={i}
-        initial={{ y: "110vh", x: `${Math.random() * 100}vw`, opacity: 0.2 + Math.random() * 0.4 }}
-        animate={{ y: "-10vh", rotate: Math.random() * 360 }}
-        transition={{
-          duration: 12 + Math.random() * 15,
-          repeat: Infinity,
-          ease: "linear",
-          delay: Math.random() * 10
-        }}
-        className="absolute text-xl sm:text-2xl"
-        style={{ fontSize: `${Math.random() * 15 + 20}px` }}
-      >
-        {['💖', '✨', '📸', '🌸', '🎀', '🧸', '💌', '⭐'][Math.floor(Math.random() * 8)]}
-      </motion.div>
-    ))}
-  </div>
-));
-
 // 8 Pilihan Tema Background Studio
 const bgThemes = {
   sunset: { name: 'Sunset', emoji: '🌅', url: 'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?auto=format&fit=crop&w=1200&q=80' },
@@ -65,8 +42,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   const mediaRecorderAudioRef = useRef(null);
   const audioChunksRef = useRef([]);
 
-  // Animasi Floating Love & Gift Effect
-  const [floatingHearts, setFloatingHearts] = useState([]);
+  // Gift Popup Effect
   const [activeGiftPopup, setActiveGiftPopup] = useState(null);
 
   // Fitur Love Notes
@@ -125,10 +101,6 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [quizAnswers, setQuizAnswers] = useState({});
   const [partnerQuizAnswers, setPartnerQuizAnswers] = useState({});
 
-  // --- MUSIC PLAYER ---
-  const [isPlayingMusic, setIsPlayingMusic] = useState(false);
-  const audioRef = useRef(null);
-
   // --- BUCKET LIST ---
   const [bucketList, setBucketList] = useState([
     { id: 1, text: "Nonton bioskop genre horor berdua 🍿", done: false },
@@ -147,14 +119,13 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   const messagesEndRef = useRef(null);
 
-  // Load Dual MediaPipe Selfie Segmentation via CDN Script (untuk Kamu & Pasangan)
+  // Load Dual MediaPipe Selfie Segmentation via CDN Script
   useEffect(() => {
     const script = document.createElement('script');
     script.src = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js";
     script.async = true;
     script.onload = async () => {
       if (window.SelfieSegmentation) {
-        // 1. Segmentation untuk Kamu (Local)
         const segLocal = new window.SelfieSegmentation({
           locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
         });
@@ -165,7 +136,6 @@ export default function LiveLoveRoomWithPhotobooth() {
         await segLocal.initialize();
         localSegmentationRef.current = segLocal;
 
-        // 2. Segmentation untuk Pasangan (Remote)
         const segRemote = new window.SelfieSegmentation({
           locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
         });
@@ -196,7 +166,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     };
   }, [cameraBgTheme]);
 
-  // Pastikan kamera langsung aktif saat masuk preview studio
   useEffect(() => {
     if (boothStep === 'preview' || boothStep === 'capturing') {
       initializeCameraAndCall();
@@ -227,7 +196,6 @@ export default function LiveLoveRoomWithPhotobooth() {
         const localSeg = localSegmentationRef.current;
         const remoteSeg = remoteSegmentationRef.current;
 
-        // Kirim frame video lokal ke AI segmentasi
         if (localVid && localSeg && localVid.readyState >= 2) {
           try {
             await localSeg.send({ image: localVid });
@@ -236,7 +204,6 @@ export default function LiveLoveRoomWithPhotobooth() {
           }
         }
 
-        // Kirim frame video pasangan ke AI segmentasi
         const activeRemoteStream = remoteStream || remoteStreamRef.current;
         if (remoteVid && remoteSeg && activeRemoteStream && remoteVid.readyState >= 2) {
           try {
@@ -249,7 +216,6 @@ export default function LiveLoveRoomWithPhotobooth() {
           }
         }
 
-        // Render hasil komposisi ke canvas utama
         drawCompositeFrame();
 
         animationFrameRef.current = requestAnimationFrame(renderLoop);
@@ -267,7 +233,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     };
   }, [boothStep, isSegmentationLoaded, cameraBgTheme, remoteStream, partnerName, myName]);
 
-  // Fungsi Helper Presisi untuk Menghitung Crop Rasio Video & Masker AI
   const getVideoCropParams = (video, destW, destH) => {
     if (!video) return { sX: 0, sY: 0, sW: 640, sH: 480 };
     const vW = video.videoWidth || 640;
@@ -292,7 +257,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     return { sX, sY, sW, sH };
   };
 
-  // Render Frame Gabungan Studio (Kamu & Pasangan dengan Background Removal Keduanya)
   const drawCompositeFrame = () => {
     const canvas = previewCanvasRef.current;
     if (!canvas) return;
@@ -306,7 +270,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     const h = canvas.height;
     const halfW = w / 2;
 
-    // 1. Gambar Background Virtual Studio di Seluruh Kanvas
     if (bgImageLoadedRef.current) {
       ctx.drawImage(bgImageLoadedRef.current, 0, 0, w, h);
     } else {
@@ -314,7 +277,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillRect(0, 0, w, h);
     }
 
-    // 2. SISI KIRI: KAMU (Local Video + AI Masking)
     const localVid = localVideoRef.current;
     const localRes = localResultsRef.current;
     if (localVid && localVid.readyState >= 2) {
@@ -350,7 +312,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.drawImage(tempCanvas, 0, 0);
     }
 
-    // 3. SISI KANAN: PASANGAN (Remote Video Stream + AI Masking)
     const remoteVid = remoteVideoRef.current;
     const remoteRes = remoteResultsRef.current;
     const activeRemoteStream = remoteStream || remoteStreamRef.current;
@@ -394,7 +355,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillText(`(Klik Hubungkan Ulang di atas)`, halfW + (halfW / 2), h / 2 + 12);
     }
 
-    // Label Nama Estetik di Dalam Frame
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
     ctx.beginPath();
     ctx.roundRect(20, h - 45, 130, 32, 10);
@@ -473,7 +433,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       }
       setCameraActive(true);
 
-      // Panggil pasangan secara otomatis via PeerJS
       if (peerInstanceRef.current && conn && conn.peer) {
         const call = peerInstanceRef.current.call(conn.peer, stream);
         currentCallRef.current = call;
@@ -664,8 +623,6 @@ export default function LiveLoveRoomWithPhotobooth() {
         showGiftPopup(data.giftName, data.giftEmoji, data.sender);
       } else if (data.type === 'mood') {
         setPartnerMood(data.mood);
-      } else if (data.type === 'love-tap') {
-        triggerLoveEffect();
       } else if (data.type === 'love-note') {
         setNotes((prev) => [data.note, ...prev]);
       } else if (data.type === 'quiz-sync') {
@@ -798,22 +755,6 @@ export default function LiveLoveRoomWithPhotobooth() {
   const handleMoodChange = (newMood) => {
     setMyMood(newMood);
     if (conn) conn.send({ type: 'mood', mood: newMood });
-  };
-
-  const triggerLoveEffect = () => {
-    confetti({ particleCount: 80, spread: 100, origin: { y: 0.6 } });
-    const newHearts = Array.from({ length: 18 }).map(() => ({
-      id: Math.random(),
-      x: Math.random() * 85 + 5,
-      emoji: ['❤️', '💖', '💗', '💓', '💕', '💘', '✨'][Math.floor(Math.random() * 7)]
-    }));
-    setFloatingHearts((prev) => [...prev, ...newHearts]);
-    setTimeout(() => setFloatingHearts((prev) => prev.filter(h => !newHearts.includes(h))), 2500);
-  };
-
-  const handleSendLoveTap = () => {
-    if (!conn) return;
-    conn.send({ type: 'love-tap' });
   };
 
   const handleLayoutChange = (layoutId) => {
@@ -1105,26 +1046,10 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-100 via-pink-100 to-purple-200 flex items-center justify-center p-4 overflow-hidden relative font-sans text-stone-800">
-      <LiveOrnaments />
 
       {/* ELEMEN VIDEO STREAM UTAMA (TERSEMBUNYI PERMANEN AGAR TIDAK UNMOUNT) */}
       <video ref={localVideoRef} autoPlay playsInline muted className="hidden" />
       <video ref={remoteVideoRef} autoPlay playsInline className="hidden" />
-
-      {/* FLOATING HEARTS OVERLAY */}
-      <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
-        {floatingHearts.map((h) => (
-          <motion.div
-            key={h.id}
-            initial={{ y: "85vh", x: `${h.x}vw`, opacity: 1, scale: 0.5 }}
-            animate={{ y: "15vh", opacity: 0, scale: 2, rotate: Math.random() * 60 - 30 }}
-            transition={{ duration: 1.6, ease: "easeOut" }}
-            className="absolute text-4xl sm:text-5xl"
-          >
-            {h.emoji}
-          </motion.div>
-        ))}
-      </div>
 
       {/* VIRTUAL GIFT POPUP OVERLAY */}
       <AnimatePresence>
@@ -1145,30 +1070,6 @@ export default function LiveLoveRoomWithPhotobooth() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* AUDIO BACKGROUND MUSIC PLAYER */}
-      <audio ref={audioRef} src="/audio.mp3" loop />
-      <div className="absolute top-4 right-4 z-40 flex gap-2">
-        <button
-          onClick={async () => {
-            try {
-              if (isPlayingMusic) {
-                audioRef.current.pause();
-                setIsPlayingMusic(false);
-              } else {
-                await audioRef.current.play();
-                setIsPlayingMusic(true);
-              }
-            } catch (err) {
-              console.log(err);
-              setIsPlayingMusic(false);
-            }
-          }}
-          className="bg-white/95 backdrop-blur-md px-3 py-2 rounded-2xl shadow-md border border-rose-200 flex items-center gap-2 text-xs font-bold text-rose-600 hover:scale-105 transition cursor-pointer"
-        >
-          <span>{isPlayingMusic ? '🎶 Pause' : '▶️ Music'}</span>
-        </button>
-      </div>
 
       <AnimatePresence mode="wait">
         
@@ -1293,7 +1194,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                     <option value="😴 Mengantuk">😴 Mengantuk</option>
                     <option value="😡 Lagi Ngambek">😡 Lagi Ngambek</option>
                   </select>
-                  <button onClick={handleSendLoveTap} className="py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer hover:scale-105 transition">💖 Kirim Hati / Peluk</button>
+                  <button onClick={() => conn && conn.send({ type: 'love-tap' })} className="py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer hover:scale-105 transition">💖 Kirim Hati / Peluk</button>
                 </div>
 
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 shrink-0 text-xs">
