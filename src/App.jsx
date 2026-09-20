@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 import { ImageSegmenter, FilesetResolver } from '@mediapipe/tasks-vision';
 
-// Ornamen Melayang Romantis
 const LiveOrnaments = React.memo(() => (
   <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
     {[...Array(12)].map((_, i) => (
@@ -27,7 +26,6 @@ const LiveOrnaments = React.memo(() => (
   </div>
 ));
 
-// 8 Pilihan Tema Background Studio
 const bgThemes = {
   sunset: { name: 'Sunset', emoji: '🌅', url: 'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?auto=format&fit=crop&w=1200&q=80' },
   pantai: { name: 'Pantai', emoji: '🏖️', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80' },
