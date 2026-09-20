@@ -198,7 +198,7 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   // Pastikan kamera langsung aktif saat masuk preview studio
   useEffect(() => {
-    if (boothStep === 'preview') {
+    if (boothStep === 'preview' || boothStep === 'capturing') {
       initializeCameraAndCall();
     }
   }, [boothStep]);
@@ -1107,6 +1107,10 @@ export default function LiveLoveRoomWithPhotobooth() {
     <div className="min-h-screen bg-gradient-to-br from-rose-100 via-pink-100 to-purple-200 flex items-center justify-center p-4 overflow-hidden relative font-sans text-stone-800">
       <LiveOrnaments />
 
+      {/* ELEMEN VIDEO STREAM UTAMA (TERSEMBUNYI PERMANEN AGAR TIDAK UNMOUNT) */}
+      <video ref={localVideoRef} autoPlay playsInline muted className="hidden" />
+      <video ref={remoteVideoRef} autoPlay playsInline className="hidden" />
+
       {/* FLOATING HEARTS OVERLAY */}
       <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
         {floatingHearts.map((h) => (
@@ -1551,8 +1555,6 @@ export default function LiveLoveRoomWithPhotobooth() {
                       
                       {/* Kanvas Live Studio Gabungan */}
                       <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-rose-300 h-[210px] flex items-center justify-center shadow-inner">
-                        <video ref={localVideoRef} autoPlay playsInline muted className="hidden" />
-                        <video ref={remoteVideoRef} autoPlay playsInline className="hidden" />
                         <canvas ref={previewCanvasRef} width={1280} height={720} className="w-full h-full object-cover" />
                       </div>
 
