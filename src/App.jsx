@@ -43,8 +43,8 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [conn, setConn] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   
-  // Setup Room & Nama
-  const [mode, setMode] = useState(() => localStorage.getItem('bucin_mode') || 'menu'); 
+  // Setup Room & Nama (Mode selalu mulai dari menu jika halaman direfresh untuk mencegah bug koneksi)
+  const [mode, setMode] = useState('menu'); 
   const [roomCode, setRoomCode] = useState(() => localStorage.getItem('bucin_roomCode') || '');
   const [inputCode, setInputCode] = useState('');
   const [myName, setMyName] = useState(() => localStorage.getItem('bucin_myName') || '');
@@ -330,7 +330,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillText(`Menunggu ${partnerName}...`, halfW + (halfW / 2), h / 2 - 10);
       ctx.font = '11px sans-serif';
       ctx.fillStyle = '#fda4af';
-      ctx.fillText(`(Tekan Hubungkan Ulang jika macet)`, halfW + (halfW / 2), h / 2 + 12);
+      ctx.fillText(`(Tekan Hubungkan Ulang di atas)`, halfW + (halfW / 2), h / 2 + 12);
     }
 
     // Label Nama Estetik di Dalam Frame
@@ -356,12 +356,11 @@ export default function LiveLoveRoomWithPhotobooth() {
   };
 
   useEffect(() => {
-    localStorage.setItem('bucin_mode', mode);
     localStorage.setItem('bucin_roomCode', roomCode);
     localStorage.setItem('bucin_myName', myName);
     localStorage.setItem('bucin_partnerName', partnerName);
     localStorage.setItem('bucin_anniversary', anniversaryDate);
-  }, [mode, roomCode, myName, partnerName, anniversaryDate]);
+  }, [roomCode, myName, partnerName, anniversaryDate]);
 
   useEffect(() => {
     allPhotosRef.current = allPhotos;
@@ -447,7 +446,7 @@ export default function LiveLoveRoomWithPhotobooth() {
           remoteVideoRef.current.play().catch(e => console.log(e));
         }
       });
-      alert("Permintaan sambungan video dikirim ulang ke pasangan! 🔄");
+      alert("Sinyal video dipanggil ulang ke pasangan! 🔄");
     } else {
       alert("Belum terhubung ke room pasangan.");
     }
@@ -462,7 +461,6 @@ export default function LiveLoveRoomWithPhotobooth() {
         localStreamRef.current = null;
       }
       
-      localStorage.removeItem('bucin_mode');
       localStorage.removeItem('bucin_roomCode');
       localStorage.removeItem('bucin_partnerName');
 
