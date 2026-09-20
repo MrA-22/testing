@@ -103,7 +103,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [iAmReady, setIAmReady] = useState(false);
   const [partnerIsReady, setPartnerIsReady] = useState(false);
 
-  // Editor States (Interactive Stickers with size scaling & custom caption)
+  // Editor States (Interactive Pointer Drag & Pinch Zoom Stickers)
   const [stripCaption, setStripCaption] = useState('Our Sweet Moment Together ❤️');
   const [placedStickers, setPlacedStickers] = useState([
     { id: 1, emoji: '🧸', x: 50, y: 50, size: 36 }
@@ -1002,15 +1002,16 @@ export default function LiveLoveRoomWithPhotobooth() {
     }, 1000);
   };
 
+  // KANVAS DOWNLOAD PRESISI PAS PADA BINGKAI / CARD (TANPA RUANG KOSONG DI LUAR)
   const generatePhotoboothCanvas = async (photosToUse) => {
     const photos = photosToUse || allPhotosRef.current;
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
-    let themeConfig = { bg: '#fff1f2', border: '#f43f5e', accent: '#fb7185', text: '#881337', cardBg: '#ffffff' };
-    if (selectedTheme === 'purple') themeConfig = { bg: '#f3e8ff', border: '#9333ea', accent: '#a855f7', text: '#581c87', cardBg: '#ffffff' };
-    else if (selectedTheme === 'peach') themeConfig = { bg: '#ffedd5', border: '#ea580c', accent: '#f97316', text: '#7c2d12', cardBg: '#ffffff' };
-    else if (selectedTheme === 'mono') themeConfig = { bg: '#f5f5f4', border: '#292524', accent: '#78716c', text: '#1c1917', cardBg: '#ffffff' };
+    let themeConfig = { border: '#f43f5e', accent: '#fb7185', text: '#881337', cardBg: '#ffffff' };
+    if (selectedTheme === 'purple') themeConfig = { border: '#9333ea', accent: '#a855f7', text: '#581c87', cardBg: '#ffffff' };
+    else if (selectedTheme === 'peach') themeConfig = { border: '#ea580c', accent: '#f97316', text: '#7c2d12', cardBg: '#ffffff' };
+    else if (selectedTheme === 'mono') themeConfig = { border: '#292524', accent: '#78716c', text: '#1c1917', cardBg: '#ffffff' };
 
     const drawCoverImage = async (photoSrc, x, y, width, height, radius) => {
       const img = await loadImage(photoSrc);
@@ -1031,14 +1032,11 @@ export default function LiveLoveRoomWithPhotobooth() {
     };
 
     if (selectedLayout === 'photocard') {
-      canvas.width = 600;
-      canvas.height = 950;
-      ctx.fillStyle = themeConfig.bg;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+      canvas.width = 520;
+      canvas.height = 870;
       ctx.fillStyle = themeConfig.cardBg;
       ctx.beginPath();
-      ctx.roundRect(40, 40, 520, 870, 35);
+      ctx.roundRect(0, 0, 520, 870, 35);
       ctx.fill();
 
       ctx.lineWidth = 8;
@@ -1046,7 +1044,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.stroke();
 
       if (photos[0]) {
-        await drawCoverImage(photos[0], 65, 65, 470, 580, 20);
+        await drawCoverImage(photos[0], 25, 25, 470, 580, 20);
       }
 
       placedStickers.forEach(stk => {
@@ -1060,19 +1058,16 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillStyle = themeConfig.text;
       ctx.font = 'bold 20px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`✨ ${myName} & ${partnerName} ✨`, canvas.width / 2, 740);
+      ctx.fillText(`✨ ${myName} & ${partnerName} ✨`, canvas.width / 2, 650);
       ctx.font = 'italic 16px sans-serif';
       ctx.fillStyle = themeConfig.accent;
-      ctx.fillText(`"${stripCaption}"`, canvas.width / 2, 780);
+      ctx.fillText(`"${stripCaption}"`, canvas.width / 2, 690);
     } else {
-      canvas.width = 700;
-      canvas.height = 1300;
-      ctx.fillStyle = themeConfig.bg;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
+      canvas.width = 630;
+      canvas.height = 1230;
       ctx.fillStyle = themeConfig.cardBg;
       ctx.beginPath();
-      ctx.roundRect(35, 35, 630, 1230, 40);
+      ctx.roundRect(0, 0, 630, 1230, 40);
       ctx.fill();
 
       ctx.lineWidth = 10;
@@ -1082,28 +1077,28 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillStyle = themeConfig.text;
       ctx.font = '900 24px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('✨ STUDIO LOVE STRIP ✨', canvas.width / 2, 85);
+      ctx.fillText('✨ STUDIO LOVE STRIP ✨', canvas.width / 2, 50);
       ctx.font = '22px sans-serif';
-      ctx.fillText(`💖 🎀 📸 🌟 🌸`, canvas.width / 2, 120);
+      ctx.fillText(`💖 🎀 📸 🌟 🌸`, canvas.width / 2, 85);
 
       if (selectedLayout === '1x2') {
-        if (photos[0]) await drawCoverImage(photos[0], 75, 145, 550, 380, 20);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 75, 545, 550, 380, 20);
+        if (photos[0]) await drawCoverImage(photos[0], 40, 110, 550, 380, 20);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 40, 510, 550, 380, 20);
       } else if (selectedLayout === '1x3') {
-        if (photos[0]) await drawCoverImage(photos[0], 85, 140, 530, 250, 15);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 85, 410, 530, 250, 15);
-        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 85, 680, 530, 250, 15);
+        if (photos[0]) await drawCoverImage(photos[0], 50, 105, 530, 250, 15);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 50, 375, 530, 250, 15);
+        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 50, 645, 530, 250, 15);
       } else if (selectedLayout === '2x2') {
-        if (photos[0]) await drawCoverImage(photos[0], 70, 145, 265, 370, 15);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 365, 145, 265, 370, 15);
-        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 70, 535, 265, 370, 15);
-        if (photos[3] || photos[1] || photos[0]) await drawCoverImage(photos[3] || photos[1] || photos[0], 365, 535, 265, 370, 15);
+        if (photos[0]) await drawCoverImage(photos[0], 35, 110, 265, 370, 15);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 330, 110, 265, 370, 15);
+        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 35, 500, 265, 370, 15);
+        if (photos[3] || photos[1] || photos[0]) await drawCoverImage(photos[3] || photos[1] || photos[0], 330, 500, 265, 370, 15);
       } else if (selectedLayout === 'polaroid') {
-        if (photos[0]) await drawCoverImage(photos[0], 90, 145, 520, 580, 15);
+        if (photos[0]) await drawCoverImage(photos[0], 55, 110, 520, 580, 15);
         ctx.fillStyle = '#1c1917';
         ctx.font = 'italic 18px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(`"${stripCaption}"`, canvas.width / 2, 780);
+        ctx.fillText(`"${stripCaption}"`, canvas.width / 2, 745);
       }
 
       placedStickers.forEach(stk => {
@@ -1115,8 +1110,8 @@ export default function LiveLoveRoomWithPhotobooth() {
       });
 
       ctx.beginPath();
-      ctx.moveTo(70, 1020);
-      ctx.lineTo(630, 1020);
+      ctx.moveTo(35, 985);
+      ctx.lineTo(595, 985);
       ctx.lineWidth = 2;
       ctx.strokeStyle = themeConfig.accent;
       ctx.stroke();
@@ -1124,16 +1119,16 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillStyle = themeConfig.border;
       ctx.font = 'bold 15px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(stripCaption, canvas.width / 2, 1065);
+      ctx.fillText(stripCaption, canvas.width / 2, 1030);
 
       ctx.fillStyle = '#57534e';
       ctx.font = 'bold 16px sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText(`👥 ${myName} & ${partnerName}`, 75, 1120);
+      ctx.fillText(`👥 ${myName} & ${partnerName}`, 40, 1085);
 
       ctx.textAlign = 'right';
       const today = new Date();
-      ctx.fillText(`📅 ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`, 625, 1120);
+      ctx.fillText(`📅 ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`, 590, 1085);
     }
 
     setFinalStripUrl(canvas.toDataURL('image/png', 1.0));
@@ -1168,7 +1163,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   const updateStickerSize = (id, delta) => {
     const newStickers = placedStickers.map(s => {
       if (s.id === id) {
-        const newSize = Math.max(20, Math.min(100, (s.size || 36) + delta));
+        const newSize = Math.max(20, Math.min(120, (s.size || 36) + delta));
         return { ...s, size: newSize };
       }
       return s;
@@ -1176,36 +1171,81 @@ export default function LiveLoveRoomWithPhotobooth() {
     handleUpdateEditor(stripCaption, newStickers);
   };
 
-  // Dragging handler for stickers inside the preview container
-  const handleStickerPointerDown = (e, id) => {
+  // UNIFIED POINTER DRAG & PINCH ZOOM HANDLERS (MENCEGAH SNAP-BACK & MENDUKUNG PINCH ZOOM)
+  const activePinchRef = useRef(null);
+
+  const handlePointerDown = (e, s) => {
     e.stopPropagation();
-    setSelectedStickerId(id);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setSelectedStickerId(s.id);
+  };
+
+  const handlePointerMove = (e, s) => {
+    e.stopPropagation();
+    if (!e.currentTarget.hasPointerCapture(e.pointerId)) return;
     const container = stickerContainerRef.current;
     if (!container) return;
     const rect = container.getBoundingClientRect();
 
-    const onPointerMove = (moveEvent) => {
-      const x = Math.max(5, Math.min(95, ((moveEvent.clientX - rect.left) / rect.width) * 100));
-      const y = Math.max(5, Math.min(95, ((moveEvent.clientY - rect.top) / rect.height) * 100));
+    const x = Math.max(5, Math.min(95, ((e.clientX - rect.left) / rect.width) * 100));
+    const y = Math.max(5, Math.min(95, ((e.clientY - rect.top) / rect.height) * 100));
 
-      const updated = placedStickers.map(s => s.id === id ? { ...s, x, y } : s);
+    const updated = placedStickers.map(stk => stk.id === s.id ? { ...stk, x, y } : stk);
+    setPlacedStickers(updated);
+  };
+
+  const handlePointerUp = (e, s) => {
+    e.stopPropagation();
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch(err) {}
+    handleUpdateEditor(stripCaption, placedStickers);
+  };
+
+  // Touch handlers for 2-finger Pinch Zoom In/Out
+  const handleTouchStart = (e, s) => {
+    if (e.touches.length === 2) {
+      setSelectedStickerId(s.id);
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      activePinchRef.current = { id: s.id, initialDist: dist, initialSize: s.size || 36 };
+    }
+  };
+
+  const handleTouchMove = (e, s) => {
+    if (e.touches.length === 2 && activePinchRef.current && activePinchRef.current.id === s.id) {
+      const dist = Math.hypot(
+        e.touches[0].clientX - e.touches[1].clientX,
+        e.touches[0].clientY - e.touches[1].clientY
+      );
+      const scale = dist / activePinchRef.current.initialDist;
+      const newSize = Math.max(20, Math.min(120, Math.round(activePinchRef.current.initialSize * scale)));
+
+      const updated = placedStickers.map(stk => stk.id === s.id ? { ...stk, size: newSize } : stk);
       setPlacedStickers(updated);
-    };
+    }
+  };
 
-    const onPointerUp = () => {
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
+  const handleTouchEnd = () => {
+    if (activePinchRef.current) {
+      activePinchRef.current = null;
       handleUpdateEditor(stripCaption, placedStickers);
-    };
+    }
+  };
 
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
+  const handleWheel = (e, s) => {
+    e.stopPropagation();
+    const delta = e.deltaY < 0 ? 4 : -4;
+    const newSize = Math.max(20, Math.min(120, (s.size || 36) + delta));
+    const updated = placedStickers.map(stk => stk.id === s.id ? { ...stk, size: newSize } : stk);
+    handleUpdateEditor(stripCaption, updated);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-100 via-pink-100 to-purple-200 flex items-center justify-center p-4 overflow-hidden relative font-sans text-stone-800">
 
-      {/* EFEK GEPRET / FLASH KAMERA */}
       <AnimatePresence>
         {flashActive && (
           <motion.div
@@ -1701,18 +1741,23 @@ export default function LiveLoveRoomWithPhotobooth() {
                 {boothStep === 'ready' && finalStripUrl && (
                   <div className="space-y-2 w-full flex flex-col items-center my-auto pt-1">
                     
-                    {/* CONTAINER PREVIEW FOTO DENGAN STIKER DRAGGABLE INTERAKTIF */}
+                    {/* CONTAINER FOTO DENGAN STIKER INTERAKTIF (DRAG & PINCH ZOOM) */}
                     <div 
                       ref={stickerContainerRef} 
                       className="w-[170px] relative rounded-xl shadow-xl overflow-hidden select-none touch-none"
                     >
                       <img src={finalStripUrl} alt="Hasil Photobooth" className="w-full h-auto object-contain block pointer-events-none" />
                       
-                      {/* Render stiker yang bisa di-drag langsung di layar preview */}
                       {placedStickers.map((s) => (
                         <div
                           key={s.id}
-                          onPointerDown={(e) => handleStickerPointerDown(e, s.id)}
+                          onPointerDown={(e) => handlePointerDown(e, s)}
+                          onPointerMove={(e) => handlePointerMove(e, s)}
+                          onPointerUp={(e) => handlePointerUp(e, s)}
+                          onTouchStart={(e) => handleTouchStart(e, s)}
+                          onTouchMove={(e) => handleTouchMove(e, s)}
+                          onTouchEnd={handleTouchEnd}
+                          onWheel={(e) => handleWheel(e, s)}
                           onClick={() => setSelectedStickerId(s.id)}
                           style={{
                             position: 'absolute',
@@ -1720,7 +1765,8 @@ export default function LiveLoveRoomWithPhotobooth() {
                             top: `${s.y}%`,
                             transform: 'translate(-50%, -50%)',
                             fontSize: `${(s.size || 36) * 0.4}px`,
-                            cursor: 'grab'
+                            cursor: 'grab',
+                            touchAction: 'none'
                           }}
                           className={`cursor-grab active:cursor-grabbing p-1 transition-transform ${selectedStickerId === s.id ? 'ring-2 ring-rose-500 rounded bg-white/50' : ''}`}
                         >
@@ -1730,7 +1776,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                     </div>
 
                     <div className="bg-stone-50 border border-stone-200 p-2.5 rounded-2xl w-full max-w-[290px] space-y-2 text-left">
-                      <p className="text-[11px] font-bold text-stone-700 text-center">✨ Studio Editor Foto & Stiker Interaktif</p>
+                      <p className="text-[11px] font-bold text-stone-700 text-center">✨ Editor Stiker (Cubit 2 Jari / Scroll Mouse)</p>
                       
                       <div>
                         <label className="block text-[10px] font-semibold text-stone-500 mb-0.5">Ubah Caption / Pesan:</label>
@@ -1743,7 +1789,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                       </div>
 
                       <div>
-                        <span className="block text-[10px] font-semibold text-stone-500 mb-1">Tambah Stiker (Klik untuk tambah & geser di foto):</span>
+                        <span className="block text-[10px] font-semibold text-stone-500 mb-1">Tambah Stiker (Sentuh & Geser di foto):</span>
                         <div className="grid grid-cols-10 gap-1 max-h-[75px] overflow-y-auto p-1 bg-white rounded-xl border border-stone-200">
                           {stickerOptions.map((stk) => (
                             <button 
@@ -1757,13 +1803,12 @@ export default function LiveLoveRoomWithPhotobooth() {
                         </div>
                       </div>
 
-                      {/* Kontrol Ukuran Stiker yang Dipilih & Hapus */}
                       {selectedStickerId && (
                         <div className="bg-rose-50 border border-rose-200 p-2 rounded-xl flex items-center justify-between text-xs">
-                          <span className="font-bold text-rose-700">Atur Stiker Dipilih:</span>
+                          <span className="font-bold text-rose-700">Atur Stiker:</span>
                           <div className="flex items-center gap-1.5">
-                            <button onClick={() => updateStickerSize(selectedStickerId, -6)} className="px-2 py-0.5 bg-white border border-rose-300 font-bold rounded shadow-xs">Perkecil ➖</button>
-                            <button onClick={() => updateStickerSize(selectedStickerId, 6)} className="px-2 py-0.5 bg-white border border-rose-300 font-bold rounded shadow-xs">Perbesar ➕</button>
+                            <button onClick={() => updateStickerSize(selectedStickerId, -6)} className="px-2 py-0.5 bg-white border border-rose-300 font-bold rounded shadow-xs">➖</button>
+                            <button onClick={() => updateStickerSize(selectedStickerId, 6)} className="px-2 py-0.5 bg-white border border-rose-300 font-bold rounded shadow-xs">➕</button>
                             <button onClick={() => removeSticker(selectedStickerId)} className="px-2 py-0.5 bg-red-500 text-white font-bold rounded shadow-xs">Hapus 🗑️</button>
                           </div>
                         </div>
