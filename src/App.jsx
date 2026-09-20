@@ -83,7 +83,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   // Fitur Photobooth & Virtual Background Kamera
   const [selectedLayout, setSelectedLayout] = useState('1x2'); 
   const [selectedTheme, setSelectedTheme] = useState('rose'); 
-  const [cameraBgTheme, setCameraBgTheme] = useState('sunset'); // Default ke sunset seperti contoh
+  const [cameraBgTheme, setCameraBgTheme] = useState('sunset');
   const [cameraActive, setCameraActive] = useState(false);
   const [countdown, setCountdown] = useState(null);
   const [allPhotos, setAllPhotos] = useState([]);
@@ -149,18 +149,19 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   const messagesEndRef = useRef(null);
 
-  // Load MediaPipe script untuk Background Removal secara dinamis
+  // Load MediaPipe script dengan Inisialisasi yang Benar
   useEffect(() => {
     const script1 = document.createElement('script');
     script1.src = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js";
     script1.async = true;
-    script1.onload = () => {
+    script1.onload = async () => {
       if (window.SelfieSegmentation) {
         const segmentation = new window.SelfieSegmentation({
           locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
         });
         segmentation.setOptions({ modelSelection: 1 });
         segmentation.onResults(onMediaPipeResults);
+        await segmentation.initialize(); // WAJIB AGAR TIDAK HITAM
         selfieSegmentationRef.current = segmentation;
       }
     };
@@ -180,6 +181,14 @@ export default function LiveLoveRoomWithPhotobooth() {
       bgImageLoadedRef.current = img;
     };
   }, [cameraBgTheme]);
+
+  // Pastikan stream kamera selalu masuk ke elemen video tersembunyi
+  useEffect(() => {
+    if (localStreamRef.current && localVideoRef.current) {
+      localVideoRef.current.srcObject = localStreamRef.current;
+      localVideoRef.current.play().catch(e => console.log(e));
+    }
+  }, [boothStep, cameraActive]);
 
   // Loop Render Live Preview dengan Virtual Background
   useEffect(() => {
@@ -229,11 +238,11 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.globalCompositeOperation = 'destination-in';
     ctx.drawImage(results.segmentationMask, 0, 0, canvas.width, canvas.height);
 
-    // 3. Gabungkan kembali badan orang di atas background baru
+    // 3. Gabungkan kembali badan orang di atas background baru (efek mirror)
     ctx.globalCompositeOperation = 'destination-over';
     ctx.save();
     ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1); // Efek mirror kamera depan
+    ctx.scale(-1, 1);
     ctx.drawImage(results.image, 0, 0, canvas.width, canvas.height);
     ctx.restore();
 
@@ -1363,7 +1372,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 6: PHOTOBOOTH DENGAN VIRTUAL BACKGROUND (BACKGROUND REMOVAL DI DALAM KAMERA) */}
+            {/* TAB 6: PHOTOBOOTH DENGAN VIRTUAL BACKGROUND */}
             {activeTab === 'photobooth' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-3 overflow-y-auto p-1">
                 
@@ -1426,7 +1435,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* 2. TAHAP LIVE PREVIEW DENGAN BACKGROUND REMOVAL DI DALAM KAMERA */}
+                {/* 2. TAHAP LIVE PREVIEW */}
                 {boothStep === 'preview' && (
                   <div className="space-y-3 w-full text-center my-auto">
                     <p className="text-xs font-bold text-stone-700">✨ Atur Pose Terbaikmu di Studio {bgThemes[cameraBgTheme]?.name}! ✨</p>
@@ -1434,7 +1443,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                     <div className="bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 border-2 border-rose-200 p-3 rounded-3xl shadow-lg max-w-[380px] mx-auto space-y-2">
                       <div className="text-[11px] font-bold text-rose-700 tracking-wide">💖 {myName} & {partnerName} • {bgThemes[cameraBgTheme]?.emoji} {bgThemes[cameraBgTheme]?.name} 💖</div>
                       <div className="grid grid-cols-2 gap-2.5">
-                        {/* Kamera Kamu (Menggunakan Canvas hasil Virtual Background MediaPipe) */}
+                        {/* Kamera Kamu (Terhubung ke Canvas Virtual Background) */}
                         <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-rose-300 h-[160px] flex items-center justify-center shadow-inner">
                           <video ref={localVideoRef} autoPlay playsInline muted className="hidden" />
                           <canvas ref={previewCanvasRef} width={320} height={240} className="w-full h-full object-cover" />
