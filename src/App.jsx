@@ -140,7 +140,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Memastikan elemen video selalu terhubung dengan stream (Mencegah Layar Hitam)
   useEffect(() => {
     if (localStreamRef.current && localVideoRef.current) {
       localVideoRef.current.srcObject = localStreamRef.current;
@@ -179,7 +178,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     };
   }, []);
 
-  // --- KELOLA WEBRTC STREAM KAMERA ---
   const startDualCameraStream = async () => {
     try {
       if (localStreamRef.current) {
@@ -228,7 +226,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     setCameraActive(false);
   };
 
-  // --- FITUR KELUAR SESI / DISCONNECT ---
   const handleLeaveSession = () => {
     if (window.confirm("Yakin ingin keluar dari sesi ruangan ini?")) {
       if (conn) conn.close();
@@ -252,7 +249,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  // 1. BUAT ROOM (HOST)
   const handleCreateRoom = (e) => {
     e.preventDefault();
     if (!myName.trim()) {
@@ -291,7 +287,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     setPeer(newPeer);
   };
 
-  // 2. GABUNG ROOM (CLIENT)
   const handleJoinRoom = (e) => {
     e.preventDefault();
     if (!myName.trim() || !inputCode.trim()) {
@@ -586,7 +581,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  // Masuk ke tahap live preview kamera ganda
   const handleOpenLivePreview = async () => {
     await startDualCameraStream();
     setAllPhotos([]);
@@ -598,7 +592,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  // Menekan tombol "Mulai" (Ready check)
   const handleToggleReady = () => {
     const nextStatus = !iAmReady;
     setIAmReady(nextStatus);
@@ -657,7 +650,7 @@ export default function LiveLoveRoomWithPhotobooth() {
           canvas.height = 600;
           const ctx = canvas.getContext('2d');
 
-          // Gambar latar belakang pemandangan sesuai pilihan studioBackground di Canvas
+          // Latar belakang pemandangan menyatu tanpa pemisah
           let grad = ctx.createLinearGradient(0, 0, 800, 600);
           if (studioBackground === 'beach') {
             grad.addColorStop(0, '#38bdf8'); grad.addColorStop(0.6, '#2dd4bf'); grad.addColorStop(1, '#fde68a');
@@ -673,72 +666,16 @@ export default function LiveLoveRoomWithPhotobooth() {
           ctx.fillStyle = grad;
           ctx.fillRect(0, 0, 800, 600);
 
-          // Header Studio Pemandangan di dalam frame foto
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 20px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.shadowColor = 'rgba(0,0,0,0.5)';
-          ctx.shadowBlur = 6;
-          ctx.fillText(`✨ ${myName} & ${partnerName} — Studio Alam ✨`, 400, 38);
-          ctx.shadowBlur = 0;
-
-          // Gambar Video Lokal (Kiri dengan sudut melengkung dan shadow elegan)
+          // Gambar Video Lokal & Pasangan Menyatu di Frame yang Sama (Tanpa Garis Pemisah / Kotak)
           ctx.save();
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-          ctx.shadowBlur = 20;
-          ctx.beginPath();
-          ctx.roundRect(40, 60, 340, 460, 20);
-          ctx.clip();
-          ctx.translate(380, 0);
+          ctx.translate(400, 0);
           ctx.scale(-1, 1);
-          ctx.drawImage(localVideoRef.current, 0, 0, 340, 460);
+          ctx.drawImage(localVideoRef.current, -400, 0, 400, 600);
           ctx.restore();
 
-          // Border halus untuk kotak kiri
-          ctx.save();
-          ctx.beginPath();
-          ctx.roundRect(40, 60, 340, 460, 20);
-          ctx.lineWidth = 4;
-          ctx.strokeStyle = '#ffffff';
-          ctx.stroke();
-          ctx.restore();
-
-          // Gambar Video Pasangan (Kanan dengan sudut melengkung dan shadow elegan)
-          ctx.save();
-          ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
-          ctx.shadowBlur = 20;
-          ctx.beginPath();
-          ctx.roundRect(420, 60, 340, 460, 20);
-          ctx.clip();
           if (remoteVideoRef.current && remoteStream) {
-            ctx.drawImage(remoteVideoRef.current, 420, 60, 340, 460);
-          } else {
-            ctx.fillStyle = 'rgba(255,255,255,0.2)';
-            ctx.fillRect(420, 60, 340, 460);
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 18px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(`Menunggu ${partnerName}...`, 590, 290);
+            ctx.drawImage(remoteVideoRef.current, 400, 0, 400, 600);
           }
-          ctx.restore();
-
-          // Border halus untuk kotak kanan
-          ctx.save();
-          ctx.beginPath();
-          ctx.roundRect(420, 60, 340, 460, 20);
-          ctx.lineWidth = 4;
-          ctx.strokeStyle = '#ffffff';
-          ctx.stroke();
-          ctx.restore();
-
-          // Footer / Ornamen bawah di dalam frame foto
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 16px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.shadowColor = 'rgba(0,0,0,0.5)';
-          ctx.shadowBlur = 5;
-          ctx.fillText('💖 Beautiful Scenery Memory 💖', 400, 555);
-          ctx.shadowBlur = 0;
 
           const photoData = canvas.toDataURL('image/jpeg', 0.9);
           const updated = [...allPhotosRef.current, photoData];
@@ -760,11 +697,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
-    let themeConfig = { bg: '#fff1f2', border: '#f43f5e', accent: '#fb7185', text: '#881337', cardBg: '#ffffff' };
-    if (selectedTheme === 'purple') themeConfig = { bg: '#f3e8ff', border: '#9333ea', accent: '#a855f7', text: '#581c87', cardBg: '#ffffff' };
-    else if (selectedTheme === 'peach') themeConfig = { bg: '#ffedd5', border: '#ea580c', accent: '#f97316', text: '#7c2d12', cardBg: '#ffffff' };
-    else if (selectedTheme === 'mono') themeConfig = { bg: '#f5f5f4', border: '#292524', accent: '#78716c', text: '#1c1917', cardBg: '#ffffff' };
-
     const loadImage = (src) => new Promise((resolve) => {
       if (!src) return resolve(null);
       const img = new Image();
@@ -774,119 +706,16 @@ export default function LiveLoveRoomWithPhotobooth() {
       img.src = src;
     });
 
-    const drawCoverImage = async (photoSrc, x, y, width, height, radius) => {
-      const img = await loadImage(photoSrc);
-      if (!img) return;
-      ctx.save();
-      ctx.beginPath();
-      ctx.roundRect(x, y, width, height, radius);
-      ctx.clip();
-      ctx.drawImage(img, x, y, width, height);
-      ctx.restore();
-      ctx.save();
-      ctx.beginPath();
-      ctx.roundRect(x, y, width, height, radius);
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = themeConfig.border;
-      ctx.stroke();
-      ctx.restore();
-    };
+    canvas.width = 700;
+    canvas.height = 950;
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    if (selectedLayout === 'photocard') {
-      canvas.width = 600;
-      canvas.height = 950;
-      ctx.fillStyle = themeConfig.bg;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
-      ctx.shadowBlur = 25;
-      ctx.fillStyle = themeConfig.cardBg;
-      ctx.beginPath();
-      ctx.roundRect(40, 40, 520, 870, 35);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-
-      ctx.lineWidth = 8;
-      ctx.strokeStyle = themeConfig.border;
-      ctx.stroke();
-
-      await drawCoverImage(photos[0], 65, 65, 470, 580, 20);
-
-      ctx.font = '40px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(selectedSticker, canvas.width / 2, 690);
-
-      ctx.fillStyle = themeConfig.text;
-      ctx.font = 'bold 20px sans-serif';
-      ctx.fillText(`✨ ${myName} & ${partnerName} ✨`, canvas.width / 2, 740);
-      ctx.font = 'italic 16px sans-serif';
-      ctx.fillStyle = themeConfig.accent;
-      ctx.fillText(`"${stripCaption}"`, canvas.width / 2, 780);
-    } else {
-      canvas.width = 700;
-      canvas.height = 1300;
-      ctx.fillStyle = themeConfig.bg;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.18)';
-      ctx.shadowBlur = 30;
-      ctx.fillStyle = themeConfig.cardBg;
-      ctx.beginPath();
-      ctx.roundRect(35, 35, 630, 1230, 40);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-
-      ctx.lineWidth = 10;
-      ctx.strokeStyle = themeConfig.border;
-      ctx.stroke();
-
-      ctx.fillStyle = themeConfig.text;
-      ctx.font = '900 24px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('✨ DUAL-CAMERA LOVE STRIP ✨', canvas.width / 2, 85);
-      ctx.font = '22px sans-serif';
-      ctx.fillText(`💖 ${selectedSticker} 🎀 📸 🌟 🌸`, canvas.width / 2, 120);
-
-      if (selectedLayout === '1x2') {
-        await drawCoverImage(photos[0], 75, 145, 550, 380, 20);
-        await drawCoverImage(photos[1] || photos[0], 75, 545, 550, 380, 20);
-      } else if (selectedLayout === '1x3') {
-        await drawCoverImage(photos[0], 85, 140, 530, 250, 15);
-        await drawCoverImage(photos[1] || photos[0], 85, 410, 530, 250, 15);
-        await drawCoverImage(photos[2] || photos[0], 85, 680, 530, 250, 15);
-      } else if (selectedLayout === '2x2') {
-        await drawCoverImage(photos[0], 70, 145, 265, 370, 15);
-        await drawCoverImage(photos[1] || photos[0], 365, 145, 265, 370, 15);
-        await drawCoverImage(photos[2] || photos[0], 70, 535, 265, 370, 15);
-        await drawCoverImage(photos[3] || photos[1] || photos[0], 365, 535, 265, 370, 15);
-      } else if (selectedLayout === 'polaroid') {
-        await drawCoverImage(photos[0], 90, 145, 520, 580, 15);
-        ctx.fillStyle = '#1c1917';
-        ctx.font = 'italic 18px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText(`"${stripCaption}"`, canvas.width / 2, 780);
+    if (photos[0]) {
+      const img = await loadImage(photos[0]);
+      if (img) {
+        ctx.drawImage(img, 50, 50, 600, 850);
       }
-
-      ctx.beginPath();
-      ctx.moveTo(70, 1020);
-      ctx.lineTo(630, 1020);
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = themeConfig.accent;
-      ctx.stroke();
-
-      ctx.fillStyle = themeConfig.border;
-      ctx.font = 'bold 15px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(stripCaption, canvas.width / 2, 1065);
-
-      ctx.fillStyle = '#57534e';
-      ctx.font = 'bold 16px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(`👥 ${myName} & ${partnerName}`, 75, 1120);
-
-      ctx.textAlign = 'right';
-      const today = new Date();
-      ctx.fillText(`📅 ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`, 625, 1120);
     }
 
     setFinalStripUrl(canvas.toDataURL('image/png', 1.0));
@@ -1081,7 +910,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             </div>
 
-            {/* TAB 1: CHAT, VOICE NOTE, & KADO VIRTUAL */}
+            {/* TAB 1: CHAT */}
             {activeTab === 'chat' && (
               <div className="flex-1 flex flex-col space-y-3 overflow-hidden">
                 <div className="grid grid-cols-2 gap-2 shrink-0">
@@ -1095,7 +924,6 @@ export default function LiveLoveRoomWithPhotobooth() {
                   <button onClick={handleSendLoveTap} className="py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer hover:scale-105 transition">💖 Kirim Hati / Peluk</button>
                 </div>
 
-                {/* Kirim Kado Virtual Cepat */}
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 shrink-0 text-xs">
                   <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider shrink-0">Kirim Kado:</span>
                   <button onClick={() => sendVirtualGift("Bunga Mawar", "🌹")} className="px-2.5 py-1 bg-pink-50 hover:bg-pink-100 text-pink-700 border border-pink-200 rounded-xl font-bold shrink-0 transition">🌹 Bunga</button>
@@ -1125,7 +953,6 @@ export default function LiveLoveRoomWithPhotobooth() {
                   <div ref={messagesEndRef} />
                 </div>
 
-                {/* Chat & Voice Input Form */}
                 <form onSubmit={handleSendMessage} className="flex gap-2 shrink-0 items-center">
                   <button
                     type="button"
@@ -1141,7 +968,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 2: COUNTER JADIAN */}
+            {/* TAB 2: COUNTER */}
             {activeTab === 'counter' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-4 overflow-y-auto p-4 text-center">
                 <div className="text-4xl">💖⏳</div>
@@ -1267,7 +1094,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 5: LOVE NOTES */}
+            {/* TAB 5: NOTES */}
             {activeTab === 'notes' && (
               <div className="flex-1 flex flex-col space-y-3 overflow-hidden">
                 <div className="text-center shrink-0">
@@ -1309,7 +1136,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                   <div className="space-y-3 w-full max-w-xs text-left my-auto">
                     <div className="text-center">
                       <h3 className="font-bold text-stone-900 text-base">Photobooth Kamera Ganda 📸</h3>
-                      <p className="text-xs text-stone-500">Muka kalian berdua akan muncul live dalam satu studio menyatu!</p>
+                      <p className="text-xs text-stone-500">Muka kalian berdua akan muncul live dalam satu frame menyatu!</p>
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-stone-600 mb-1">Pilih Layout:</label>
@@ -1325,29 +1152,16 @@ export default function LiveLoveRoomWithPhotobooth() {
                         ))}
                       </div>
                     </div>
-                    <div>
-                      <label className="block text-xs font-bold text-stone-600 mb-1">Pilih Tema Warna:</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { id: 'rose', label: '🌸 Rose Pink' },
-                          { id: 'purple', label: '💜 Lilac Dream' },
-                          { id: 'peach', label: '🍑 Warm Peach' },
-                          { id: 'mono', label: '🖤 Aesthetic Mono' }
-                        ].map((theme) => (
-                          <button key={theme.id} onClick={() => handleThemeChange(theme.id)} className={`py-2 px-2 rounded-xl text-xs font-bold border transition cursor-pointer ${selectedTheme === theme.id ? 'bg-stone-900 text-white border-stone-900 shadow-sm' : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'}`}>{theme.label}</button>
-                        ))}
-                      </div>
-                    </div>
                     <button onClick={handleOpenLivePreview} className="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-2xl shadow-md text-xs cursor-pointer mt-1">Buka Studio Kamera Live 🎥</button>
                   </div>
                 )}
 
-                {/* 2. TAHAP LIVE PREVIEW DENGAN PEMILIHAN LATAR PEMANDANGAN */}
+                {/* 2. TAHAP LIVE PREVIEW (MENYATU TANPA PEMISAH) */}
                 {boothStep === 'preview' && (
                   <div className="space-y-3 w-full text-center my-auto">
-                    <p className="text-xs font-bold text-stone-700">✨ Atur Pose & Pilih Latar Pemandangan Live! ✨</p>
+                    <p className="text-xs font-bold text-stone-700">✨ Pilih Latar Pemandangan Live ✨</p>
                     
-                    {/* PILIHAN LATAR PEMANDANGAN SAAT KAMERA TERBUKA */}
+                    {/* PILIHAN LATAR PEMANDANGAN */}
                     <div className="bg-white/90 border border-stone-200 p-2.5 rounded-2xl max-w-[390px] mx-auto space-y-1.5 shadow-xs text-left">
                       <label className="block text-[11px] font-bold text-stone-700 text-center">🎨 Pilih Latar Pemandangan Kamera:</label>
                       <div className="grid grid-cols-5 gap-1.5">
@@ -1369,21 +1183,13 @@ export default function LiveLoveRoomWithPhotobooth() {
                       </div>
                     </div>
 
-                    {/* BINGKAI STUDIO WIDESCREEN DENGAN LATAR PEMANDANGAN */}
-                    <div className={`relative ${getStudioBgClass()} border-2 border-white rounded-3xl shadow-xl max-w-[390px] mx-auto overflow-hidden flex h-[165px]`}>
-                      {/* Video Kamu (Kiri) */}
+                    {/* BINGKAI LIVE BERBENTUK 1 FRAME UTUH TANPA PEMISAH */}
+                    <div className={`relative ${getStudioBgClass()} rounded-3xl shadow-xl max-w-[390px] mx-auto overflow-hidden flex h-[165px]`}>
                       <div className="relative w-1/2 h-full overflow-hidden">
                         <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
-                        <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2.5 py-0.5 rounded-full font-semibold backdrop-blur-xs">Kamu ({myName})</span>
                       </div>
-                      
-                      {/* Garis pemisah tengah estetik */}
-                      <div className="w-[2px] bg-white/40 h-full z-10 shadow"></div>
-
-                      {/* Video Pasangan (Kanan) */}
                       <div className="relative w-1/2 h-full overflow-hidden">
                         <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
-                        <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2.5 py-0.5 rounded-full font-semibold backdrop-blur-xs">{partnerName}</span>
                         {!remoteStream && (
                           <div className="absolute inset-0 bg-stone-900/90 flex items-center justify-center p-2">
                             <span className="text-[11px] text-pink-200 font-medium animate-pulse text-center">Menunggu {partnerName}...</span>
@@ -1422,15 +1228,12 @@ export default function LiveLoveRoomWithPhotobooth() {
                 {/* 3. TAHAP KAPTUR / HITUNG MUNDUR */}
                 {boothStep === 'capturing' && (
                   <div className="space-y-3 w-full text-center my-auto">
-                    <div className={`relative ${getStudioBgClass()} border-2 border-white rounded-3xl shadow-xl max-w-[390px] mx-auto overflow-hidden flex h-[190px]`}>
+                    <div className={`relative ${getStudioBgClass()} rounded-3xl shadow-xl max-w-[390px] mx-auto overflow-hidden flex h-[190px]`}>
                       <div className="relative w-1/2 h-full overflow-hidden">
                         <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
-                        <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2.5 py-0.5 rounded-full font-semibold">Kamu</span>
                       </div>
-                      <div className="w-[2px] bg-white/40 h-full z-10"></div>
                       <div className="relative w-1/2 h-full overflow-hidden">
                         <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
-                        <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2.5 py-0.5 rounded-full font-semibold">{partnerName}</span>
                       </div>
                     </div>
 
@@ -1443,39 +1246,11 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* 4. TAHAP HASIL & EDITOR */}
+                {/* 4. TAHAP HASIL */}
                 {boothStep === 'ready' && finalStripUrl && (
                   <div className="space-y-2 w-full flex flex-col items-center my-auto pt-1">
                     <div className="w-[180px] drop-shadow-xl">
                       <img src={finalStripUrl} alt="Hasil Photobooth" className="w-full h-auto object-contain rounded-xl" />
-                    </div>
-
-                    {/* STUDIO EDITOR */}
-                    <div className="bg-stone-50 border border-stone-200 p-2.5 rounded-2xl w-full max-w-[280px] space-y-2 text-left">
-                      <p className="text-[11px] font-bold text-stone-700 text-center">✨ Studio Editor Foto Bersama</p>
-                      <div>
-                        <label className="block text-[10px] font-semibold text-stone-500 mb-0.5">Ubah Caption / Pesan:</label>
-                        <input 
-                          type="text" 
-                          value={stripCaption} 
-                          onChange={(e) => handleUpdateEditor(e.target.value, selectedSticker)} 
-                          className="w-full px-2.5 py-1.5 rounded-xl border border-stone-200 text-xs bg-white font-medium focus:outline-none focus:border-rose-400" 
-                        />
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-semibold text-stone-500">Pilih Stiker:</span>
-                        <div className="flex gap-1">
-                          {['🧸', '💖', '✨', '🌹', '👑'].map((stk) => (
-                            <button 
-                              key={stk} 
-                              onClick={() => handleUpdateEditor(stripCaption, stk)}
-                              className={`w-7 h-7 rounded-lg text-xs flex items-center justify-center border transition ${selectedSticker === stk ? 'bg-rose-500 border-rose-500 scale-110 shadow-sm' : 'bg-white border-stone-200'}`}
-                            >
-                              {stk}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
                     </div>
 
                     <div className="flex gap-2 w-full max-w-[280px]">
