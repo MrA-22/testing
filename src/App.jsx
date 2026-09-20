@@ -86,8 +86,10 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [remoteStream, setRemoteStream] = useState(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const previewCanvasRef = useRef(null);
   const currentCallRef = useRef(null);
   const peerInstanceRef = useRef(null);
+  const animationFrameRef = useRef(null);
 
   // --- FITUR COUNTER JADIAN ---
   const [anniversaryDate, setAnniversaryDate] = useState(() => localStorage.getItem('bucin_anniversary') || '2024-01-01');
@@ -141,20 +143,6 @@ export default function LiveLoveRoomWithPhotobooth() {
   }, [messages]);
 
   useEffect(() => {
-    if (localStreamRef.current && localVideoRef.current) {
-      localVideoRef.current.srcObject = localStreamRef.current;
-      localVideoRef.current.play().catch(e => console.log(e));
-    }
-  }, [boothStep, localStreamRef.current]);
-
-  useEffect(() => {
-    if (remoteStream && remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = remoteStream;
-      remoteVideoRef.current.play().catch(e => console.log(e));
-    }
-  }, [boothStep, remoteStream]);
-
-  useEffect(() => {
     const interval = setInterval(() => {
       const start = new Date(anniversaryDate);
       const now = new Date();
@@ -174,6 +162,9 @@ export default function LiveLoveRoomWithPhotobooth() {
     return () => {
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
       }
     };
   }, []);
@@ -547,13 +538,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  const handleThemeChange = (themeId) => {
-    setSelectedTheme(themeId);
-    if (conn) {
-      conn.send({ type: 'pb-config-sync', layout: selectedLayout, theme: themeId, bg: studioBackground });
-    }
-  };
-
   const handleBgChange = (bgId) => {
     setStudioBackground(bgId);
     if (conn) {
@@ -569,17 +553,95 @@ export default function LiveLoveRoomWithPhotobooth() {
     return 2;
   };
 
-  // Peta CSS Background untuk Preview Studio
-  const getStudioBgClass = () => {
-    switch (studioBackground) {
-      case 'beach': return 'bg-gradient-to-br from-sky-400 via-teal-300 to-amber-200';
-      case 'mountain': return 'bg-gradient-to-br from-slate-700 via-emerald-800 to-stone-900';
-      case 'river': return 'bg-gradient-to-br from-cyan-600 via-teal-600 to-emerald-700';
-      case 'sunset': return 'bg-gradient-to-br from-orange-400 via-rose-500 to-purple-700';
-      case 'garden': return 'bg-gradient-to-br from-green-400 via-emerald-500 to-pink-300';
-      default: return 'bg-gradient-to-br from-sky-400 via-teal-300 to-amber-200';
+  // Fungsi untuk menggambar latar belakang pemandangan & orang pada Canvas (Virtual Background Replacement)
+  const drawCompositeScene = (ctx, width, height) => {
+    // 1. Gambar Latar Belakang Pemandangan di Kanvas
+    let grad = ctx.createLinearGradient(0, 0, width, height);
+    if (studioBackground === 'beach') {
+      grad.addColorStop(0, '#38bdf8'); grad.addColorStop(0.6, '#2dd4bf'); grad.addColorStop(1, '#fde68a');
+    } else if (studioBackground === 'mountain') {
+      grad.addColorStop(0, '#334155'); grad.addColorStop(0.5, '#065f46'); grad.addColorStop(1, '#1c1917');
+    } else if (studioBackground === 'river') {
+      grad.addColorStop(0, '#0891b2'); grad.addColorStop(0.5, '#0d9488'); grad.addColorStop(1, '#047857');
+    } else if (studioBackground === 'sunset') {
+      grad.addColorStop(0, '#fb923c'); grad.addColorStop(0.5, '#f43f5e'); grad.addColorStop(1, '#7e22ce');
+    } else if (studioBackground === 'garden') {
+      grad.addColorStop(0, '#4ade80'); grad.addColorStop(0.5, '#10b981'); grad.addColorStop(1, '#f472b6');
+    }
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, width, height);
+
+    const halfW = width / 2;
+
+    // 2. Gambar Video Kamu (Sisi Kiri dengan Chroma-Key / Latar Dihilangkan Otomatis)
+    if (localVideoRef.current && localVideoRef.current.readyState >= 2) {
+      ctx.save();
+      ctx.translate(halfW, 0);
+      ctx.scale(-1, 1);
+      
+      // Buat offscreen canvas untuk memproses frame video kamu agar background dinding terang/putih tersaring
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = halfW;
+      tempCanvas.height = height;
+      const tCtx = tempCanvas.getContext('2d');
+      tCtx.drawImage(localVideoRef.current, 0, 0, halfW, height);
+      
+      const imgData = tCtx.getImageData(0, 0, halfW, height);
+      const data = imgData.data;
+      // Algoritma sederhana mendeteksi dinding terang/putih/kusam di latar belakang untuk menjadikannya transparan
+      for (let i = 0; i < data.length; i += 4) {
+        const r = data[i], g = data[i+1], b = data[i+2];
+        // Jika piksel cenderung terang (dinding kamar putih/kusam)
+        if (r > 160 && g > 160 && b > 140 && Math.abs(r - g) < 30 && Math.abs(g - b) < 30) {
+          data[i+3] = 0; // Buat transparan agar pemandangan di belakangnya tembus
+        }
+      }
+      tCtx.putImageData(imgData, 0, 0);
+      ctx.drawImage(tempCanvas, 0, 0, halfW, height);
+      ctx.restore();
+    }
+
+    // 3. Gambar Video Pasangan (Sisi Kanan dengan efek serupa)
+    if (remoteVideoRef.current && remoteStream && remoteVideoRef.current.readyState >= 2) {
+      ctx.save();
+      const tempCanvasR = document.createElement('canvas');
+      tempCanvasR.width = halfW;
+      tempCanvasR.height = height;
+      const rCtx = tempCanvasR.getContext('2d');
+      rCtx.drawImage(remoteVideoRef.current, 0, 0, halfW, height);
+      
+      const imgDataR = rCtx.getImageData(0, 0, halfW, height);
+      const dataR = imgDataR.data;
+      for (let i = 0; i < dataR.length; i += 4) {
+        const r = dataR[i], g = dataR[i+1], b = dataR[i+2];
+        if (r > 160 && g > 160 && b > 140 && Math.abs(r - g) < 30 && Math.abs(g - b) < 30) {
+          dataR[i+3] = 0;
+        }
+      }
+      rCtx.putImageData(imgDataR, 0, 0);
+      ctx.drawImage(tempCanvasR, halfW, 0, halfW, height);
+      ctx.restore();
     }
   };
+
+  // Loop Render Live Preview ke Kanvas
+  useEffect(() => {
+    if (boothStep === 'preview') {
+      const canvas = previewCanvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+
+      const renderLoop = () => {
+        drawCompositeScene(ctx, canvas.width, canvas.height);
+        animationFrameRef.current = requestAnimationFrame(renderLoop);
+      };
+      renderLoop();
+
+      return () => {
+        if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      };
+    }
+  }, [boothStep, studioBackground, remoteStream]);
 
   const handleOpenLivePreview = async () => {
     await startDualCameraStream();
@@ -644,50 +706,22 @@ export default function LiveLoveRoomWithPhotobooth() {
         clearInterval(timer);
         setCountdown(null);
 
-        if (localVideoRef.current) {
-          const canvas = document.createElement('canvas');
-          canvas.width = 800;
-          canvas.height = 600;
-          const ctx = canvas.getContext('2d');
+        const canvas = document.createElement('canvas');
+        canvas.width = 800;
+        canvas.height = 600;
+        const ctx = canvas.getContext('2d');
+        drawCompositeScene(ctx, 800, 600);
 
-          // Latar belakang pemandangan menyatu tanpa pemisah
-          let grad = ctx.createLinearGradient(0, 0, 800, 600);
-          if (studioBackground === 'beach') {
-            grad.addColorStop(0, '#38bdf8'); grad.addColorStop(0.6, '#2dd4bf'); grad.addColorStop(1, '#fde68a');
-          } else if (studioBackground === 'mountain') {
-            grad.addColorStop(0, '#334155'); grad.addColorStop(0.5, '#065f46'); grad.addColorStop(1, '#1c1917');
-          } else if (studioBackground === 'river') {
-            grad.addColorStop(0, '#0891b2'); grad.addColorStop(0.5, '#0d9488'); grad.addColorStop(1, '#047857');
-          } else if (studioBackground === 'sunset') {
-            grad.addColorStop(0, '#fb923c'); grad.addColorStop(0.5, '#f43f5e'); grad.addColorStop(1, '#7e22ce');
-          } else if (studioBackground === 'garden') {
-            grad.addColorStop(0, '#4ade80'); grad.addColorStop(0.5, '#10b981'); grad.addColorStop(1, '#f472b6');
-          }
-          ctx.fillStyle = grad;
-          ctx.fillRect(0, 0, 800, 600);
+        const photoData = canvas.toDataURL('image/jpeg', 0.9);
+        const updated = [...allPhotosRef.current, photoData];
+        setAllPhotos(updated);
 
-          // Gambar Video Lokal & Pasangan Menyatu di Frame yang Sama (Tanpa Garis Pemisah / Kotak)
-          ctx.save();
-          ctx.translate(400, 0);
-          ctx.scale(-1, 1);
-          ctx.drawImage(localVideoRef.current, -400, 0, 400, 600);
-          ctx.restore();
-
-          if (remoteVideoRef.current && remoteStream) {
-            ctx.drawImage(remoteVideoRef.current, 400, 0, 400, 600);
-          }
-
-          const photoData = canvas.toDataURL('image/jpeg', 0.9);
-          const updated = [...allPhotosRef.current, photoData];
-          setAllPhotos(updated);
-
-          if (conn) {
-            conn.send({ type: 'pb-dual-snapshot', step: currentStep, photo: photoData });
-          }
-
-          const nextStep = currentStep + 1;
-          setCurrentStep(nextStep);
+        if (conn) {
+          conn.send({ type: 'pb-dual-snapshot', step: currentStep, photo: photoData });
         }
+
+        const nextStep = currentStep + 1;
+        setCurrentStep(nextStep);
       }
     }, 1000);
   };
@@ -719,20 +753,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
 
     setFinalStripUrl(canvas.toDataURL('image/png', 1.0));
-  };
-
-  useEffect(() => {
-    if (boothStep === 'ready' && allPhotos.length > 0) {
-      generatePhotoboothCanvas(allPhotos);
-    }
-  }, [stripCaption, selectedSticker]);
-
-  const handleUpdateEditor = (newCaption, newSticker) => {
-    setStripCaption(newCaption);
-    setSelectedSticker(newSticker);
-    if (conn) {
-      conn.send({ type: 'pb-edit-sync', caption: newCaption, sticker: newSticker });
-    }
   };
 
   return (
@@ -1127,7 +1147,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 6: PHOTOBOOTH KAMERA GANDA & READY CHECK */}
+            {/* TAB 6: PHOTOBOOTH KAMERA GANDA & VIRTUAL BACKGROUND */}
             {activeTab === 'photobooth' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-3 overflow-y-auto p-1">
                 
@@ -1136,7 +1156,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                   <div className="space-y-3 w-full max-w-xs text-left my-auto">
                     <div className="text-center">
                       <h3 className="font-bold text-stone-900 text-base">Photobooth Kamera Ganda 📸</h3>
-                      <p className="text-xs text-stone-500">Muka kalian berdua akan muncul live dalam satu frame menyatu!</p>
+                      <p className="text-xs text-stone-500">Latar ruangan asli akan diganti pemandangan indah secara otomatis!</p>
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-stone-600 mb-1">Pilih Layout:</label>
@@ -1156,14 +1176,14 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* 2. TAHAP LIVE PREVIEW (MENYATU TANPA PEMISAH) */}
+                {/* 2. TAHAP LIVE PREVIEW DENGAN VIRTUAL BACKGROUND (LATAR DIGANTI PEMANDANGAN) */}
                 {boothStep === 'preview' && (
                   <div className="space-y-3 w-full text-center my-auto">
-                    <p className="text-xs font-bold text-stone-700">✨ Pilih Latar Pemandangan Live ✨</p>
+                    <p className="text-xs font-bold text-stone-700">✨ Pilih Latar Belakang Pemandangan ✨</p>
                     
                     {/* PILIHAN LATAR PEMANDANGAN */}
                     <div className="bg-white/90 border border-stone-200 p-2.5 rounded-2xl max-w-[390px] mx-auto space-y-1.5 shadow-xs text-left">
-                      <label className="block text-[11px] font-bold text-stone-700 text-center">🎨 Pilih Latar Pemandangan Kamera:</label>
+                      <label className="block text-[11px] font-bold text-stone-700 text-center">🎨 Ganti Latar Belakang:</label>
                       <div className="grid grid-cols-5 gap-1.5">
                         {[
                           { id: 'beach', label: '🏖️ Pantai' },
@@ -1183,19 +1203,20 @@ export default function LiveLoveRoomWithPhotobooth() {
                       </div>
                     </div>
 
-                    {/* BINGKAI LIVE BERBENTUK 1 FRAME UTUH TANPA PEMISAH */}
-                    <div className={`relative ${getStudioBgClass()} rounded-3xl shadow-xl max-w-[390px] mx-auto overflow-hidden flex h-[165px]`}>
-                      <div className="relative w-1/2 h-full overflow-hidden">
-                        <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
-                      </div>
-                      <div className="relative w-1/2 h-full overflow-hidden">
-                        <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
-                        {!remoteStream && (
-                          <div className="absolute inset-0 bg-stone-900/90 flex items-center justify-center p-2">
-                            <span className="text-[11px] text-pink-200 font-medium animate-pulse text-center">Menunggu {partnerName}...</span>
-                          </div>
-                        )}
-                      </div>
+                    {/* VIDEO & REMOTE VIDEO TERSEMBUNYI UNTUK SUMBER KANVAS */}
+                    <div className="hidden">
+                      <video ref={localVideoRef} autoPlay playsInline muted />
+                      <video ref={remoteVideoRef} autoPlay playsInline />
+                    </div>
+
+                    {/* KANVAS UTAMA VIRTUAL BACKGROUND (1 FRAME UTUH TANPA PEMISAH) */}
+                    <div className="relative rounded-3xl shadow-xl max-w-[390px] mx-auto overflow-hidden h-[180px] bg-black">
+                      <canvas ref={previewCanvasRef} width={640} height={360} className="w-full h-full object-cover" />
+                      {!remoteStream && (
+                        <div className="absolute inset-0 bg-stone-900/80 flex items-center justify-center p-2 pointer-events-none">
+                          <span className="text-[11px] text-pink-200 font-medium animate-pulse text-center">Menunggu {partnerName} bergabung...</span>
+                        </div>
+                      )}
                     </div>
 
                     {/* Status Saling Menunggu */}
@@ -1228,13 +1249,8 @@ export default function LiveLoveRoomWithPhotobooth() {
                 {/* 3. TAHAP KAPTUR / HITUNG MUNDUR */}
                 {boothStep === 'capturing' && (
                   <div className="space-y-3 w-full text-center my-auto">
-                    <div className={`relative ${getStudioBgClass()} rounded-3xl shadow-xl max-w-[390px] mx-auto overflow-hidden flex h-[190px]`}>
-                      <div className="relative w-1/2 h-full overflow-hidden">
-                        <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover transform -scale-x-100" />
-                      </div>
-                      <div className="relative w-1/2 h-full overflow-hidden">
-                        <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
-                      </div>
+                    <div className="relative rounded-3xl shadow-xl max-w-[390px] mx-auto overflow-hidden h-[190px] bg-black">
+                      <canvas ref={previewCanvasRef} width={640} height={360} className="w-full h-full object-cover" />
                     </div>
 
                     {countdown !== null && (
