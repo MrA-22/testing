@@ -3,7 +3,6 @@ import { Peer } from 'peerjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
-// Ornamen Melayang Romantis
 const LiveOrnaments = React.memo(() => (
   <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
     {[...Array(12)].map((_, i) => (
@@ -26,7 +25,6 @@ const LiveOrnaments = React.memo(() => (
   </div>
 ));
 
-// Daftar Tema Latar Belakang Kamera (Virtual Background)
 const bgThemes = {
   pantai: { 
     name: 'Pantai', 
