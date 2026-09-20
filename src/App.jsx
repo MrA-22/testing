@@ -318,7 +318,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.drawImage(tempCanvas, 0, 0);
     }
 
-    // 3. SISI KANAN: PASANGAN (WebRTC Remote Video Stream - Diperbaiki agar langsung render saat stream masuk)
+    // 3. SISI KANAN: PASANGAN (WebRTC Remote Video Stream)
     if (remoteVideoRef.current && remoteStream) {
       if (remoteVideoRef.current.paused) {
         remoteVideoRef.current.play().catch(e => console.log(e));
@@ -333,7 +333,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillText(`Menunggu ${partnerName}...`, halfW + (halfW / 2), h / 2 - 10);
       ctx.font = '11px sans-serif';
       ctx.fillStyle = '#fda4af';
-      ctx.fillText(`(Tekan Hubungkan Ulang jika macet)`, halfW + (halfW / 2), h / 2 + 12);
+      ctx.fillText(`(Klik Hubungkan Ulang di atas)`, halfW + (halfW / 2), h / 2 + 12);
     }
 
     // Label Nama Estetik di Dalam Frame
@@ -418,6 +418,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       }
       setCameraActive(true);
 
+      // Auto call ke pasangan jika koneksi sudah ada
       if (peerInstanceRef.current && conn && conn.peer) {
         const call = peerInstanceRef.current.call(conn.peer, stream);
         currentCallRef.current = call;
@@ -450,7 +451,7 @@ export default function LiveLoveRoomWithPhotobooth() {
           remoteVideoRef.current.play().catch(e => console.log(e));
         }
       });
-      alert("Permintaan sambungan video dikirim ulang ke pasangan! 🔄");
+      alert("Sambungan video berhasil direfresh! 🔄");
     } else {
       alert("Belum terhubung ke room pasangan.");
     }
