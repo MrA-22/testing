@@ -45,15 +45,11 @@ export default function LiveLoveRoomWithPhotobooth() {
   
   // Setup Room & Nama
   const [mode, setMode] = useState('menu'); 
-  const [roomCode, setRoomCode] = useState('');
+  const [roomCode, setRoomCode] = useState(() => localStorage.getItem('bucin_roomCode') || '');
   const [inputCode, setInputCode] = useState('');
-  const [myName, setMyName] = useState('');
-  const [partnerName, setPartnerName] = useState('Ayang');
+  const [myName, setMyName] = useState(() => localStorage.getItem('bucin_myName') || '');
+  const [partnerName, setPartnerName] = useState(() => localStorage.getItem('bucin_partnerName') || 'Ayang');
   const [statusText, setStatusText] = useState('Menunggu koneksi...');
-
-  // Firebase Firestore Instance Ref
-  const dbRef = useRef(null);
-  const unsubFirestoreRef = useRef(null);
 
   // Navigasi Dashboard Tabs
   const [activeTab, setActiveTab] = useState('chat');
@@ -113,7 +109,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [isSegmentationLoaded, setIsSegmentationLoaded] = useState(false);
 
   // --- COUNTER JADIAN ---
-  const [anniversaryDate, setAnniversaryDate] = useState('2024-01-01');
+  const [anniversaryDate, setAnniversaryDate] = useState(() => localStorage.getItem('bucin_anniversary') || '2024-01-01');
   const [timeTogether, setTimeTogether] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   // --- QUIZ ---
@@ -147,44 +143,12 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   const messagesEndRef = useRef(null);
 
-  // Load Firebase & MediaPipe via CDN Script
+  // Load MediaPipe Selfie Segmentation via CDN Script
   useEffect(() => {
-    // 1. Load Firebase Scripts
-    const loadFirebase = async () => {
-      if (!window.firebase) {
-        const scriptApp = document.createElement('script');
-        scriptApp.src = "https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js";
-        document.body.appendChild(scriptApp);
-
-        await new Promise((resolve) => { scriptApp.onload = resolve; });
-
-        const scriptFs = document.createElement('script');
-        scriptFs.src = "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js";
-        document.body.appendChild(scriptFs);
-
-        await new Promise((resolve) => { scriptFs.onload = resolve; });
-      }
-
-      if (window.firebase && !window.firebase.apps.length) {
-        // Konfigurasi Firebase Publik Demo Aman untuk Sinkronisasi Sesi Room
-        window.firebase.initializeApp({
-          apiKey: "AIzaSyDemoBucinAppKey-998877",
-          authDomain: "bucin-studio-live.firebaseapp.com",
-          projectId: "bucin-studio-live"
-        });
-      }
-      if (window.firebase) {
-        dbRef.current = window.firebase.firestore();
-      }
-    };
-
-    loadFirebase();
-
-    // 2. Load MediaPipe Selfie Segmentation
-    const scriptMediaPipe = document.createElement('script');
-    scriptMediaPipe.src = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js";
-    scriptMediaPipe.async = true;
-    scriptMediaPipe.onload = async () => {
+    const script = document.createElement('script');
+    script.src = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js";
+    script.async = true;
+    script.onload = async () => {
       if (window.SelfieSegmentation) {
         const segmentation = new window.SelfieSegmentation({
           locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
@@ -196,21 +160,14 @@ export default function LiveLoveRoomWithPhotobooth() {
         setIsSegmentationLoaded(true);
       }
     };
-    document.body.appendChild(scriptMediaPipe);
+    document.body.appendChild(script);
 
     return () => {
-      if (scriptMediaPipe.parentNode) scriptMediaPipe.parentNode.removeChild(scriptMediaPipe);
+      if (script.parentNode) script.parentNode.removeChild(script);
     };
   }, []);
 
-  // Sync data ke Firebase Firestore setiap ada perubahan state room
-  const syncToFirebase = (data) => {
-    if (dbRef.current && roomCode) {
-      dbRef.current.collection('rooms').doc(roomCode).set(data, { merge: true }).catch(err => console.log(err));
-    }
-  };
-
-  // Muat background tema aktif
+  // Muat gambar background tema aktif
   useEffect(() => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -262,7 +219,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     };
   }, [boothStep, isSegmentationLoaded, cameraBgTheme]);
 
-  // Fungsi Helper Crop Rasio Video & Masker AI
+  // Fungsi Helper Presisi untuk Menghitung Crop Rasio Video & Masker AI
   const getVideoCropParams = (video, destW, destH) => {
     if (!video) return { sX: 0, sY: 0, sW: 640, sH: 480 };
     const vW = video.videoWidth || 640;
@@ -306,7 +263,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.restore();
   };
 
-  // Hasil Masking AI & Render 1 Frame Studio Bersama (Tanpa Hitam)
+  // Hasil Masking AI & Render 1 Frame Studio Bersama (Dilengkapi Placeholder Estetik Anti-Hitam)
   const onMediaPipeResults = (results) => {
     const canvas = previewCanvasRef.current;
     if (!canvas) return;
@@ -361,19 +318,22 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.drawImage(tempCanvas, 0, 0);
     }
 
-    // 3. SISI KANAN: PASANGAN (WebRTC Remote Video Stream / Placeholder Estetik jika belum muat)
+    // 3. SISI KANAN: PASANGAN (WebRTC Remote Video atau Placeholder Estetik Anti-Hitam)
     if (remoteVideoRef.current && remoteVideoRef.current.readyState >= 2 && remoteStream) {
       drawVideoCover(ctx, remoteVideoRef.current, halfW, 0, halfW, h, false);
     } else {
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      // Kotak Pendukung / Placeholder Agar Tidak Hitam Polos
+      ctx.fillStyle = 'rgba(255, 228, 230, 0.85)';
       ctx.fillRect(halfW, 0, halfW, h);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 13px sans-serif';
+
+      ctx.fillStyle = '#881337';
+      ctx.font = 'bold 18px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`Menunggu ${partnerName}...`, halfW + (halfW / 2), h / 2 - 12);
-      ctx.font = '11px sans-serif';
-      ctx.fillStyle = '#fda4af';
-      ctx.fillText(`(Tekan Hubungkan Ulang jika macet)`, halfW + (halfW / 2), h / 2 + 10);
+      ctx.fillText(`🧸 ${partnerName} 🧸`, halfW + (halfW / 2), h / 2 - 15);
+
+      ctx.font = '12px sans-serif';
+      ctx.fillStyle = '#9f1239';
+      ctx.fillText(`Menunggu Sambungan Kamera...`, halfW + (halfW / 2), h / 2 + 15);
     }
 
     // Label Nama Estetik di Dalam Frame
@@ -397,6 +357,13 @@ export default function LiveLoveRoomWithPhotobooth() {
 
     ctx.restore();
   };
+
+  useEffect(() => {
+    localStorage.setItem('bucin_roomCode', roomCode);
+    localStorage.setItem('bucin_myName', myName);
+    localStorage.setItem('bucin_partnerName', partnerName);
+    localStorage.setItem('bucin_anniversary', anniversaryDate);
+  }, [roomCode, myName, partnerName, anniversaryDate]);
 
   useEffect(() => {
     allPhotosRef.current = allPhotos;
@@ -446,7 +413,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       localStreamRef.current = stream;
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
-        await localVideoRef.current.play().catch(e => console.log(e));
+        await localVideoRef.current.play().catch(e => console.log("Play interrupted:", e));
       }
       setCameraActive(true);
 
@@ -482,7 +449,7 @@ export default function LiveLoveRoomWithPhotobooth() {
           remoteVideoRef.current.play().catch(e => console.log(e));
         }
       });
-      alert("Sinyal video dipanggil ulang ke pasangan! 🔄");
+      alert("Sinyal video berhasil dikirim ulang ke pasangan! 🔄");
     } else {
       alert("Belum terhubung ke room pasangan.");
     }
@@ -492,11 +459,13 @@ export default function LiveLoveRoomWithPhotobooth() {
     if (window.confirm("Yakin ingin keluar dari sesi ruangan ini?")) {
       if (conn) conn.close();
       if (peer) peer.destroy();
-      if (unsubFirestoreRef.current) unsubFirestoreRef.current();
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach(track => track.stop());
         localStreamRef.current = null;
       }
+      
+      localStorage.removeItem('bucin_roomCode');
+      localStorage.removeItem('bucin_partnerName');
 
       setMode('menu');
       setRoomCode('');
@@ -511,28 +480,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  const listenToFirestore = (code) => {
-    if (!dbRef.current) return;
-    if (unsubFirestoreRef.current) unsubFirestoreRef.current();
-
-    unsubFirestoreRef.current = dbRef.current.collection('rooms').doc(code).onSnapshot((doc) => {
-      if (doc.exists) {
-        const data = doc.data();
-        if (data.partnerName && data.partnerName !== myName) setPartnerName(data.partnerName);
-        if (data.messages) setMessages(data.messages);
-        if (data.notes) setNotes(data.notes);
-        if (data.bucketList) setBucketList(data.bucketList);
-        if (data.partnerIsReady !== undefined) setPartnerIsReady(data.partnerIsReady);
-        if (data.selectedLayout) setSelectedLayout(data.selectedLayout);
-        if (data.selectedTheme) setSelectedTheme(data.selectedTheme);
-        if (data.cameraBgTheme) setCameraBgTheme(data.cameraBgTheme);
-        if (data.boothStep && data.boothStep !== boothStep) setBoothStep(data.boothStep);
-        if (data.stripCaption) setStripCaption(data.stripCaption);
-        if (data.selectedSticker) setSelectedSticker(data.selectedSticker);
-      }
-    });
-  };
-
   const handleCreateRoom = (e) => {
     e.preventDefault();
     if (!myName.trim()) {
@@ -542,9 +489,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     const code = roomCode || Math.floor(1000 + Math.random() * 9000).toString();
     setRoomCode(code);
     setMode('waiting-host');
-    listenToFirestore(code);
-
-    syncToFirebase({ hostName: myName, createdAt: Date.now() });
 
     const newPeer = new Peer(`bucin-room-${code}`);
     peerInstanceRef.current = newPeer;
@@ -583,9 +527,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     setRoomCode(inputCode);
     setMode('connecting');
     setStatusText('Menghubungkan ke ruangan...');
-    listenToFirestore(inputCode);
-
-    syncToFirebase({ partnerName: myName });
 
     const newPeer = new Peer();
     peerInstanceRef.current = newPeer;
@@ -654,12 +595,31 @@ export default function LiveLoveRoomWithPhotobooth() {
         setPartnerMood(data.mood);
       } else if (data.type === 'chat') {
         setMessages((prev) => [...prev, { sender: 'partner', text: data.text, time: data.time }]);
+      } else if (data.type === 'chat-voice') {
+        setMessages((prev) => [...prev, { sender: 'partner', audio: data.audio, time: data.time, isVoice: true }]);
       } else if (data.type === 'virtual-gift') {
         showGiftPopup(data.giftName, data.giftEmoji, data.sender);
+      } else if (data.type === 'mood') {
+        setPartnerMood(data.mood);
       } else if (data.type === 'love-tap') {
         triggerLoveEffect();
       } else if (data.type === 'love-note') {
         setNotes((prev) => [data.note, ...prev]);
+      } else if (data.type === 'quiz-sync') {
+        setPartnerQuizAnswers(data.answers);
+      } else if (data.type === 'bucket-sync') {
+        setBucketList(data.list);
+      } else if (data.type === 'pb-config-sync') {
+        setSelectedLayout(data.layout);
+        setSelectedTheme(data.theme);
+      } else if (data.type === 'pb-bg-theme-sync') {
+        setCameraBgTheme(data.theme);
+      } else if (data.type === 'pb-preview-mode') {
+        setSelectedLayout(data.layout);
+        setSelectedTheme(data.theme);
+        setBoothStep('preview');
+        setIAmReady(false);
+        setPartnerIsReady(false);
       } else if (data.type === 'pb-ready-status') {
         setPartnerIsReady(data.ready);
       } else if (data.type === 'pb-start-countdown') {
@@ -669,6 +629,9 @@ export default function LiveLoveRoomWithPhotobooth() {
         const updated = [...allPhotosRef.current, data.photo];
         setAllPhotos(updated);
         setCurrentStep(data.step + 1);
+      } else if (data.type === 'pb-edit-sync') {
+        setStripCaption(data.caption);
+        setSelectedSticker(data.sticker);
       }
     });
 
@@ -680,19 +643,60 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   const handleSendMessage = (e) => {
     e.preventDefault();
-    if (!inputMessage.trim()) return;
+    if (!inputMessage.trim() || !conn) return;
 
     const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    const newMsgList = [...messages, { sender: 'me', text: inputMessage, time: timeStr }];
-    setMessages(newMsgList);
-    syncToFirebase({ messages: newMsgList });
-    if (conn) conn.send({ type: 'chat', text: inputMessage, time: timeStr });
+    const msgObj = { type: 'chat', text: inputMessage, time: timeStr };
+
+    conn.send(msgObj);
+    setMessages((prev) => [...prev, { sender: 'me', text: inputMessage, time: timeStr }]);
     setInputMessage('');
   };
 
+  const startAudioRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderAudioRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const reader = new FileReader();
+        reader.readAsDataURL(audioBlob);
+        reader.onloadend = () => {
+          const base64Audio = reader.result;
+          const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          const voiceMsg = { type: 'chat-voice', audio: base64Audio, time: timeStr };
+          if (conn) conn.send(voiceMsg);
+          setMessages((prev) => [...prev, { sender: 'me', audio: base64Audio, time: timeStr, isVoice: true }]);
+        };
+        stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Gagal akses mikrofon:", err);
+    }
+  };
+
+  const stopAudioRecording = () => {
+    if (mediaRecorderAudioRef.current && isRecording) {
+      mediaRecorderAudioRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
   const sendVirtualGift = (giftName, giftEmoji) => {
-    if (conn) conn.send({ type: 'virtual-gift', giftName, giftEmoji, sender: myName });
-    showGiftPopup(giftName, giftEmoji, 'Kamu');
+    if (!conn) return;
+    conn.send({ type: 'virtual-gift', giftName, giftEmoji, sender: myName });
   };
 
   const showGiftPopup = (giftName, giftEmoji, sender) => {
@@ -713,9 +717,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       color: ['bg-pink-100 text-pink-900', 'bg-yellow-100 text-yellow-900', 'bg-purple-100 text-purple-900', 'bg-rose-100 text-rose-900'][Math.floor(Math.random() * 4)]
     };
 
-    const updatedNotes = [newNote, ...notes];
-    setNotes(updatedNotes);
-    syncToFirebase({ notes: updatedNotes });
+    setNotes((prev) => [newNote, ...prev]);
     if (conn) conn.send({ type: 'love-note', note: newNote });
     setInputNote('');
   };
@@ -737,23 +739,25 @@ export default function LiveLoveRoomWithPhotobooth() {
   };
 
   const handleSendLoveTap = () => {
-    if (conn) conn.send({ type: 'love-tap' });
-    triggerLoveEffect();
+    if (!conn) return;
+    conn.send({ type: 'love-tap' });
   };
 
   const handleLayoutChange = (layoutId) => {
     setSelectedLayout(layoutId);
-    syncToFirebase({ selectedLayout: layoutId });
+    if (conn) conn.send({ type: 'pb-config-sync', layout: layoutId, theme: selectedTheme });
   };
 
   const handleThemeChange = (themeId) => {
     setSelectedTheme(themeId);
-    syncToFirebase({ selectedTheme: themeId });
+    if (conn) conn.send({ type: 'pb-config-sync', layout: selectedLayout, theme: themeId });
   };
 
   const handleCameraBgChange = (bgId) => {
     setCameraBgTheme(bgId);
-    syncToFirebase({ cameraBgTheme: bgId });
+    if (conn) {
+      conn.send({ type: 'pb-bg-theme-sync', theme: bgId });
+    }
   };
 
   const getRequiredPhotosCount = () => {
@@ -770,14 +774,14 @@ export default function LiveLoveRoomWithPhotobooth() {
     setBoothStep('preview');
     setIAmReady(false);
     setPartnerIsReady(false);
-    syncToFirebase({ boothStep: 'preview', partnerIsReady: false });
-    if (conn) conn.send({ type: 'pb-preview-mode', layout: selectedLayout, theme: selectedTheme });
+    if (conn) {
+      conn.send({ type: 'pb-preview-mode', layout: selectedLayout, theme: selectedTheme });
+    }
   };
 
   const handleToggleReady = () => {
     const nextStatus = !iAmReady;
     setIAmReady(nextStatus);
-    syncToFirebase({ partnerIsReady: nextStatus }); // disimpan sementara untuk status
     if (conn) conn.send({ type: 'pb-ready-status', ready: nextStatus });
     if (nextStatus && partnerIsReady) triggerStartCountdown();
   };
@@ -792,7 +796,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     setBoothStep('capturing');
     setCurrentStep(0);
     setAllPhotos([]);
-    syncToFirebase({ boothStep: 'capturing' });
     if (conn) conn.send({ type: 'pb-start-countdown' });
   };
 
@@ -811,12 +814,10 @@ export default function LiveLoveRoomWithPhotobooth() {
     img.src = src;
   });
 
-  // DI PERBAIKI: Menggambar langsung video lokal & remote ke canvas foto agar 100% TIDAK HITAM
   const runDualCaptureStep = async () => {
     const total = getRequiredPhotosCount();
     if (currentStep >= total) {
       setBoothStep('ready');
-      syncToFirebase({ boothStep: 'ready' });
       generatePhotoboothCanvas(allPhotosRef.current);
       confetti({ particleCount: 100, spread: 100, origin: { y: 0.5 } });
       return;
@@ -848,30 +849,14 @@ export default function LiveLoveRoomWithPhotobooth() {
         ctx.textAlign = 'center';
         ctx.fillText(`✨ ${myName} & ${partnerName} • ${bgThemes[cameraBgTheme]?.name} ✨`, 400, 38);
 
-        // Gambar background virtual studio di dalam frame foto
-        if (bgImageLoadedRef.current) {
-          ctx.drawImage(bgImageLoadedRef.current, 40, 60, 720, 450);
-        }
-
-        // Gambar Video Kamu (Kiri) & Pasangan (Kanan) secara langsung agar tidak pernah hitam
-        const halfW = 360;
-        if (localVideoRef.current && localVideoRef.current.readyState >= 2) {
+        if (previewCanvasRef.current) {
           ctx.save();
+          ctx.shadowColor = 'rgba(0, 0, 0, 0.18)';
+          ctx.shadowBlur = 20;
           ctx.beginPath();
-          ctx.rect(40, 60, halfW, 450);
+          ctx.roundRect(40, 60, 720, 450, 20);
           ctx.clip();
-          ctx.translate(40 + halfW, 60);
-          ctx.scale(-1, 1);
-          ctx.drawImage(localVideoRef.current, 0, 0, halfW, 450);
-          ctx.restore();
-        }
-
-        if (remoteVideoRef.current && remoteVideoRef.current.readyState >= 2 && remoteStream) {
-          ctx.save();
-          ctx.beginPath();
-          ctx.rect(40 + halfW, 60, halfW, 450);
-          ctx.clip();
-          ctx.drawImage(remoteVideoRef.current, 40 + halfW, 60, halfW, 450);
+          ctx.drawImage(previewCanvasRef.current, 0, 0, 1280, 720, 40, 60, 720, 450);
           ctx.restore();
         }
 
@@ -947,7 +932,9 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.strokeStyle = themeConfig.border;
       ctx.stroke();
 
-      if (photos[0]) await drawCoverImage(photos[0], 65, 65, 470, 580, 20);
+      if (photos[0]) {
+        await drawCoverImage(photos[0], 65, 65, 470, 580, 20);
+      }
 
       ctx.font = '40px sans-serif';
       ctx.textAlign = 'center';
@@ -1038,7 +1025,9 @@ export default function LiveLoveRoomWithPhotobooth() {
   const handleUpdateEditor = (newCaption, newSticker) => {
     setStripCaption(newCaption);
     setSelectedSticker(newSticker);
-    syncToFirebase({ stripCaption: newCaption, selectedSticker: newSticker });
+    if (conn) {
+      conn.send({ type: 'pb-edit-sync', caption: newCaption, sticker: newSticker });
+    }
   };
 
   return (
@@ -1111,7 +1100,7 @@ export default function LiveLoveRoomWithPhotobooth() {
           <motion.div key="menu" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-xl border border-rose-100 text-center max-w-md w-full space-y-6 relative z-10">
             <div className="text-5xl mb-2">📸💞</div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">Live Space & Photobooth</h1>
-            <p className="text-stone-600 text-xs sm:text-sm leading-relaxed">Terhubung dengan Firebase Real-time! Data aman dari refresh, chat, kuis, dan photobooth studio bersama pasangan.</p>
+            <p className="text-stone-600 text-xs sm:text-sm leading-relaxed">Ruang interaktif real-time. Ngobrol, Counter Jadian, Quiz, Bucket List, dan Photobooth studio bersama pasangan!</p>
             <div className="space-y-3 pt-2">
               <button onClick={() => setMode('create')} className="w-full py-4 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-2xl shadow-md transition cursor-pointer text-sm">✨ Buat Room Baru</button>
               <button onClick={() => setMode('join')} className="w-full py-4 bg-white hover:bg-rose-50 text-rose-600 border-2 border-rose-200 font-bold rounded-2xl transition cursor-pointer text-sm">🔗 Gabung ke Room Pasangan</button>
@@ -1193,7 +1182,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] uppercase tracking-widest text-green-600 font-bold flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Terhubung Firebase
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Terhubung Live
                   </span>
                   <button
                     onClick={handleLeaveSession}
@@ -1240,11 +1229,18 @@ export default function LiveLoveRoomWithPhotobooth() {
 
                 <div className="flex-1 bg-stone-50 border border-stone-200/80 rounded-2xl p-3 overflow-y-auto space-y-2.5 flex flex-col">
                   {messages.length === 0 ? (
-                    <div className="my-auto text-center text-xs text-stone-400">Kirim sapaan atau kado virtual ke {partnerName}! Pesan tersimpan aman di Firebase. 👋</div>
+                    <div className="my-auto text-center text-xs text-stone-400">Kirim sapaan, voice note, atau kado virtual ke {partnerName}! 👋</div>
                   ) : (
                     messages.map((m, idx) => (
                       <div key={idx} className={`flex flex-col max-w-[85%] ${m.sender === 'me' ? 'ml-auto items-end' : 'mr-auto items-start'}`}>
-                        <div className={`px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-medium ${m.sender === 'me' ? 'bg-rose-500 text-white rounded-br-none shadow-sm' : 'bg-white text-stone-800 border border-stone-200 rounded-bl-none shadow-sm'}`}>{m.text}</div>
+                        {m.isVoice ? (
+                          <div className={`p-2.5 rounded-2xl shadow-sm border ${m.sender === 'me' ? 'bg-rose-500 text-white border-rose-600 rounded-br-none' : 'bg-white text-stone-800 border-stone-200 rounded-bl-none'}`}>
+                            <div className="text-[10px] font-bold mb-1 opacity-80">{m.sender === 'me' ? '🎤 Voice Note Kamu' : `🎤 Voice Note ${partnerName}`}</div>
+                            <audio controls src={m.audio} className="w-44 sm:w-52 h-8" />
+                          </div>
+                        ) : (
+                          <div className={`px-3.5 py-2 rounded-2xl text-xs sm:text-sm font-medium ${m.sender === 'me' ? 'bg-rose-500 text-white rounded-br-none shadow-sm' : 'bg-white text-stone-800 border border-stone-200 rounded-bl-none shadow-sm'}`}>{m.text}</div>
+                        )}
                         <span className="text-[9px] text-stone-400 mt-0.5 px-1">{m.time}</span>
                       </div>
                     ))
@@ -1253,8 +1249,15 @@ export default function LiveLoveRoomWithPhotobooth() {
                 </div>
 
                 <form onSubmit={handleSendMessage} className="flex gap-2 shrink-0 items-center">
-                  <input type="text" value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} placeholder={`Ketik pesan ke ${partnerName}...`} className="flex-1 px-4 py-3 rounded-2xl border border-stone-200 focus:border-rose-400 focus:outline-none text-stone-900 font-medium bg-stone-50 text-xs sm:text-sm" />
-                  <button type="submit" className="px-4 py-3 bg-stone-900 hover:bg-stone-800 text-white font-semibold rounded-2xl text-xs sm:text-sm shadow-sm cursor-pointer">Kirim ✈️</button>
+                  <button
+                    type="button"
+                    onClick={isRecording ? stopAudioRecording : startAudioRecording}
+                    className={`p-3 rounded-2xl text-white font-bold text-xs transition cursor-pointer flex items-center justify-center shrink-0 shadow-sm ${isRecording ? 'bg-red-500 animate-pulse' : 'bg-rose-500 hover:bg-rose-600'}`}
+                  >
+                    {isRecording ? '⏹️' : '🎙️'}
+                  </button>
+                  <input type="text" value={inputMessage} onChange={(e) => setInputMessage(e.target.value)} placeholder={isRecording ? "Sedang merekam suara... 🎙️" : `Ketik pesan ke ${partnerName}...`} disabled={isRecording} className="flex-1 px-4 py-3 rounded-2xl border border-stone-200 focus:border-rose-400 focus:outline-none text-stone-900 font-medium bg-stone-50 text-xs sm:text-sm" />
+                  <button type="submit" disabled={isRecording} className="px-4 py-3 bg-stone-900 hover:bg-stone-800 text-white font-semibold rounded-2xl text-xs sm:text-sm shadow-sm cursor-pointer">Kirim ✈️</button>
                 </form>
               </div>
             )}
@@ -1297,7 +1300,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               <div className="flex-1 flex flex-col space-y-3 overflow-y-auto p-2">
                 <div className="text-center shrink-0">
                   <h3 className="font-bold text-stone-900 text-sm">❓ Seberapa Kenal Kamu Sama Aku?</h3>
-                  <p className="text-[11px] text-stone-500">Jawab pertanyaan di bawah bersama pasangan!</p>
+                  <p className="text-[11px] text-stone-500">Jawab pertanyaan di bawah, lalu lihat jawaban pasanganmu!</p>
                 </div>
 
                 <div className="space-y-4">
@@ -1311,6 +1314,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                             onClick={() => {
                               const updated = { ...quizAnswers, [idx]: opt };
                               setQuizAnswers(updated);
+                              if (conn) conn.send({ type: 'quiz-sync', answers: updated });
                             }}
                             className={`py-2 px-2 rounded-xl text-[11px] font-bold border transition ${quizAnswers[idx] === opt ? 'bg-rose-500 text-white border-rose-500 shadow-sm' : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-100'}`}
                           >
@@ -1318,6 +1322,9 @@ export default function LiveLoveRoomWithPhotobooth() {
                           </button>
                         ))}
                       </div>
+                      {partnerQuizAnswers[idx] && (
+                        <p className="text-[10px] text-rose-600 font-semibold pt-1">💬 Jawaban {partnerName}: <span className="underline">{partnerQuizAnswers[idx]}</span></p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -1354,7 +1361,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                     const updated = [...bucketList, { id: Date.now(), text: newBucketItem, done: false }];
                     setBucketList(updated);
                     setNewBucketItem('');
-                    syncToFirebase({ bucketList: updated });
+                    if (conn) conn.send({ type: 'bucket-sync', list: updated });
                   }} className="flex gap-2">
                     <input type="text" value={newBucketItem} onChange={(e) => setNewBucketItem(e.target.value)} placeholder="Tambah impian baru..." className="flex-1 px-3 py-2 rounded-xl border border-stone-200 text-xs bg-stone-50" />
                     <button type="submit" className="px-3 py-2 bg-rose-500 text-white font-bold rounded-xl text-xs">Tambah</button>
@@ -1368,7 +1375,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                           onClick={() => {
                             const updated = bucketList.map(b => b.id === item.id ? { ...b, done: !b.done } : b);
                             setBucketList(updated);
-                            syncToFirebase({ bucketList: updated });
+                            if (conn) conn.send({ type: 'bucket-sync', list: updated });
                           }}
                           className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${item.done ? 'bg-emerald-200 text-emerald-800' : 'bg-stone-200 text-stone-700'}`}
                         >
@@ -1386,7 +1393,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               <div className="flex-1 flex flex-col space-y-3 overflow-hidden">
                 <div className="text-center shrink-0">
                   <h3 className="font-bold text-stone-900 text-sm">💌 Papan Catatan Hati</h3>
-                  <p className="text-[11px] text-stone-500">Tinggalkan pesan manis yang tersinkronisasi di Firebase!</p>
+                  <p className="text-[11px] text-stone-500">Tinggalkan pesan manis yang langsung nempel di layar kalian berdua!</p>
                 </div>
 
                 <form onSubmit={handleSendNote} className="flex gap-2 shrink-0">
