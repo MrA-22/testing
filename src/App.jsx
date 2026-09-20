@@ -998,7 +998,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     }, 1000);
   };
 
-  // Fungsi Pembuatan Canvas Photobooth dengan Konsep Bingkai Dekoratif & Spesial
   const generatePhotoboothCanvas = async (photosToUse) => {
     const photos = photosToUse || allPhotosRef.current;
     const canvas = document.createElement('canvas');
@@ -1032,7 +1031,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.roundRect(0, 0, 520, 870, 35);
       ctx.fill();
 
-      // Ornamen Bingkai Dekoratif Luar
       ctx.lineWidth = 10;
       ctx.strokeStyle = currentTheme.border;
       ctx.stroke();
@@ -1044,13 +1042,11 @@ export default function LiveLoveRoomWithPhotobooth() {
       canvas.width = 630;
       canvas.height = 1230;
 
-      // Background Card
       ctx.fillStyle = currentTheme.cardBg;
       ctx.beginPath();
       ctx.roundRect(0, 0, 630, 1230, 40);
       ctx.fill();
 
-      // Efek Bingkai Dekoratif Pinggiran (Gaya Gambar Kedua)
       ctx.save();
       ctx.lineWidth = 12;
       ctx.strokeStyle = currentTheme.border;
@@ -1059,11 +1055,9 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.stroke();
       ctx.restore();
 
-      // Ornamen Bingkai Spesial (Lucu, Anime, Boneka, Pita di Sudut)
       if (currentTheme.isSpecial) {
         ctx.save();
         ctx.font = '28px sans-serif';
-        // Hiasan di 4 Sudut Bingkai
         ctx.fillText(currentTheme.id === 'special_chibi' ? '🎀' : currentTheme.id === 'special_anime' ? '🌸' : currentTheme.id === 'special_cat' ? '🐾' : currentTheme.id === 'special_magical' ? '⭐' : '🦖', 30, 50);
         ctx.fillText(currentTheme.id === 'special_chibi' ? '🧸' : currentTheme.id === 'special_anime' ? '✨' : currentTheme.id === 'special_cat' ? '🐱' : currentTheme.id === 'special_magical' ? '🌙' : '💚', 565, 50);
         ctx.fillText(currentTheme.id === 'special_chibi' ? '🍫' : currentTheme.id === 'special_anime' ? '💖' : currentTheme.id === 'special_cat' ? '🐟' : currentTheme.id === 'special_magical' ? '🪄' : '🌿', 30, 1205);
@@ -1071,7 +1065,6 @@ export default function LiveLoveRoomWithPhotobooth() {
         ctx.restore();
       }
 
-      // Area Bawah Card
       ctx.save();
       ctx.fillStyle = currentTheme.softBg;
       ctx.beginPath();
@@ -1083,7 +1076,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.stroke();
       ctx.restore();
 
-      // Label Pita Tengah Bawah
       ctx.save();
       ctx.fillStyle = currentTheme.border;
       ctx.beginPath();
@@ -1095,7 +1087,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillText(currentTheme.isSpecial ? currentTheme.badge : 'SPECIAL MOMENT', 315, 962);
       ctx.restore();
 
-      // Header Teks
       ctx.fillStyle = currentTheme.text;
       ctx.font = '900 18px sans-serif';
       ctx.textAlign = 'center';
@@ -1104,7 +1095,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillStyle = currentTheme.accent;
       ctx.fillText('Our Sweet Memories Together', canvas.width / 2, 80);
 
-      // Render Layout Foto
       if (selectedLayout === '1x2') {
         if (photos[0]) await drawCoverImage(photos[0], 50, 105, 530, 380, 15);
         if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 50, 500, 530, 380, 15);
@@ -1139,7 +1129,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       }
     }
 
-    // Render Stiker
     placedStickers.forEach(stk => {
       ctx.font = `${stk.size || 32}px sans-serif`;
       ctx.textAlign = 'center';
@@ -1148,7 +1137,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillText(stk.emoji, canvasX, canvasY);
     });
 
-    // Render Caption Teks dengan ukuran dinamis
     const captionX = (captionPos.x / 100) * canvas.width;
     const captionY = (captionPos.y / 100) * canvas.height;
     ctx.fillStyle = currentTheme.border;
@@ -1156,7 +1144,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.textAlign = 'center';
     ctx.fillText(stripCaption, captionX, captionY);
 
-    // Footer Info
     ctx.fillStyle = '#57534e';
     ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'left';
@@ -1652,7 +1639,7 @@ export default function LiveLoveRoomWithPhotobooth() {
             )}
 
             {activeTab === 'photobooth' && (
-              <div className="flex-1 flex flex-col items-center justify-center space-y-1.5 overflow-y-auto p-1">
+              <div className="flex-1 flex flex-col items-center justify-between space-y-1 overflow-y-auto p-1">
                 
                 {boothStep === 'select-layout' && (
                   <div className="space-y-2.5 w-full text-left my-auto overflow-y-auto max-h-[78vh] pr-1">
@@ -1785,12 +1772,12 @@ export default function LiveLoveRoomWithPhotobooth() {
                 )}
 
                 {boothStep === 'ready' && finalStripUrl && (
-                  <div className="space-y-1.5 w-full flex flex-col items-center my-auto pt-0.5">
+                  <div className="w-full flex flex-col items-center justify-center space-y-1.5">
                     
-                    {/* Area Card Preview Diperbesar & Pas di Layar */}
+                    {/* Area Card Diperbesar (Zoom In) Supaya Nyaman Diedit */}
                     <div 
                       ref={stickerContainerRef} 
-                      className="w-[125px] sm:w-[135px] relative rounded-2xl shadow-2xl overflow-hidden select-none touch-none border-2 border-rose-300 bg-white"
+                      className="w-[170px] sm:w-[190px] relative rounded-2xl shadow-2xl overflow-hidden select-none touch-none border-2 border-rose-300 bg-white shrink-0"
                     >
                       <img src={finalStripUrl} alt="Hasil Photobooth" className="w-full h-auto object-contain block pointer-events-none" />
                       
@@ -1808,7 +1795,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                           left: `${captionPos.x}%`,
                           top: `${captionPos.y}%`,
                           transform: 'translate(-50%, -50%)',
-                          fontSize: `${(captionPos.size || 16) * 0.45}px`,
+                          fontSize: `${(captionPos.size || 16) * 0.55}px`,
                           touchAction: 'none'
                         }}
                         className={`cursor-grab active:cursor-grabbing px-1.5 py-0.5 rounded text-center transition-all whitespace-nowrap ${selectedElementId === 'caption' ? 'ring-2 ring-rose-500 bg-white/90 shadow-md' : ''}`}
@@ -1832,7 +1819,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                             left: `${s.x}%`,
                             top: `${s.y}%`,
                             transform: 'translate(-50%, -50%)',
-                            fontSize: `${(s.size || 36) * 0.4}px`,
+                            fontSize: `${(s.size || 36) * 0.5}px`,
                             touchAction: 'none'
                           }}
                           className={`cursor-grab active:cursor-grabbing p-0.5 transition-transform ${selectedElementId === s.id ? 'ring-2 ring-rose-500 rounded bg-white/70 shadow-md' : ''}`}
@@ -1842,7 +1829,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                       ))}
                     </div>
 
-                    <div className="bg-stone-50 border border-stone-200 p-2 rounded-2xl w-full max-w-[270px] space-y-1 text-left shadow-sm">
+                    <div className="bg-stone-50 border border-stone-200 p-2 rounded-2xl w-full max-w-[310px] space-y-1 text-left shadow-sm shrink-0">
                       <p className="text-[9px] font-bold text-stone-700 text-center">✨ Editor (Cubit 2 jari teks/stiker untuk besar/kecil)</p>
                       
                       <div>
@@ -1857,7 +1844,7 @@ export default function LiveLoveRoomWithPhotobooth() {
 
                       <div>
                         <span className="block text-[9px] font-semibold text-stone-500 mb-0.5">Tambah Stiker:</span>
-                        <div className="grid grid-cols-10 gap-1 max-h-[55px] overflow-y-auto p-1 bg-white rounded-xl border border-stone-200 shadow-inner">
+                        <div className="grid grid-cols-10 gap-1 max-h-[50px] overflow-y-auto p-1 bg-white rounded-xl border border-stone-200 shadow-inner">
                           {stickerOptions.map((stk) => (
                             <button 
                               key={stk} 
@@ -1884,7 +1871,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                       )}
                     </div>
 
-                    <div className="flex gap-2 w-full max-w-[270px]">
+                    <div className="flex gap-2 w-full max-w-[310px] shrink-0 pt-0.5">
                       <a href={finalStripUrl} download={`StudioPhotobooth_${myName}_${partnerName}.png`} className="flex-1 py-2 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs text-center block cursor-pointer hover:scale-105 transition">📥 Download (PNG)</a>
                       <button onClick={handleOpenLivePreview} className="px-3 py-2 bg-stone-200 text-stone-600 font-bold rounded-xl text-xs hover:bg-stone-300 transition cursor-pointer shadow-xs">Ulangi 🔄</button>
                     </div>
