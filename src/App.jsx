@@ -75,6 +75,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   const remoteStreamRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const remoteAudioRef = useRef(null); // Ref khusus Audio Pasangan agar suara muncul lancar
   const currentCallRef = useRef(null);
   const peerInstanceRef = useRef(null);
 
@@ -186,14 +187,19 @@ export default function LiveLoveRoomWithPhotobooth() {
   }, [boothStep, cameraActive]);
 
   useEffect(() => {
-    if (remoteStream && remoteVideoRef.current) {
-      remoteStreamRef.current = remoteStream;
-      remoteVideoRef.current.srcObject = remoteStream;
-      remoteVideoRef.current.play().catch(e => console.log(e));
+    if (remoteStream) {
+      if (remoteVideoRef.current) {
+        remoteVideoRef.current.srcObject = remoteStream;
+        remoteVideoRef.current.play().catch(e => console.log(e));
+      }
+      if (remoteAudioRef.current) {
+        remoteAudioRef.current.srcObject = remoteStream;
+        remoteAudioRef.current.play().catch(e => console.log("Audio play blocked:", e));
+      }
     }
   }, [remoteStream, boothStep]);
 
-  // Real-time Render Loop AI Dual Background Removal & Komposisi Studio (Dioptimalkan agar tidak menumpuk)
+  // Real-time Render Loop AI Dual Background Removal & Komposisi Studio
   useEffect(() => {
     if ((boothStep === 'preview' || boothStep === 'capturing') && isSegmentationLoaded && cameraActive) {
       let isCancelled = false;
@@ -418,7 +424,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     return () => clearInterval(interval);
   }, [anniversaryDate]);
 
-  // Fungsi untuk mematikan kamera sepenuhnya
   const stopCamera = () => {
     if (animationFrameRef.current) {
       cancelAnimationFrame(animationFrameRef.current);
@@ -441,7 +446,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     try {
       let stream = localStreamRef.current;
       if (!stream) {
-        // Mengaktifkan audio: true agar suara terdengar seperti video call
         stream = await navigator.mediaDevices.getUserMedia({ 
           video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }, 
           audio: true 
@@ -463,14 +467,17 @@ export default function LiveLoveRoomWithPhotobooth() {
           setRemoteStream(remoteStreamFeed);
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = remoteStreamFeed;
-            remoteVideoRef.current.muted = false; // Pastikan audio pasangan aktif
             remoteVideoRef.current.play().catch(e => console.log(e));
+          }
+          if (remoteAudioRef.current) {
+            remoteAudioRef.current.srcObject = remoteStreamFeed;
+            remoteAudioRef.current.play().catch(e => console.log(e));
           }
         });
       }
       return stream;
     } catch (err) {
-      console.error("Gagal kamera:", err);
+      console.error("Gagal kamera/audio:", err);
       alert("Tidak dapat mengakses kamera/mikrofon. Pastikan izin aktif!");
       return null;
     }
@@ -480,7 +487,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     const stream = await initializeCameraAndCall();
     if (stream && conn && conn.peer) {
       conn.send({ type: 'request-video-sync' });
-      alert("Permintaan sinkronisasi video dikirim ke pasangan! 🔄");
+      alert("Permintaan sinkronisasi video & suara dikirim ke pasangan! 🔄");
     }
   };
 
@@ -538,8 +545,11 @@ export default function LiveLoveRoomWithPhotobooth() {
         setRemoteStream(remoteStreamFeed);
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = remoteStreamFeed;
-          remoteVideoRef.current.muted = false;
           remoteVideoRef.current.play().catch(e => console.log(e));
+        }
+        if (remoteAudioRef.current) {
+          remoteAudioRef.current.srcObject = remoteStreamFeed;
+          remoteAudioRef.current.play().catch(e => console.log(e));
         }
       });
     });
@@ -575,8 +585,11 @@ export default function LiveLoveRoomWithPhotobooth() {
         setRemoteStream(remoteStreamFeed);
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = remoteStreamFeed;
-          remoteVideoRef.current.muted = false;
           remoteVideoRef.current.play().catch(e => console.log(e));
+        }
+        if (remoteAudioRef.current) {
+          remoteAudioRef.current.srcObject = remoteStreamFeed;
+          remoteAudioRef.current.play().catch(e => console.log(e));
         }
       });
     });
@@ -632,8 +645,9 @@ export default function LiveLoveRoomWithPhotobooth() {
           call.on('stream', (remoteStreamFeed) => {
             remoteStreamRef.current = remoteStreamFeed;
             setRemoteStream(remoteStreamFeed);
-            if (remoteVideoRef.current) {
-              remoteVideoRef.current.muted = false;
+            if (remoteAudioRef.current) {
+              remoteAudioRef.current.srcObject = remoteStreamFeed;
+              remoteAudioRef.current.play().catch(e => console.log(e));
             }
           });
         }
@@ -819,7 +833,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     const total = getRequiredPhotosCount();
     if (currentStep >= total) {
       setBoothStep('ready');
-      stopCamera(); // Matikan kamera otomatis setelah selesai jepret untuk menghemat resource/mencegah lag
+      stopCamera(); // Matikan kamera otomatis setelah selesai jepret untuk mencegah lag/memory leak
       generatePhotoboothCanvas(allPhotosRef.current);
       confetti({ particleCount: 100, spread: 100, origin: { y: 0.5 } });
       return;
@@ -1038,6 +1052,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       {/* ELEMEN VIDEO & AUDIO STREAM UTAMA */}
       <video ref={localVideoRef} autoPlay playsInline muted className="hidden" />
       <video ref={remoteVideoRef} autoPlay playsInline className="hidden" />
+      <audio ref={remoteAudioRef} autoPlay />
 
       {/* VIRTUAL GIFT POPUP OVERLAY */}
       <AnimatePresence>
