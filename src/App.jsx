@@ -553,7 +553,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     return 2;
   };
 
-  // Fungsi untuk melukis pemandangan dan potret video secara kemas dan estetik di atas kanvas
+  // Fungsi untuk menggambar pemandangan dan video berdampingan dalam satu frame utuh tanpa bingkai/kotak
   const drawCompositeScene = (ctx, width, height) => {
     // 1. Latar Belakang Pemandangan
     let grad = ctx.createLinearGradient(0, 0, width, height);
@@ -571,66 +571,46 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, width, height);
 
-    // 2. Bingkai Potret Estetik untuk Kamu (Sisi Kiri)
-    const cardWidth = width * 0.42;
-    const cardHeight = height * 0.78;
-    const yPos = (height - cardHeight) / 2;
+    const halfW = width / 2;
 
-    // Potret Kamu
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(width * 0.05, yPos, cardWidth, cardHeight, 25);
-    ctx.clip();
+    // 2. Video Kamu (Sisi Kiri - Full memenuhi setengah frame)
     if (localVideoRef.current && localVideoRef.current.readyState >= 2) {
       ctx.save();
-      ctx.translate(width * 0.05 + cardWidth, 0);
+      ctx.translate(halfW, 0);
       ctx.scale(-1, 1);
-      ctx.drawImage(localVideoRef.current, 0, yPos, cardWidth, cardHeight);
+      ctx.drawImage(localVideoRef.current, 0, 0, halfW, height);
       ctx.restore();
     }
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = '#ffffff';
-    ctx.stroke();
-    ctx.restore();
 
-    // Label Nama Kamu
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.beginPath();
-    ctx.roundRect(width * 0.08, yPos + cardHeight - 38, cardWidth * 0.6, 26, 12);
-    ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.fillText(myName || 'Kamu', width * 0.11, yPos + cardHeight - 21);
-
-    // 3. Potret Pasangan (Sisi Kanan)
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(width * 0.53, yPos, cardWidth, cardHeight, 25);
-    ctx.clip();
+    // 3. Video Pasangan (Sisi Kanan - Full memenuhi setengah frame)
     if (remoteVideoRef.current && remoteStream && remoteVideoRef.current.readyState >= 2) {
-      ctx.drawImage(remoteVideoRef.current, width * 0.53, yPos, cardWidth, cardHeight);
+      ctx.drawImage(remoteVideoRef.current, halfW, 0, halfW, height);
     } else {
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.fillRect(width * 0.53, yPos, cardWidth, cardHeight);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.fillRect(halfW, 0, halfW, height);
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 14px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`Menunggu ${partnerName}...`, width * 0.74, height / 2);
+      ctx.fillText(`Menunggu ${partnerName}...`, halfW + halfW / 2, height / 2);
       ctx.textAlign = 'left';
     }
-    ctx.lineWidth = 6;
-    ctx.strokeStyle = '#ffffff';
-    ctx.stroke();
-    ctx.restore();
 
-    // Label Nama Pasangan
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    // Label Nama Estetik di Bawah Sudut
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
     ctx.beginPath();
-    ctx.roundRect(width * 0.56, yPos + cardHeight - 38, cardWidth * 0.6, 26, 12);
+    ctx.roundRect(15, height - 38, 110, 26, 12);
     ctx.fill();
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.fillText(partnerName || 'Ayang', width * 0.59, yPos + cardHeight - 21);
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText(myName || 'Kamu', 25, height - 21);
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+    ctx.beginPath();
+    ctx.roundRect(halfW + 15, height - 38, 110, 26, 12);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.fillText(partnerName || 'Ayang', halfW + 25, height - 21);
   };
 
   // Loop Render Live Preview ke Kanvas
@@ -1156,7 +1136,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 6: PHOTOBOOTH KAMERA GANDA & VIRTUAL BACKGROUND */}
+            {/* TAB 6: PHOTOBOOTH KAMERA GANDA & 1 FRAME UTUH */}
             {activeTab === 'photobooth' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-3 overflow-y-auto p-1">
                 
@@ -1185,7 +1165,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* 2. TAHAP LIVE PREVIEW DENGAN PEMANDANGAN & POTRET BERSIH */}
+                {/* 2. TAHAP LIVE PREVIEW DALAM 1 FRAME UTUH TANPA BINGKAI KOTAK */}
                 {boothStep === 'preview' && (
                   <div className="space-y-3 w-full text-center my-auto">
                     <p className="text-xs font-bold text-stone-700">✨ Pilih Latar Belakang Pemandangan ✨</p>
@@ -1218,11 +1198,11 @@ export default function LiveLoveRoomWithPhotobooth() {
                       <video ref={remoteVideoRef} autoPlay playsInline />
                     </div>
 
-                    {/* KANVAS UTAMA PREVIEW */}
+                    {/* KANVAS UTAMA PREVIEW (1 FRAME UTUH TANPA BINGKAI TERPISAH) */}
                     <div className="relative rounded-3xl shadow-xl max-w-[390px] mx-auto overflow-hidden h-[180px] bg-black">
                       <canvas ref={previewCanvasRef} width={640} height={360} className="w-full h-full object-cover" />
                       {!remoteStream && (
-                        <div className="absolute inset-0 bg-stone-900/80 flex items-center justify-center p-2 pointer-events-none">
+                        <div className="absolute inset-0 bg-stone-900/70 flex items-center justify-center p-2 pointer-events-none">
                           <span className="text-[11px] text-pink-200 font-medium animate-pulse text-center">Menunggu {partnerName} bergabung...</span>
                         </div>
                       )}
