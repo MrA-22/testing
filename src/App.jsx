@@ -167,12 +167,6 @@ export default function LiveLoveRoomWithPhotobooth() {
   }, [cameraBgTheme]);
 
   useEffect(() => {
-    if (boothStep === 'preview' || boothStep === 'capturing') {
-      initializeCameraAndCall();
-    }
-  }, [boothStep]);
-
-  useEffect(() => {
     if (localStreamRef.current && localVideoRef.current) {
       localVideoRef.current.srcObject = localStreamRef.current;
       localVideoRef.current.play().catch(e => console.log(e));
@@ -189,7 +183,7 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   // Real-time Render Loop AI Dual Background Removal & Komposisi Studio
   useEffect(() => {
-    if ((boothStep === 'preview' || boothStep === 'capturing') && isSegmentationLoaded) {
+    if ((boothStep === 'preview' || boothStep === 'capturing') && isSegmentationLoaded && cameraActive) {
       const renderLoop = async () => {
         const localVid = localVideoRef.current;
         const remoteVid = remoteVideoRef.current;
@@ -231,7 +225,7 @@ export default function LiveLoveRoomWithPhotobooth() {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [boothStep, isSegmentationLoaded, cameraBgTheme, remoteStream, partnerName, myName]);
+  }, [boothStep, isSegmentationLoaded, cameraBgTheme, remoteStream, partnerName, myName, cameraActive]);
 
   const getVideoCropParams = (video, destW, destH) => {
     if (!video) return { sX: 0, sY: 0, sW: 640, sH: 480 };
@@ -408,11 +402,18 @@ export default function LiveLoveRoomWithPhotobooth() {
     return () => clearInterval(interval);
   }, [anniversaryDate]);
 
+  // Fungsi untuk mematikan kamera sepenuhnya
+  const stopCamera = () => {
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => track.stop());
+      localStreamRef.current = null;
+    }
+    setCameraActive(false);
+  };
+
   useEffect(() => {
     return () => {
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach(track => track.stop());
-      }
+      stopCamera();
     };
   }, []);
 
@@ -465,10 +466,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     if (window.confirm("Yakin ingin keluar dari sesi ruangan ini?")) {
       if (conn) conn.close();
       if (peer) peer.destroy();
-      if (localStreamRef.current) {
-        localStreamRef.current.getTracks().forEach(track => track.stop());
-        localStreamRef.current = null;
-      }
+      stopCamera();
       
       localStorage.removeItem('bucin_mode');
       localStorage.removeItem('bucin_roomCode');
@@ -510,11 +508,8 @@ export default function LiveLoveRoomWithPhotobooth() {
     });
 
     newPeer.on('call', async (call) => {
-      let stream = localStreamRef.current;
-      if (!stream) {
-        stream = await initializeCameraAndCall();
-      }
-      call.answer(stream);
+      const stream = localStreamRef.current;
+      call.answer(stream || undefined);
       currentCallRef.current = call;
       call.on('stream', (remoteStreamFeed) => {
         remoteStreamRef.current = remoteStreamFeed;
@@ -546,28 +541,11 @@ export default function LiveLoveRoomWithPhotobooth() {
       const connection = newPeer.connect(`bucin-room-${inputCode}`);
       setConn(connection);
       setupConnection(connection, newPeer);
-
-      let stream = await initializeCameraAndCall();
-      if (stream) {
-        const call = newPeer.call(`bucin-room-${inputCode}`, stream);
-        currentCallRef.current = call;
-        call.on('stream', (remoteStreamFeed) => {
-          remoteStreamRef.current = remoteStreamFeed;
-          setRemoteStream(remoteStreamFeed);
-          if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = remoteStreamFeed;
-            remoteVideoRef.current.play().catch(e => console.log(e));
-          }
-        });
-      }
     });
 
     newPeer.on('call', async (call) => {
-      let stream = localStreamRef.current;
-      if (!stream) {
-        stream = await initializeCameraAndCall();
-      }
-      call.answer(stream);
+      const stream = localStreamRef.current;
+      call.answer(stream || undefined);
       currentCallRef.current = call;
       call.on('stream', (remoteStreamFeed) => {
         remoteStreamRef.current = remoteStreamFeed;
@@ -592,23 +570,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       setIsConnected(true);
       setStatusText('Terhubung dengan Ayang! ❤️');
       connection.send({ type: 'init', name: myName, mood: myMood });
-
-      let stream = localStreamRef.current;
-      if (!stream) {
-        stream = await initializeCameraAndCall();
-      }
-      if (stream && connection.peer) {
-        const call = currentPeerInstance.call(connection.peer, stream);
-        currentCallRef.current = call;
-        call.on('stream', (remoteStreamFeed) => {
-          remoteStreamRef.current = remoteStreamFeed;
-          setRemoteStream(remoteStreamFeed);
-          if (remoteVideoRef.current) {
-            remoteVideoRef.current.srcObject = remoteStreamFeed;
-            remoteVideoRef.current.play().catch(e => console.log(e));
-          }
-        });
-      }
     });
 
     connection.on('data', async (data) => {
@@ -635,12 +596,12 @@ export default function LiveLoveRoomWithPhotobooth() {
       } else if (data.type === 'pb-bg-theme-sync') {
         setCameraBgTheme(data.theme);
       } else if (data.type === 'pb-preview-mode') {
+        // HANYA mengganti step preview tanpa menyalakan kamera secara otomatis
         setSelectedLayout(data.layout);
         setSelectedTheme(data.theme);
         setBoothStep('preview');
         setIAmReady(false);
         setPartnerIsReady(false);
-        await initializeCameraAndCall();
       } else if (data.type === 'request-video-sync') {
         if (localStreamRef.current && currentPeerInstance && connection.peer) {
           const call = currentPeerInstance.call(connection.peer, localStreamRef.current);
@@ -832,6 +793,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     const total = getRequiredPhotosCount();
     if (currentStep >= total) {
       setBoothStep('ready');
+      stopCamera(); // Matikan kamera otomatis setelah selesai jepret
       generatePhotoboothCanvas(allPhotosRef.current);
       confetti({ particleCount: 100, spread: 100, origin: { y: 0.5 } });
       return;
@@ -1047,7 +1009,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-100 via-pink-100 to-purple-200 flex items-center justify-center p-4 overflow-hidden relative font-sans text-stone-800">
 
-      {/* ELEMEN VIDEO STREAM UTAMA (TERSEMBUNYI PERMANEN AGAR TIDAK UNMOUNT) */}
+      {/* ELEMEN VIDEO STREAM UTAMA (TERSEMBUNYI PERMANEN) */}
       <video ref={localVideoRef} autoPlay playsInline muted className="hidden" />
       <video ref={remoteVideoRef} autoPlay playsInline className="hidden" />
 
@@ -1194,7 +1156,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                     <option value="😴 Mengantuk">😴 Mengantuk</option>
                     <option value="😡 Lagi Ngambek">😡 Lagi Ngambek</option>
                   </select>
-                  <button onClick={() => conn && conn.send({ type: 'love-tap' })} className="py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer hover:scale-105 transition">💖 Kirim Hati / Peluk</button>
+                  <button onClick={() => confetti({ particleCount: 80, spread: 100, origin: { y: 0.6 } })} className="py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl text-xs shadow-sm cursor-pointer hover:scale-105 transition">💖 Kirim Hati / Peluk</button>
                 </div>
 
                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1 shrink-0 text-xs">
@@ -1451,12 +1413,26 @@ export default function LiveLoveRoomWithPhotobooth() {
                     <div className="bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 border-2 border-rose-200 p-3 rounded-3xl shadow-lg max-w-[480px] mx-auto space-y-2">
                       <div className="flex justify-between items-center px-1">
                         <span className="text-[11px] font-bold text-rose-700 tracking-wide">💖 {myName} & {partnerName} • {bgThemes[cameraBgTheme]?.emoji} {bgThemes[cameraBgTheme]?.name} 💖</span>
-                        <button onClick={handleReconnectCall} className="text-[10px] bg-rose-200 hover:bg-rose-300 text-rose-800 font-bold px-2 py-1 rounded-lg transition cursor-pointer">🔄 Hubungkan Ulang Video</button>
+                        {cameraActive && (
+                          <button onClick={handleReconnectCall} className="text-[10px] bg-rose-200 hover:bg-rose-300 text-rose-800 font-bold px-2 py-1 rounded-lg transition cursor-pointer">🔄 Hubungkan Ulang Video</button>
+                        )}
                       </div>
                       
-                      {/* Kanvas Live Studio Gabungan */}
+                      {/* Kanvas Live Studio Gabungan / Tombol Nyalakan Kamera */}
                       <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-rose-300 h-[210px] flex items-center justify-center shadow-inner">
-                        <canvas ref={previewCanvasRef} width={1280} height={720} className="w-full h-full object-cover" />
+                        {cameraActive ? (
+                          <canvas ref={previewCanvasRef} width={1280} height={720} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="text-center p-4 space-y-2">
+                            <p className="text-xs text-stone-300">Kamera belum aktif untuk menghemat baterai & kuota.</p>
+                            <button 
+                              onClick={initializeCameraAndCall}
+                              className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl text-xs shadow transition cursor-pointer"
+                            >
+                              🎥 Nyalakan Kamera Saya
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       {/* 8 PILIHAN TEMA BACKGROUND REAL-TIME */}
@@ -1493,7 +1469,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                     </div>
 
                     <div className="flex gap-2 max-w-[320px] mx-auto pt-1">
-                      <button onClick={() => setBoothStep('select-layout')} className="py-2 px-3 bg-stone-200 text-stone-700 font-bold rounded-xl text-xs">← Menu Utama</button>
+                      <button onClick={() => { stopCamera(); setBoothStep('select-layout'); }} className="py-2 px-3 bg-stone-200 text-stone-700 font-bold rounded-xl text-xs">← Menu Utama</button>
                       <button 
                         onClick={handleToggleReady} 
                         className={`flex-1 py-2 font-bold rounded-xl shadow-md text-xs cursor-pointer transition ${iAmReady ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-gradient-to-r from-rose-500 to-pink-600 text-white animate-pulse'}`}
@@ -1561,7 +1537,7 @@ export default function LiveLoveRoomWithPhotobooth() {
 
                     <div className="flex gap-2 w-full max-w-[280px]">
                       <a href={finalStripUrl} download={`StudioPhotobooth_${myName}_${partnerName}.png`} className="flex-1 py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs text-center block cursor-pointer hover:scale-105 transition">📥 Download (PNG)</a>
-                      <button onClick={() => { setAllPhotos([]); setFinalStripUrl(null); setBoothStep('select-layout'); }} className="px-3 py-2.5 bg-stone-200 text-stone-600 font-bold rounded-xl text-xs hover:bg-stone-300 transition cursor-pointer">Ulangi 🔄</button>
+                      <button onClick={handleOpenLivePreview} className="px-3 py-2.5 bg-stone-200 text-stone-600 font-bold rounded-xl text-xs hover:bg-stone-300 transition cursor-pointer">Ulangi 🔄</button>
                     </div>
                   </div>
                 )}
