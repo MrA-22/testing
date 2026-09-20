@@ -1042,48 +1042,47 @@ export default function LiveLoveRoomWithPhotobooth() {
     }, 1000);
   };
 
-  // Fungsi helper crop agar gambar tidak gepeng (object-fit cover equivalent pada canvas)
-  const drawCoverImage = async (photoSrc, x, y, width, height, radius) => {
-    const img = await loadImage(photoSrc);
-    if (!img) return;
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(x, y, width, height, radius);
-    ctx.clip();
-
-    const imgRatio = img.width / img.height;
-    const targetRatio = width / height;
-    let sW = img.width;
-    let sH = img.height;
-    let sX = 0;
-    let sY = 0;
-
-    if (imgRatio > targetRatio) {
-      sW = img.height * targetRatio;
-      sX = (img.width - sW) / 2;
-    } else {
-      sH = img.width / targetRatio;
-      sY = (img.height - sH) / 2;
-    }
-
-    ctx.drawImage(img, sX, sY, sW, sH, x, y, width, height);
-    ctx.restore();
-
-    ctx.save();
-    ctx.beginPath();
-    ctx.roundRect(x, y, width, height, radius);
-    ctx.lineWidth = 4;
-    ctx.strokeStyle = currentTheme.border;
-    ctx.stroke();
-    ctx.restore();
-  };
-
   const generatePhotoboothCanvas = async (photosToUse) => {
     const photos = photosToUse || allPhotosRef.current;
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
     const currentTheme = frameThemes.find(t => t.id === selectedTheme) || frameThemes[0];
+
+    const drawCoverImage = async (photoSrc, x, y, width, height, radius) => {
+      const img = await loadImage(photoSrc);
+      if (!img) return;
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(x, y, width, height, radius);
+      ctx.clip();
+
+      const imgRatio = img.width / img.height;
+      const targetRatio = width / height;
+      let sW = img.width;
+      let sH = img.height;
+      let sX = 0;
+      let sY = 0;
+
+      if (imgRatio > targetRatio) {
+        sW = img.height * targetRatio;
+        sX = (img.width - sW) / 2;
+      } else {
+        sH = img.width / targetRatio;
+        sY = (img.height - sH) / 2;
+      }
+
+      ctx.drawImage(img, sX, sY, sW, sH, x, y, width, height);
+      ctx.restore();
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.roundRect(x, y, width, height, radius);
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = currentTheme.border;
+      ctx.stroke();
+      ctx.restore();
+    };
 
     const drawSpecialPattern = () => {
       if (!currentTheme.isSpecial || !currentTheme.pattern) return;
@@ -1141,7 +1140,6 @@ export default function LiveLoveRoomWithPhotobooth() {
         await drawCoverImage(photos[0], 30, 30, 460, 680, 20);
       }
     } else {
-      // Tinggi kanvas dipangkas pas (840px) agar ruang kosong di bawah hilang total dan pas untuk foto
       canvas.width = 630;
       canvas.height = 840;
 
@@ -1165,7 +1163,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.textAlign = 'center';
       ctx.fillText(currentTheme.isSpecial ? `✨ ${currentTheme.name} ✨` : 'STUDIO LOVE STRIP', canvas.width / 2, 40);
 
-      // Posisi foto diatur pas agar proporsional tanpa gepeng
       if (selectedLayout === '1x2' || selectedLayout === 'mini_polaroid') {
         if (photos[0]) await drawCoverImage(photos[0], 55, 55, 520, 345, 12);
         if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 55, 410, 520, 345, 12);
@@ -1464,7 +1461,7 @@ export default function LiveLoveRoomWithPhotobooth() {
         )}
 
         {mode === 'dashboard' && (
-          <motion.div key="dash" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white/95 backdrop-blur-2xl p-3 sm:p-4 rounded-3xl shadow-2xl border border-rose-200 max-w-md w-full space-y-2 relative z-10 flex flex-col h-[96vh]">
+          <motion.div key="dash" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white/95 backdrop-blur-2xl p-3 sm:p-4 rounded-3xl shadow-2xl border border-rose-200 max-w-md w-full space-y-2 relative z-10 flex flex-col h-[94vh] max-h-[780px]">
             
             <div className="flex justify-between items-center border-b border-stone-100 pb-1.5 shrink-0">
               <div>
@@ -1675,7 +1672,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                 </div>
 
                 <form onSubmit={handleSendNote} className="flex gap-1.5 shrink-0">
-                  <input type="text" value={inputNote} onChange={(e) => setNewBucketItem(e.target.value) /* placeholder safety */ || setNewBucketItem('') || setInputNote(e.target.value)} placeholder="Tulis catatan romantis..." className="flex-1 px-3 py-2 rounded-2xl border border-stone-200 focus:border-rose-400 focus:outline-none text-stone-900 bg-stone-50 text-xs" />
+                  <input type="text" value={inputNote} onChange={(e) => setInputNote(e.target.value)} placeholder="Tulis catatan romantis..." className="flex-1 px-3 py-2 rounded-2xl border border-stone-200 focus:border-rose-400 focus:outline-none text-stone-900 bg-stone-50 text-xs" />
                   <button type="submit" className="px-3 py-2 bg-rose-500 text-white font-bold rounded-2xl text-xs shadow-sm cursor-pointer">Tempel</button>
                 </form>
 
@@ -1701,7 +1698,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               <div className="flex-1 flex flex-col items-center justify-between space-y-1 overflow-y-auto p-1">
                 
                 {boothStep === 'select-layout' && (
-                  <div className="space-y-2.5 w-full text-left my-auto overflow-y-auto max-h-[78vh] pr-1">
+                  <div className="space-y-2.5 w-full text-left my-auto overflow-y-auto max-h-[70vh] pr-1">
                     <div className="text-center">
                       <h3 className="font-bold text-stone-900 text-sm">Photobooth Studio Bersama 📸</h3>
                       <p className="text-[11px] text-stone-500">Pilih 10 Layout & 30 Bingkai Spesial (Pikachu, Spider, Anime, dll)!</p>
@@ -1709,7 +1706,7 @@ export default function LiveLoveRoomWithPhotobooth() {
 
                     <div>
                       <label className="block text-[11px] font-bold text-stone-600 mb-1">Pilih Layout:</label>
-                      <div className="grid grid-cols-2 gap-1 max-h-[120px] overflow-y-auto pr-1">
+                      <div className="grid grid-cols-2 gap-1 max-h-[110px] overflow-y-auto pr-1">
                         {layoutOptions.map((layout) => (
                           <button key={layout.id} onClick={() => handleLayoutChange(layout.id)} className={`py-1.5 px-2 rounded-xl text-[10px] font-bold border transition cursor-pointer ${selectedLayout === layout.id ? 'bg-rose-500 text-white border-rose-500 shadow-sm' : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'}`}>{layout.label}</button>
                         ))}
@@ -1718,7 +1715,7 @@ export default function LiveLoveRoomWithPhotobooth() {
 
                     <div>
                       <label className="block text-[11px] font-bold text-stone-600 mb-1">Pilih Bingkai & Warna (30 Pilihan):</label>
-                      <div className="grid grid-cols-2 gap-1 max-h-[140px] overflow-y-auto pr-1">
+                      <div className="grid grid-cols-2 gap-1 max-h-[130px] overflow-y-auto pr-1">
                         {frameThemes.map((theme) => (
                           <button key={theme.id} onClick={() => handleThemeChange(theme.id)} className={`py-1.5 px-2 rounded-xl text-[10px] font-bold border transition cursor-pointer flex items-center justify-between ${selectedTheme === theme.id ? 'bg-stone-900 text-white border-stone-900 shadow-sm' : theme.isSpecial ? 'bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100' : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'}`}>
                             <span className="truncate">{theme.name}</span>
@@ -1733,10 +1730,10 @@ export default function LiveLoveRoomWithPhotobooth() {
                 )}
 
                 {boothStep === 'preview' && (
-                  <div className="space-y-2.5 w-full text-center my-auto">
+                  <div className="space-y-2 w-full text-center my-auto">
                     <p className="text-[11px] font-bold text-stone-700">✨ Atur Pose & Pilih dari 30 Destinasi Wisata Dunia! ✨</p>
                     
-                    <div className="bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 border-2 border-rose-200 p-2.5 rounded-3xl shadow-lg max-w-[420px] mx-auto space-y-2">
+                    <div className="bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 border-2 border-rose-200 p-2 rounded-3xl shadow-lg max-w-[420px] mx-auto space-y-1.5">
                       <div className="flex justify-between items-center px-1">
                         <span className="text-[10px] font-bold text-rose-700 tracking-wide">
                           💖 {myName} & {partnerName} • {cameraBgTheme === 'custom' ? '🖼️ Custom' : (bgThemes[cameraBgTheme]?.emoji + ' ' + bgThemes[cameraBgTheme]?.name)}
@@ -1746,7 +1743,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                         )}
                       </div>
                       
-                      <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-rose-300 h-[190px] flex items-center justify-center shadow-inner">
+                      <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-rose-300 h-[170px] flex items-center justify-center shadow-inner">
                         {cameraActive ? (
                           <canvas ref={previewCanvasRef} width={1280} height={720} className="w-full h-full object-cover" />
                         ) : (
@@ -1772,7 +1769,7 @@ export default function LiveLoveRoomWithPhotobooth() {
 
                       <div className="pt-0.5">
                         <span className="block text-[9px] font-bold text-stone-500 uppercase tracking-wider mb-1">Pilih dari 30 Destinasi Wisata Dunia:</span>
-                        <div className="grid grid-cols-5 gap-1 max-h-[110px] overflow-y-auto pr-1">
+                        <div className="grid grid-cols-5 gap-1 max-h-[90px] overflow-y-auto pr-1">
                           {Object.keys(bgThemes).map((key) => {
                             const bg = bgThemes[key];
                             return (
@@ -1790,7 +1787,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                       </div>
                     </div>
 
-                    <div className="bg-white/90 border border-stone-200 p-2 rounded-2xl max-w-[290px] mx-auto text-[11px] space-y-1 shadow-xs">
+                    <div className="bg-white/90 border border-stone-200 p-1.5 rounded-2xl max-w-[290px] mx-auto text-[11px] space-y-0.5 shadow-xs">
                       <div className="flex justify-between items-center px-1">
                         <span>Kamu:</span>
                         <span className={`font-bold ${iAmReady ? 'text-emerald-600' : 'text-amber-600'}`}>{iAmReady ? '✔️ Siap!' : '⏳ Belum'}</span>
@@ -1802,10 +1799,10 @@ export default function LiveLoveRoomWithPhotobooth() {
                     </div>
 
                     <div className="flex gap-2 max-w-[290px] mx-auto pt-0.5">
-                      <button onClick={() => { stopCamera(); setBoothStep('select-layout'); }} className="py-2 px-3 bg-stone-200 text-stone-700 font-bold rounded-xl text-xs">← Menu</button>
+                      <button onClick={() => { stopCamera(); setBoothStep('select-layout'); }} className="py-1.5 px-3 bg-stone-200 text-stone-700 font-bold rounded-xl text-xs">← Menu</button>
                       <button 
                         onClick={handleToggleReady} 
-                        className={`flex-1 py-2 font-bold rounded-xl shadow-md text-xs cursor-pointer transition ${iAmReady ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-gradient-to-r from-rose-500 to-pink-600 text-white animate-pulse'}`}
+                        className={`flex-1 py-1.5 font-bold rounded-xl shadow-md text-xs cursor-pointer transition ${iAmReady ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-gradient-to-r from-rose-500 to-pink-600 text-white animate-pulse'}`}
                       >
                         {iAmReady ? 'Batal Siap ❌' : '✨ Saya Siap!'}
                       </button>
@@ -1831,12 +1828,11 @@ export default function LiveLoveRoomWithPhotobooth() {
                 )}
 
                 {boothStep === 'ready' && finalStripUrl && (
-                  <div className="w-full flex-1 flex flex-col items-center justify-center space-y-1.5 my-auto">
+                  <div className="w-full flex-1 flex flex-col items-center justify-center space-y-1 my-auto">
                     
-                    {/* Card diposisikan tepat di tengah, ukuran diperbesar dan proporsional */}
                     <div 
                       ref={stickerContainerRef} 
-                      className="w-[190px] sm:w-[210px] relative rounded-2xl shadow-2xl overflow-hidden select-none touch-none border-2 border-rose-300 bg-white shrink-0 my-auto"
+                      className="w-[170px] sm:w-[190px] relative rounded-2xl shadow-2xl overflow-hidden select-none touch-none border-2 border-rose-300 bg-white shrink-0 my-auto"
                     >
                       <img src={finalStripUrl} alt="Hasil Photobooth" className="w-full h-auto object-contain block pointer-events-none" />
                       
@@ -1854,7 +1850,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                           left: `${captionPos.x}%`,
                           top: `${captionPos.y}%`,
                           transform: 'translate(-50%, -50%)',
-                          fontSize: `${(captionPos.size || 16) * 0.58}px`,
+                          fontSize: `${(captionPos.size || 16) * 0.55}px`,
                           touchAction: 'none'
                         }}
                         className={`cursor-grab active:cursor-grabbing px-1.5 py-0.5 rounded text-center transition-all whitespace-nowrap ${selectedElementId === 'caption' ? 'ring-2 ring-rose-500 bg-white/90 shadow-md' : ''}`}
@@ -1878,7 +1874,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                             left: `${s.x}%`,
                             top: `${s.y}%`,
                             transform: 'translate(-50%, -50%)',
-                            fontSize: `${(s.size || 40) * 0.52}px`,
+                            fontSize: `${(s.size || 40) * 0.48}px`,
                             touchAction: 'none'
                           }}
                           className={`cursor-grab active:cursor-grabbing p-0.5 transition-transform ${selectedElementId === s.id ? 'ring-2 ring-rose-500 rounded bg-white/70 shadow-md' : ''}`}
@@ -1888,7 +1884,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                       ))}
                     </div>
 
-                    <div className="bg-stone-50 border border-stone-200 p-2 rounded-2xl w-full max-w-[310px] space-y-1 text-left shadow-sm shrink-0">
+                    <div className="bg-stone-50 border border-stone-200 p-1.5 rounded-2xl w-full max-w-[300px] space-y-1 text-left shadow-sm shrink-0">
                       <p className="text-[9px] font-bold text-stone-700 text-center">✨ Editor (Cubit 2 jari teks/stiker untuk besar/kecil)</p>
                       
                       <div>
@@ -1903,7 +1899,7 @@ export default function LiveLoveRoomWithPhotobooth() {
 
                       <div>
                         <span className="block text-[9px] font-semibold text-stone-500 mb-0.5">Tambah Stiker:</span>
-                        <div className="grid grid-cols-10 gap-1 max-h-[50px] overflow-y-auto p-1 bg-white rounded-xl border border-stone-200 shadow-inner">
+                        <div className="grid grid-cols-10 gap-1 max-h-[45px] overflow-y-auto p-1 bg-white rounded-xl border border-stone-200 shadow-inner">
                           {stickerOptions.map((stk) => (
                             <button 
                               key={stk} 
@@ -1917,7 +1913,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                       </div>
 
                       {selectedElementId && (
-                        <div className="bg-rose-50 border border-rose-200 p-1.5 rounded-xl flex items-center justify-between text-xs">
+                        <div className="bg-rose-50 border border-rose-200 p-1 rounded-xl flex items-center justify-between text-xs">
                           <span className="font-bold text-rose-700 text-[10px]">Atur {selectedElementId === 'caption' ? 'Teks' : 'Stiker'}:</span>
                           <div className="flex items-center gap-1">
                             <button onClick={() => updateElementSize(selectedElementId, -4)} className="px-1.5 py-0.5 bg-white border border-rose-300 font-bold rounded shadow-xs text-[10px]">➖</button>
@@ -1930,9 +1926,9 @@ export default function LiveLoveRoomWithPhotobooth() {
                       )}
                     </div>
 
-                    <div className="flex gap-2 w-full max-w-[310px] shrink-0 pt-0.5">
-                      <a href={finalStripUrl} download={`StudioPhotobooth_${myName}_${partnerName}.png`} className="flex-1 py-2 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs text-center block cursor-pointer hover:scale-105 transition">📥 Download (PNG)</a>
-                      <button onClick={handleOpenLivePreview} className="px-3 py-2 bg-stone-200 text-stone-600 font-bold rounded-xl text-xs hover:bg-stone-300 transition cursor-pointer shadow-xs">Ulangi 🔄</button>
+                    <div className="flex gap-2 w-full max-w-[300px] shrink-0 pt-0.5">
+                      <a href={finalStripUrl} download={`StudioPhotobooth_${myName}_${partnerName}.png`} className="flex-1 py-1.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs text-center block cursor-pointer hover:scale-105 transition">📥 Download (PNG)</a>
+                      <button onClick={handleOpenLivePreview} className="px-3 py-1.5 bg-stone-200 text-stone-600 font-bold rounded-xl text-xs hover:bg-stone-300 transition cursor-pointer shadow-xs">Ulangi 🔄</button>
                     </div>
                   </div>
                 )}
