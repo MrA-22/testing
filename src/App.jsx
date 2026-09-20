@@ -3,7 +3,6 @@ import { Peer } from 'peerjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
-// 50 Pilihan Background (30 Nuansa Dunia/Wisata/Desa/Kota + 20 Polosan & Gradasi)
 const bgThemes = {
   tokyo: { name: 'Tokyo Street', emoji: '🗼', type: 'image', url: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1200&q=80' },
   seoul: { name: 'Seoul Hanok', emoji: '🏯', type: 'image', url: 'https://images.unsplash.com/photo-1538485399060-071c360ca4fa?auto=format&fit=crop&w=1200&q=80' },
@@ -65,7 +64,6 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [conn, setConn] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   
-  // Setup Room & Nama (Tanpa LocalStorage)
   const [mode, setMode] = useState('menu'); 
   const [roomCode, setRoomCode] = useState('');
   const [inputCode, setInputCode] = useState('');
@@ -95,7 +93,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [customBgUrl, setCustomBgUrl] = useState(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [countdown, setCountdown] = useState(null);
-  const [flashActive, setFlashActive] = useState(false); // Efek Jepret / Gepret Flash
+  const [flashActive, setFlashActive] = useState(false);
   const [allPhotos, setAllPhotos] = useState([]);
   const allPhotosRef = useRef([]);
   const [boothStep, setBoothStep] = useState('select-layout'); 
@@ -105,11 +103,13 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [iAmReady, setIAmReady] = useState(false);
   const [partnerIsReady, setPartnerIsReady] = useState(false);
 
-  // Editor States (Multiple Free Stickers & Custom Caption)
+  // Editor States (Interactive Stickers with size scaling & custom caption)
   const [stripCaption, setStripCaption] = useState('Our Sweet Moment Together ❤️');
   const [placedStickers, setPlacedStickers] = useState([
-    { id: 1, emoji: '🧸', x: 50, y: 50 }
+    { id: 1, emoji: '🧸', x: 50, y: 50, size: 36 }
   ]);
+  const [selectedStickerId, setSelectedStickerId] = useState(null);
+  const stickerContainerRef = useRef(null);
 
   const localStreamRef = useRef(null);
   const [remoteStream, setRemoteStream] = useState(null);
@@ -157,13 +157,10 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   const messagesEndRef = useRef(null);
 
-  // Efek Suara Jepret & Flash Gepret Kamera
   const playShutterSoundAndFlash = () => {
-    // 1. Efek Visual Flash (Gepret)
     setFlashActive(true);
     setTimeout(() => setFlashActive(false), 200);
 
-    // 2. Efek Audio Shutter
     try {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const bufferSize = audioCtx.sampleRate * 0.05;
@@ -949,7 +946,6 @@ export default function LiveLoveRoomWithPhotobooth() {
         clearInterval(timer);
         setCountdown(null);
 
-        // Putar suara jepret & efek gepret (flash)
         playShutterSoundAndFlash();
 
         const canvas = document.createElement('canvas');
@@ -1040,13 +1036,10 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillStyle = themeConfig.bg;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.2)';
-      ctx.shadowBlur = 25;
       ctx.fillStyle = themeConfig.cardBg;
       ctx.beginPath();
       ctx.roundRect(40, 40, 520, 870, 35);
       ctx.fill();
-      ctx.shadowBlur = 0;
 
       ctx.lineWidth = 8;
       ctx.strokeStyle = themeConfig.border;
@@ -1056,9 +1049,8 @@ export default function LiveLoveRoomWithPhotobooth() {
         await drawCoverImage(photos[0], 65, 65, 470, 580, 20);
       }
 
-      // Render semua stiker bebas di canvas photocard
       placedStickers.forEach(stk => {
-        ctx.font = '36px sans-serif';
+        ctx.font = `${stk.size || 36}px sans-serif`;
         ctx.textAlign = 'center';
         const canvasX = (stk.x / 100) * canvas.width;
         const canvasY = (stk.y / 100) * canvas.height;
@@ -1078,13 +1070,10 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillStyle = themeConfig.bg;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.shadowColor = 'rgba(0, 0, 0, 0.18)';
-      ctx.shadowBlur = 30;
       ctx.fillStyle = themeConfig.cardBg;
       ctx.beginPath();
       ctx.roundRect(35, 35, 630, 1230, 40);
       ctx.fill();
-      ctx.shadowBlur = 0;
 
       ctx.lineWidth = 10;
       ctx.strokeStyle = themeConfig.border;
@@ -1117,9 +1106,8 @@ export default function LiveLoveRoomWithPhotobooth() {
         ctx.fillText(`"${stripCaption}"`, canvas.width / 2, 780);
       }
 
-      // Render stiker bebas di strip
       placedStickers.forEach(stk => {
-        ctx.font = '32px sans-serif';
+        ctx.font = `${stk.size || 32}px sans-serif`;
         ctx.textAlign = 'center';
         const canvasX = (stk.x / 100) * canvas.width;
         const canvasY = (stk.y / 100) * canvas.height;
@@ -1166,13 +1154,52 @@ export default function LiveLoveRoomWithPhotobooth() {
   };
 
   const addStickerToCard = (emoji) => {
-    const newStickers = [...placedStickers, { id: Date.now(), emoji, x: 50 + (Math.random() * 30 - 15), y: 50 + (Math.random() * 30 - 15) }];
+    const newStickers = [...placedStickers, { id: Date.now(), emoji, x: 50, y: 50, size: 36 }];
     handleUpdateEditor(stripCaption, newStickers);
+    setSelectedStickerId(newStickers[newStickers.length - 1].id);
   };
 
   const removeSticker = (id) => {
     const newStickers = placedStickers.filter(s => s.id !== id);
     handleUpdateEditor(stripCaption, newStickers);
+    if (selectedStickerId === id) setSelectedStickerId(null);
+  };
+
+  const updateStickerSize = (id, delta) => {
+    const newStickers = placedStickers.map(s => {
+      if (s.id === id) {
+        const newSize = Math.max(20, Math.min(100, (s.size || 36) + delta));
+        return { ...s, size: newSize };
+      }
+      return s;
+    });
+    handleUpdateEditor(stripCaption, newStickers);
+  };
+
+  // Dragging handler for stickers inside the preview container
+  const handleStickerPointerDown = (e, id) => {
+    e.stopPropagation();
+    setSelectedStickerId(id);
+    const container = stickerContainerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+
+    const onPointerMove = (moveEvent) => {
+      const x = Math.max(5, Math.min(95, ((moveEvent.clientX - rect.left) / rect.width) * 100));
+      const y = Math.max(5, Math.min(95, ((moveEvent.clientY - rect.top) / rect.height) * 100));
+
+      const updated = placedStickers.map(s => s.id === id ? { ...s, x, y } : s);
+      setPlacedStickers(updated);
+    };
+
+    const onPointerUp = () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      handleUpdateEditor(stripCaption, placedStickers);
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
   };
 
   return (
@@ -1190,12 +1217,10 @@ export default function LiveLoveRoomWithPhotobooth() {
         )}
       </AnimatePresence>
 
-      {/* ELEMEN VIDEO & AUDIO STREAM UTAMA */}
       <video ref={localVideoRef} autoPlay playsInline muted className="hidden" />
       <video ref={remoteVideoRef} autoPlay playsInline className="hidden" />
       <audio ref={remoteAudioRef} autoPlay />
 
-      {/* VIRTUAL GIFT POPUP OVERLAY */}
       <AnimatePresence>
         {activeGiftPopup && (
           <motion.div
@@ -1217,7 +1242,6 @@ export default function LiveLoveRoomWithPhotobooth() {
 
       <AnimatePresence mode="wait">
         
-        {/* MENU UTAMA */}
         {mode === 'menu' && (
           <motion.div key="menu" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-xl border border-rose-100 text-center max-w-md w-full space-y-6 relative z-10">
             <div className="text-5xl mb-2">📸💞</div>
@@ -1230,7 +1254,6 @@ export default function LiveLoveRoomWithPhotobooth() {
           </motion.div>
         )}
 
-        {/* BUAT ROOM */}
         {mode === 'create' && (
           <motion.div key="create" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-xl border border-rose-100 max-w-md w-full space-y-5 relative z-10 text-left">
             <h2 className="text-xl font-bold text-stone-900 text-center">Buat Room Baru</h2>
@@ -1249,7 +1272,6 @@ export default function LiveLoveRoomWithPhotobooth() {
           </motion.div>
         )}
 
-        {/* MENUNGGU PASANGAN */}
         {mode === 'waiting-host' && (
           <motion.div key="waiting" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-xl border border-rose-100 max-w-md w-full space-y-6 text-center relative z-10">
             <div className="text-4xl animate-pulse">⏳</div>
@@ -1265,7 +1287,6 @@ export default function LiveLoveRoomWithPhotobooth() {
           </motion.div>
         )}
 
-        {/* GABUNG ROOM */}
         {mode === 'join' && (
           <motion.div key="join" initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-xl border border-rose-100 max-w-md w-full space-y-5 relative z-10 text-left">
             <h2 className="text-xl font-bold text-stone-900 text-center">Gabung ke Room Pasangan</h2>
@@ -1284,7 +1305,6 @@ export default function LiveLoveRoomWithPhotobooth() {
           </motion.div>
         )}
 
-        {/* STATUS MENGHUBUNGKAN */}
         {mode === 'connecting' && (
           <motion.div key="conn" className="bg-white/80 p-8 rounded-3xl text-center space-y-4 max-w-sm w-full">
             <div className="text-4xl animate-spin">💫</div>
@@ -1295,11 +1315,9 @@ export default function LiveLoveRoomWithPhotobooth() {
           </motion.div>
         )}
 
-        {/* DASHBOARD UTAMA */}
         {mode === 'dashboard' && (
           <motion.div key="dash" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white/95 backdrop-blur-xl p-4 sm:p-5 rounded-3xl shadow-2xl border border-rose-100 max-w-lg w-full space-y-3 relative z-10 flex flex-col h-[92vh]">
             
-            {/* Header & Tabs Navigasi */}
             <div className="flex justify-between items-center border-b border-stone-100 pb-2 shrink-0">
               <div>
                 <div className="flex items-center gap-2">
@@ -1316,7 +1334,6 @@ export default function LiveLoveRoomWithPhotobooth() {
                 <h2 className="text-sm font-bold text-stone-900 mt-0.5">{myName} & {partnerName}</h2>
               </div>
 
-              {/* Scrollable Tabs */}
               <div className="flex bg-stone-100 p-1 rounded-xl text-xs font-bold gap-1 overflow-x-auto max-w-[210px]">
                 <button onClick={() => setActiveTab('chat')} className={`px-2 py-1 rounded-lg transition whitespace-nowrap ${activeTab === 'chat' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}>💬 Chat</button>
                 <button onClick={() => setActiveTab('counter')} className={`px-2 py-1 rounded-lg transition whitespace-nowrap ${activeTab === 'counter' ? 'bg-white text-rose-600 shadow-sm' : 'text-stone-500'}`}>⏳ Counter</button>
@@ -1327,7 +1344,6 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             </div>
 
-            {/* TAB 1: CHAT */}
             {activeTab === 'chat' && (
               <div className="flex-1 flex flex-col space-y-3 overflow-hidden">
                 <div className="grid grid-cols-2 gap-2 shrink-0">
@@ -1384,7 +1400,6 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 2: COUNTER JADIAN */}
             {activeTab === 'counter' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-4 overflow-y-auto p-4 text-center">
                 <div className="text-4xl">💖⏳</div>
@@ -1417,7 +1432,6 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 3: QUIZ */}
             {activeTab === 'quiz' && (
               <div className="flex-1 flex flex-col space-y-3 overflow-y-auto p-2">
                 <div className="text-center shrink-0">
@@ -1453,7 +1467,6 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 4: BUCKET LIST */}
             {activeTab === 'bucket' && (
               <div className="flex-1 flex flex-col space-y-3 overflow-y-auto p-2">
                 <div className="text-center shrink-0">
@@ -1510,7 +1523,6 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 5: LOVE NOTES */}
             {activeTab === 'notes' && (
               <div className="flex-1 flex flex-col space-y-3 overflow-hidden">
                 <div className="text-center shrink-0">
@@ -1543,11 +1555,9 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 6: PHOTOBOOTH STUDIO 1 FRAME */}
             {activeTab === 'photobooth' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-3 overflow-y-auto p-1">
                 
-                {/* 1. PILIH LAYOUT & TEMA AWAL */}
                 {boothStep === 'select-layout' && (
                   <div className="space-y-3 w-full max-w-xs text-left my-auto">
                     <div className="text-center">
@@ -1587,7 +1597,6 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* 2. TAHAP LIVE PREVIEW + 50 PILIHAN BACKGROUND & UPLOAD */}
                 {boothStep === 'preview' && (
                   <div className="space-y-3 w-full text-center my-auto">
                     <p className="text-xs font-bold text-stone-700">✨ Atur Pose & Pilih Background di Bawah Ini Secara Real-Time! ✨</p>
@@ -1602,7 +1611,6 @@ export default function LiveLoveRoomWithPhotobooth() {
                         )}
                       </div>
                       
-                      {/* Kanvas Live Studio Gabungan / Tombol Nyalakan Kamera */}
                       <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-rose-300 h-[210px] flex items-center justify-center shadow-inner">
                         {cameraActive ? (
                           <canvas ref={previewCanvasRef} width={1280} height={720} className="w-full h-full object-cover" />
@@ -1619,7 +1627,6 @@ export default function LiveLoveRoomWithPhotobooth() {
                         )}
                       </div>
 
-                      {/* UPLOAD BACKGROUND SENDIRI */}
                       <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-rose-200">
                         <span className="text-[11px] font-bold text-stone-700">📁 Pakai Background Sendiri:</span>
                         <label className="px-3 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-[11px] font-bold cursor-pointer transition">
@@ -1628,7 +1635,6 @@ export default function LiveLoveRoomWithPhotobooth() {
                         </label>
                       </div>
 
-                      {/* 50 PILIHAN BACKGROUND (SCROLLABLE GRID) */}
                       <div className="pt-1">
                         <span className="block text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1">Pilih dari 50 Jenis Background Dunia & Polosan:</span>
                         <div className="grid grid-cols-5 gap-1 max-h-[110px] overflow-y-auto pr-1">
@@ -1649,7 +1655,6 @@ export default function LiveLoveRoomWithPhotobooth() {
                       </div>
                     </div>
 
-                    {/* Status Saling Menunggu */}
                     <div className="bg-white/90 border border-stone-200 p-2 rounded-2xl max-w-[320px] mx-auto text-xs space-y-1 shadow-xs">
                       <div className="flex justify-between items-center px-2">
                         <span>Status Kamu:</span>
@@ -1676,7 +1681,6 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* 3. TAHAP KAPTUR / HITUNG MUNDUR */}
                 {boothStep === 'capturing' && (
                   <div className="space-y-3 w-full text-center my-auto">
                     <div className="bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 border-2 border-rose-200 p-3 rounded-3xl shadow-lg max-w-[460px] mx-auto space-y-2">
@@ -1694,17 +1698,42 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* 4. TAHAP HASIL & EDITOR */}
                 {boothStep === 'ready' && finalStripUrl && (
                   <div className="space-y-2 w-full flex flex-col items-center my-auto pt-1">
-                    <div className="w-[170px] drop-shadow-xl relative">
-                      <img src={finalStripUrl} alt="Hasil Photobooth" className="w-full h-auto object-contain rounded-xl" />
+                    
+                    {/* CONTAINER PREVIEW FOTO DENGAN STIKER DRAGGABLE INTERAKTIF */}
+                    <div 
+                      ref={stickerContainerRef} 
+                      className="w-[170px] relative rounded-xl shadow-xl overflow-hidden select-none touch-none"
+                    >
+                      <img src={finalStripUrl} alt="Hasil Photobooth" className="w-full h-auto object-contain block pointer-events-none" />
+                      
+                      {/* Render stiker yang bisa di-drag langsung di layar preview */}
+                      {placedStickers.map((s) => (
+                        <div
+                          key={s.id}
+                          onPointerDown={(e) => handleStickerPointerDown(e, s.id)}
+                          onClick={() => setSelectedStickerId(s.id)}
+                          style={{
+                            position: 'absolute',
+                            left: `${s.x}%`,
+                            top: `${s.y}%`,
+                            transform: 'translate(-50%, -50%)',
+                            fontSize: `${(s.size || 36) * 0.4}px`,
+                            cursor: 'grab'
+                          }}
+                          className={`cursor-grab active:cursor-grabbing p-1 transition-transform ${selectedStickerId === s.id ? 'ring-2 ring-rose-500 rounded bg-white/50' : ''}`}
+                        >
+                          {s.emoji}
+                        </div>
+                      ))}
                     </div>
 
                     <div className="bg-stone-50 border border-stone-200 p-2.5 rounded-2xl w-full max-w-[290px] space-y-2 text-left">
-                      <p className="text-[11px] font-bold text-stone-700 text-center">✨ Studio Editor Foto Bersama</p>
+                      <p className="text-[11px] font-bold text-stone-700 text-center">✨ Studio Editor Foto & Stiker Interaktif</p>
+                      
                       <div>
-                        <label className="block text-[10px] font-semibold text-stone-500 mb-0.5">Ubah Caption / Pesan (Bebas):</label>
+                        <label className="block text-[10px] font-semibold text-stone-500 mb-0.5">Ubah Caption / Pesan:</label>
                         <input 
                           type="text" 
                           value={stripCaption} 
@@ -1712,9 +1741,10 @@ export default function LiveLoveRoomWithPhotobooth() {
                           className="w-full px-2.5 py-1.5 rounded-xl border border-stone-200 text-xs bg-white font-medium focus:outline-none focus:border-rose-400" 
                         />
                       </div>
+
                       <div>
-                        <span className="block text-[10px] font-semibold text-stone-500 mb-1">Tambah Berbagai Stiker (Klik untuk tambah):</span>
-                        <div className="grid grid-cols-10 gap-1 max-h-[80px] overflow-y-auto p-1 bg-white rounded-xl border border-stone-200">
+                        <span className="block text-[10px] font-semibold text-stone-500 mb-1">Tambah Stiker (Klik untuk tambah & geser di foto):</span>
+                        <div className="grid grid-cols-10 gap-1 max-h-[75px] overflow-y-auto p-1 bg-white rounded-xl border border-stone-200">
                           {stickerOptions.map((stk) => (
                             <button 
                               key={stk} 
@@ -1727,20 +1757,14 @@ export default function LiveLoveRoomWithPhotobooth() {
                         </div>
                       </div>
 
-                      {/* Daftar Stiker Aktif (Bisa Dihapus) */}
-                      {placedStickers.length > 0 && (
-                        <div>
-                          <span className="block text-[9px] font-bold text-stone-400 mb-0.5">Stiker Aktif (Klik untuk hapus):</span>
-                          <div className="flex flex-wrap gap-1">
-                            {placedStickers.map((s) => (
-                              <button
-                                key={s.id}
-                                onClick={() => removeSticker(s.id)}
-                                className="px-2 py-0.5 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-md text-xs font-bold transition flex items-center gap-1 cursor-pointer"
-                              >
-                                {s.emoji} ✕
-                              </button>
-                            ))}
+                      {/* Kontrol Ukuran Stiker yang Dipilih & Hapus */}
+                      {selectedStickerId && (
+                        <div className="bg-rose-50 border border-rose-200 p-2 rounded-xl flex items-center justify-between text-xs">
+                          <span className="font-bold text-rose-700">Atur Stiker Dipilih:</span>
+                          <div className="flex items-center gap-1.5">
+                            <button onClick={() => updateStickerSize(selectedStickerId, -6)} className="px-2 py-0.5 bg-white border border-rose-300 font-bold rounded shadow-xs">Perkecil ➖</button>
+                            <button onClick={() => updateStickerSize(selectedStickerId, 6)} className="px-2 py-0.5 bg-white border border-rose-300 font-bold rounded shadow-xs">Perbesar ➕</button>
+                            <button onClick={() => removeSticker(selectedStickerId)} className="px-2 py-0.5 bg-red-500 text-white font-bold rounded shadow-xs">Hapus 🗑️</button>
                           </div>
                         </div>
                       )}
