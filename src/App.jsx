@@ -2,8 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Peer } from 'peerjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
-import { ImageSegmenter, FilesetResolver } from '@mediapipe/tasks-vision';
 
+// Ornamen Melayang Romantis
 const LiveOrnaments = React.memo(() => (
   <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
     {[...Array(12)].map((_, i) => (
@@ -26,6 +26,7 @@ const LiveOrnaments = React.memo(() => (
   </div>
 ));
 
+// 8 Pilihan Tema Background Studio
 const bgThemes = {
   sunset: { name: 'Sunset', emoji: '🌅', url: 'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?auto=format&fit=crop&w=1200&q=80' },
   pantai: { name: 'Pantai', emoji: '🏖️', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80' },
@@ -100,12 +101,12 @@ export default function LiveLoveRoomWithPhotobooth() {
   const currentCallRef = useRef(null);
   const peerInstanceRef = useRef(null);
 
-  // Canvas & MediaPipe Tasks Vision Refs
+  // Canvas & MediaPipe Refs
   const previewCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
-  const imageSegmenterRef = useRef(null);
+  const selfieSegmentationRef = useRef(null);
   const bgImageLoadedRef = useRef(null);
-  const [isSegmenterReady, setIsSegmenterReady] = useState(false);
+  const [isSegmentationLoaded, setIsSegmentationLoaded] = useState(false);
 
   // --- COUNTER JADIAN ---
   const [anniversaryDate, setAnniversaryDate] = useState(() => localStorage.getItem('bucin_anniversary') || '2024-01-01');
@@ -142,32 +143,31 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   const messagesEndRef = useRef(null);
 
-  // Inisialisasi MediaPipe Tasks Vision (ImageSegmenter) Terbaru
+  // Load MediaPipe Selfie Segmentation via CDN Script (Tanpa Error Build npm)
   useEffect(() => {
-    async function initSegmenter() {
-      try {
-        const vision = await FilesetResolver.visionModules(
-          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm"
-        );
-        const segmenter = await ImageSegmenter.createFromOptions(vision, {
-          baseOptions: {
-            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/image_segmenter/selfie_segmenter/float16/latest/selfie_segmenter.tflite",
-            delegate: "GPU"
-          },
-          runningMode: "IMAGE",
-          outputCategoryMask: true,
-          outputConfidenceMasks: false
+    const script = document.createElement('script');
+    script.src = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js";
+    script.async = true;
+    script.onload = async () => {
+      if (window.SelfieSegmentation) {
+        const segmentation = new window.SelfieSegmentation({
+          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
         });
-        imageSegmenterRef.current = segmenter;
-        setIsSegmenterReady(true);
-      } catch (err) {
-        console.error("Gagal memuat MediaPipe Tasks Vision:", err);
+        segmentation.setOptions({ modelSelection: 1 });
+        segmentation.onResults(onMediaPipeResults);
+        await segmentation.initialize();
+        selfieSegmentationRef.current = segmentation;
+        setIsSegmentationLoaded(true);
       }
-    }
-    initSegmenter();
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
   }, []);
 
-  // Muat background tema aktif
+  // Muat gambar background tema aktif
   useEffect(() => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -191,7 +191,35 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   }, [remoteStream, boothStep]);
 
-  // Fungsi Cover Ratio untuk Video agar Tidak Gepeng/Melar
+  // Real-time Render Loop AI & Komposisi Studio
+  useEffect(() => {
+    if ((boothStep === 'preview' || boothStep === 'capturing') && isSegmentationLoaded) {
+      const renderLoop = async () => {
+        const video = localVideoRef.current;
+        const segmentation = selfieSegmentationRef.current;
+        if (video && segmentation && video.readyState >= 2) {
+          try {
+            await segmentation.send({ image: video });
+          } catch (e) {
+            console.error(e);
+          }
+        }
+        animationFrameRef.current = requestAnimationFrame(renderLoop);
+      };
+      renderLoop();
+    } else {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    }
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [boothStep, isSegmentationLoaded, cameraBgTheme]);
+
+  // Fungsi Helper untuk Cover Ratio Video (Tanpa Gepeng/Melar)
   const drawVideoCover = (ctx, video, destX, destY, destW, destH, mirror = false) => {
     if (!video || video.readyState < 2) return;
     const vW = video.videoWidth || 640;
@@ -228,108 +256,75 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.restore();
   };
 
-  // Render Loop Real-Time Studio menggunakan MediaPipe Tasks Vision
-  useEffect(() => {
-    if ((boothStep === 'preview' || boothStep === 'capturing') && isSegmenterReady) {
-      const renderLoop = () => {
-        const canvas = previewCanvasRef.current;
-        const video = localVideoRef.current;
-        const segmenter = imageSegmenterRef.current;
+  // Hasil Masking AI & Render 1 Frame Studio Bersama
+  const onMediaPipeResults = (results) => {
+    const canvas = previewCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-        if (canvas && video && segmenter && video.readyState >= 2) {
-          const ctx = canvas.getContext('2d');
-          const w = canvas.width;
-          const h = canvas.height;
-          const halfW = w / 2;
+    ctx.save();
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          ctx.save();
-          ctx.clearRect(0, 0, w, h);
+    const w = canvas.width;
+    const h = canvas.height;
+    const halfW = w / 2;
 
-          // 1. Gambar Background Studio di Seluruh Kanvas
-          if (bgImageLoadedRef.current) {
-            ctx.drawImage(bgImageLoadedRef.current, 0, 0, w, h);
-          } else {
-            ctx.fillStyle = '#111';
-            ctx.fillRect(0, 0, w, h);
-          }
-
-          // 2. SISI KIRI: KAMU (Segmentasi AI Presisi Tinggi & Cepat)
-          try {
-            const segmentationResult = segmenter.segment(video);
-            const mask = segmentationResult.categoryMask;
-            const maskWidth = mask.width;
-            const maskHeight = mask.height;
-            const maskData = mask.getAsUint8Array();
-
-            // Buat canvas sementara untuk video kamu
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = maskWidth;
-            tempCanvas.height = maskHeight;
-            const tCtx = tempCanvas.getContext('2d');
-            
-            drawVideoCover(tCtx, video, 0, 0, maskWidth, maskHeight, true);
-
-            const imgData = tCtx.getImageData(0, 0, maskWidth, maskHeight);
-            const pixels = imgData.data;
-
-            for (let i = 0; i < maskData.length; i++) {
-              // Jika nilai mask 0 (latar belakang), buat transparan
-              if (maskData[i] === 0) {
-                pixels[i * 4 + 3] = 0;
-              }
-            }
-            tCtx.putImageData(imgData, 0, 0);
-
-            // Gambar hasil potongan tubuh kamu ke sisi kiri kanvas utama
-            ctx.drawImage(tempCanvas, 0, 0, maskWidth, maskHeight, 0, 0, halfW, h);
-          } catch (err) {
-            // Fallback jika frame gagal disegmentasi
-            drawVideoCover(ctx, video, 0, 0, halfW, h, true);
-          }
-
-          // 3. SISI KANAN: PASANGAN (WebRTC Remote Stream - Pastikan Selalu Tampil)
-          if (remoteVideoRef.current && remoteVideoRef.current.readyState >= 2 && remoteStream) {
-            drawVideoCover(ctx, remoteVideoRef.current, halfW, 0, halfW, h, false);
-          } else {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-            ctx.fillRect(halfW, 0, halfW, h);
-            ctx.fillStyle = '#ffffff';
-            ctx.font = 'bold 14px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.fillText(`Menunggu ${partnerName}...`, halfW + (halfW / 2), h / 2);
-          }
-
-          // Label Nama Estetik
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-          ctx.beginPath();
-          ctx.roundRect(20, h - 45, 130, 32, 10);
-          ctx.fill();
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 12px sans-serif';
-          ctx.textAlign = 'left';
-          ctx.fillText(`👤 Kamu (${myName})`, 30, h - 25);
-
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-          ctx.beginPath();
-          ctx.roundRect(halfW + 20, h - 45, 140, 32, 10);
-          ctx.fill();
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 12px sans-serif';
-          ctx.textAlign = 'left';
-          ctx.fillText(`👤 ${partnerName}`, halfW + 30, h - 25);
-
-          ctx.restore();
-        }
-        animationFrameRef.current = requestAnimationFrame(renderLoop);
-      };
-      renderLoop();
+    // 1. Gambar Background Virtual Studio di Seluruh Kanvas
+    if (bgImageLoadedRef.current) {
+      ctx.drawImage(bgImageLoadedRef.current, 0, 0, w, h);
+    } else {
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, w, h);
     }
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [boothStep, isSegmenterReady, cameraBgTheme, remoteStream, myName, partnerName]);
+
+    // 2. SISI KIRI: KAMU (Badan di Depan Latar Virtual dengan Masking AI)
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = halfW;
+    tempCanvas.height = h;
+    const tCtx = tempCanvas.getContext('2d');
+
+    if (localVideoRef.current && localVideoRef.current.readyState >= 2) {
+      drawVideoCover(tCtx, localVideoRef.current, 0, 0, halfW, h, true);
+    }
+
+    tCtx.globalCompositeOperation = 'destination-in';
+    tCtx.drawImage(results.segmentationMask, 0, 0, halfW, h);
+    ctx.drawImage(tempCanvas, 0, 0);
+
+    // 3. SISI KANAN: PASANGAN (WebRTC Remote Video Stream)
+    if (remoteVideoRef.current && remoteVideoRef.current.readyState >= 2 && remoteStream) {
+      drawVideoCover(ctx, remoteVideoRef.current, halfW, 0, halfW, h, false);
+    } else {
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.fillRect(halfW, 0, halfW, h);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Menunggu ${partnerName}...`, halfW + (halfW / 2), h / 2);
+    }
+
+    // Label Nama Estetik di Dalam Frame
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.beginPath();
+    ctx.roundRect(20, h - 45, 130, 32, 10);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`👤 Kamu (${myName})`, 30, h - 25);
+
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.beginPath();
+    ctx.roundRect(halfW + 20, h - 45, 140, 32, 10);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 12px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`👤 ${partnerName}`, halfW + 30, h - 25);
+
+    ctx.restore();
+  };
 
   useEffect(() => {
     localStorage.setItem('bucin_mode', mode);
