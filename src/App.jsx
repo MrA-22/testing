@@ -263,7 +263,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.restore();
   };
 
-  // Hasil Masking AI & Render 1 Frame Studio Bersama (Tanpa Geser/Offset)
+  // Hasil Masking AI & Render 1 Frame Studio Bersama
   const onMediaPipeResults = (results) => {
     const canvas = previewCanvasRef.current;
     if (!canvas) return;
@@ -285,12 +285,11 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillRect(0, 0, w, h);
     }
 
-    // 2. SISI KIRI: KAMU (Masker AI & Video diselaraskan koordinat crop-nya 100%)
+    // 2. SISI KIRI: KAMU (Masker AI & Video diselaraskan koordinat crop-nya)
     if (localVideoRef.current && localVideoRef.current.readyState >= 2) {
       const video = localVideoRef.current;
       const { sX, sY, sW, sH } = getVideoCropParams(video, halfW, h);
 
-      // Kanvas Sementara untuk Video Kamu (Mirrored)
       const tempCanvas = document.createElement('canvas');
       tempCanvas.width = halfW;
       tempCanvas.height = h;
@@ -302,7 +301,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       tCtx.drawImage(video, sX, sY, sW, sH, 0, 0, halfW, h);
       tCtx.restore();
 
-      // Kanvas Sementara untuk Masker AI (Diselaraskan Mirror dan Crop-nya agar tidak geser)
       const maskCanvas = document.createElement('canvas');
       maskCanvas.width = halfW;
       maskCanvas.height = h;
@@ -314,11 +312,9 @@ export default function LiveLoveRoomWithPhotobooth() {
       mCtx.drawImage(results.segmentationMask, sX, sY, sW, sH, 0, 0, halfW, h);
       mCtx.restore();
 
-      // Terapkan masking pada video
       tCtx.globalCompositeOperation = 'destination-in';
       tCtx.drawImage(maskCanvas, 0, 0);
 
-      // Gambar hasil akhir sisi kiri ke kanvas utama
       ctx.drawImage(tempCanvas, 0, 0);
     }
 
@@ -326,12 +322,15 @@ export default function LiveLoveRoomWithPhotobooth() {
     if (remoteVideoRef.current && remoteVideoRef.current.readyState >= 2 && remoteStream) {
       drawVideoCover(ctx, remoteVideoRef.current, halfW, 0, halfW, h, false);
     } else {
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
       ctx.fillRect(halfW, 0, halfW, h);
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 14px sans-serif';
+      ctx.font = 'bold 13px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`Menunggu ${partnerName}...`, halfW + (halfW / 2), h / 2);
+      ctx.fillText(`Menunggu ${partnerName}...`, halfW + (halfW / 2), h / 2 - 10);
+      ctx.font = '11px sans-serif';
+      ctx.fillStyle = '#fda4af';
+      ctx.fillText(`(Tekan Hubungkan Ulang jika macet)`, halfW + (halfW / 2), h / 2 + 12);
     }
 
     // Label Nama Estetik di Dalam Frame
@@ -433,6 +432,24 @@ export default function LiveLoveRoomWithPhotobooth() {
       console.error("Gagal mengakses kamera:", err);
       alert("Tidak dapat mengakses kamera. Pastikan izin kamera aktif!");
       return null;
+    }
+  };
+
+  const handleReconnectCall = async () => {
+    const stream = await startDualCameraStream();
+    if (stream && peerInstanceRef.current && conn && conn.peer) {
+      const call = peerInstanceRef.current.call(conn.peer, stream);
+      currentCallRef.current = call;
+      call.on('stream', (remoteStreamFeed) => {
+        setRemoteStream(remoteStreamFeed);
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = remoteStreamFeed;
+          remoteVideoRef.current.play().catch(e => console.log(e));
+        }
+      });
+      alert("Permintaan sambungan video dikirim ulang ke pasangan! 🔄");
+    } else {
+      alert("Belum terhubung ke room pasangan.");
     }
   };
 
@@ -914,7 +931,9 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.strokeStyle = themeConfig.border;
       ctx.stroke();
 
-      await drawCoverImage(photos[0], 65, 65, 470, 580, 20);
+      if (photos[0]) {
+        await drawCoverImage(photos[0], 65, 65, 470, 580, 20);
+      }
 
       ctx.font = '40px sans-serif';
       ctx.textAlign = 'center';
@@ -952,19 +971,19 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillText(`💖 ${selectedSticker} 🎀 📸 🌟 🌸`, canvas.width / 2, 120);
 
       if (selectedLayout === '1x2') {
-        await drawCoverImage(photos[0], 75, 145, 550, 380, 20);
-        await drawCoverImage(photos[1] || photos[0], 75, 545, 550, 380, 20);
+        if (photos[0]) await drawCoverImage(photos[0], 75, 145, 550, 380, 20);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 75, 545, 550, 380, 20);
       } else if (selectedLayout === '1x3') {
-        await drawCoverImage(photos[0], 85, 140, 530, 250, 15);
-        await drawCoverImage(photos[1] || photos[0], 85, 410, 530, 250, 15);
-        await drawCoverImage(photos[2] || photos[0], 85, 680, 530, 250, 15);
+        if (photos[0]) await drawCoverImage(photos[0], 85, 140, 530, 250, 15);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 85, 410, 530, 250, 15);
+        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 85, 680, 530, 250, 15);
       } else if (selectedLayout === '2x2') {
-        await drawCoverImage(photos[0], 70, 145, 265, 370, 15);
-        await drawCoverImage(photos[1] || photos[0], 365, 145, 265, 370, 15);
-        await drawCoverImage(photos[2] || photos[0], 70, 535, 265, 370, 15);
-        await drawCoverImage(photos[3] || photos[1] || photos[0], 365, 535, 265, 370, 15);
+        if (photos[0]) await drawCoverImage(photos[0], 70, 145, 265, 370, 15);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 365, 145, 265, 370, 15);
+        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 70, 535, 265, 370, 15);
+        if (photos[3] || photos[1] || photos[0]) await drawCoverImage(photos[3] || photos[1] || photos[0], 365, 535, 265, 370, 15);
       } else if (selectedLayout === 'polaroid') {
-        await drawCoverImage(photos[0], 90, 145, 520, 580, 15);
+        if (photos[0]) await drawCoverImage(photos[0], 90, 145, 520, 580, 15);
         ctx.fillStyle = '#1c1917';
         ctx.font = 'italic 18px sans-serif';
         ctx.textAlign = 'center';
@@ -1451,7 +1470,10 @@ export default function LiveLoveRoomWithPhotobooth() {
                     <p className="text-xs font-bold text-stone-700">✨ Atur Pose & Pilih Tema di Bawah Ini Secara Real-Time! ✨</p>
                     
                     <div className="bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 border-2 border-rose-200 p-3 rounded-3xl shadow-lg max-w-[480px] mx-auto space-y-2">
-                      <div className="text-[11px] font-bold text-rose-700 tracking-wide">💖 {myName} & {partnerName} • {bgThemes[cameraBgTheme]?.emoji} {bgThemes[cameraBgTheme]?.name} 💖</div>
+                      <div className="flex justify-between items-center px-1">
+                        <span className="text-[11px] font-bold text-rose-700 tracking-wide">💖 {myName} & {partnerName} • {bgThemes[cameraBgTheme]?.emoji} {bgThemes[cameraBgTheme]?.name} 💖</span>
+                        <button onClick={handleReconnectCall} className="text-[10px] bg-rose-200 hover:bg-rose-300 text-rose-800 font-bold px-2 py-1 rounded-lg transition cursor-pointer">🔄 Hubungkan Ulang Video</button>
+                      </div>
                       
                       {/* Kanvas Live Studio Gabungan */}
                       <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-rose-300 h-[210px] flex items-center justify-center shadow-inner">
