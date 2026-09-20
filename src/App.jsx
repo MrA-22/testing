@@ -50,7 +50,6 @@ const layoutOptions = [
 ];
 
 const frameThemes = [
-  // Standar & Gradasi Warna (10 Pilihan)
   { id: 'rose', name: '🌸 Rose Pink', border: '#f43f5e', accent: '#fb7185', text: '#881337', cardBg: '#ffffff', softBg: '#fff1f2' },
   { id: 'purple', name: '💜 Lilac Dream', border: '#9333ea', accent: '#a855f7', text: '#581c87', cardBg: '#ffffff', softBg: '#faf5ff' },
   { id: 'peach', name: '🍑 Warm Peach', border: '#ea580c', accent: '#f97316', text: '#7c2d12', cardBg: '#ffffff', softBg: '#fff7ed' },
@@ -62,37 +61,37 @@ const frameThemes = [
   { id: 'choco_latte', name: '☕ Choco Latte', border: '#78350f', accent: '#92400e', text: '#451a03', cardBg: '#fdf8f6', softBg: '#fbe7c6' },
   { id: 'galaxy_night', name: '🌌 Galaxy Night', border: '#4f46e5', accent: '#818cf8', text: '#312e81', cardBg: '#0f172a', softBg: '#1e293b' },
 
-  // 30 Bingkai Spesial (Pikachu, Spider-Man, Anime, Karakter Lucu, dll)
-  { id: 'sp_pikachu', name: '⚡ Pikachu Yellow', border: '#eab308', accent: '#facc15', text: '#713f12', cardBg: '#fefce8', softBg: '#fef9c3', isSpecial: true, badge: '⚡ PIKACHU' },
-  { id: 'sp_spiderman', name: '🕷️ Spider Hero', border: '#dc2626', accent: '#2563eb', text: '#991b1b', cardBg: '#fef2f2', softBg: '#fee2e2', isSpecial: true, badge: '🕷️ SPIDER' },
-  { id: 'sp_naruto', name: '🍥 Ninja Uzumaki', border: '#ea580c', accent: '#f97316', text: '#7c2d12', cardBg: '#fff7ed', softBg: '#ffedd5', isSpecial: true, badge: '🍥 NARUTO' },
-  { id: 'sp_luffy', name: '🏴‍☠️ Pirate King', border: '#b91c1c', accent: '#15803d', text: '#7f1d1d', cardBg: '#fef2f2', softBg: '#dcfce7', isSpecial: true, badge: '🏴‍☠️ LUFFY' },
-  { id: 'sp_gojo', name: '👁️ Jujutsu Infinite', border: '#1e1b4b', accent: '#38bdf8', text: '#312e81', cardBg: '#f8fafc', softBg: '#e0f2fe', isSpecial: true, badge: '👁️ GOJO' },
-  { id: 'sp_demonslayer', name: '👺 Demon Slayer', border: '#991b1b', accent: '#14532d', text: '#450a0a', cardBg: '#fff5f5', softBg: '#dcfce7', isSpecial: true, badge: '👺 KIMETSU' },
-  { id: 'sp_hellokitty', name: '🎀 Hello Kitty', border: '#f43f5e', accent: '#fb7185', text: '#9f1239', cardBg: '#fff1f2', softBg: '#ffe4e6', isSpecial: true, badge: '🎀 KITTY' },
-  { id: 'sp_cinnamon', name: '☁️ Cinnamoroll', border: '#0284c7', accent: '#38bdf8', text: '#0369a1', cardBg: '#f0f9ff', softBg: '#e0f2fe', isSpecial: true, badge: '☁️ CINNAMON' },
-  { id: 'sp_melody', name: '🐰 My Melody', border: '#ec4899', accent: '#f472b6', text: '#831843', cardBg: '#fdf2f8', softBg: '#fce7f3', isSpecial: true, badge: '🐰 MELODY' },
-  { id: 'sp_kuromi', name: '🖤 Kuromi Punk', border: '#581c87', accent: '#a855f7', text: '#3b0764', cardBg: '#faf5ff', softBg: '#f3e8ff', isSpecial: true, badge: '🖤 KUROMI' },
-  { id: 'sp_stitch', name: '💙 Stitch Ohana', border: '#1d4ed8', accent: '#60a5fa', text: '#1e3a8a', cardBg: '#eff6ff', softBg: '#dbeafe', isSpecial: true, badge: '💙 STITCH' },
-  { id: 'sp_pooh', name: '🍯 Winnie Honey', border: '#d97706', accent: '#fbbf24', text: '#78350f', cardBg: '#fffbeb', softBg: '#fef3c7', isSpecial: true, badge: '🍯 POOH' },
-  { id: 'sp_mickey', name: '🐭 Mickey Classic', border: '#18181b', accent: '#dc2626', text: '#09090b', cardBg: '#f4f4f5', softBg: '#f1f5f9', isSpecial: true, badge: '🐭 MICKEY' },
-  { id: 'sp_batman', name: '🦇 Dark Knight', border: '#09090b', accent: '#eab308', text: '#27272a', cardBg: '#18181b', softBg: '#27272a', isSpecial: true, badge: '🦇 BATMAN' },
-  { id: 'sp_deadpool', name: '⚔️ Deadpool & Chimi', border: '#b91c1c', accent: '#18181b', text: '#7f1d1d', cardBg: '#fef2f2', softBg: '#f3f4f6', isSpecial: true, badge: '⚔️ DEADPOOL' },
-  { id: 'sp_ironman', name: '🦾 Stark Armor', border: '#b91c1c', accent: '#eab308', text: '#7f1d1d', cardBg: '#fffbeb', softBg: '#fef3c7', isSpecial: true, badge: '🦾 STARK' },
-  { id: 'sp_goku', name: '🔥 Super Saiyan', border: '#ea580c', accent: '#2563eb', text: '#7c2d12', cardBg: '#fff7ed', softBg: '#dbeafe', isSpecial: true, badge: '🔥 GOKU' },
-  { id: 'sp_sailormoon', name: '🌙 Sailor Moon', border: '#db2777', accent: '#facc15', text: '#831843', cardBg: '#fdf2f8', softBg: '#fef9c3', isSpecial: true, badge: '🌙 MOON' },
-  { id: 'sp_totoro', name: '🌳 Totoro Forest', border: '#15803d', accent: '#4ade80', text: '#14532d', cardBg: '#f0fdf4', softBg: '#dcfce7', isSpecial: true, badge: '🌳 TOTORO' },
-  { id: 'sp_doraemon', name: '🔔 Doraemon Time', border: '#0284c7', accent: '#f43f5e', text: '#0369a1', cardBg: '#f0f9ff', softBg: '#fff1f2', isSpecial: true, badge: '🔔 DORAEMON' },
-  { id: 'sp_sponge', name: '🍍 Bikini Bottom', border: '#ca8a04', accent: '#0284c7', text: '#713f12', cardBg: '#fefce8', softBg: '#e0f2fe', isSpecial: true, badge: '🍍 SPONGE' },
-  { id: 'sp_barbie', name: '💖 Barbie Dream', border: '#ec4899', accent: '#f472b6', text: '#831843', cardBg: '#fdf2f8', softBg: '#fce7f3', isSpecial: true, badge: '💖 BARBIE' },
-  { id: 'sp_harry', name: '⚡ Hogwarts Magic', border: '#78350f', accent: '#b45309', text: '#451a03', cardBg: '#fdf8f6', softBg: '#fef3c7', isSpecial: true, badge: '⚡ HOGWARTS' },
-  { id: 'sp_frozen', name: '❄️ Frozen Ice', border: '#0284c7', accent: '#9333ea', text: '#0369a1', cardBg: '#f0f9ff', softBg: '#f3e8ff', isSpecial: true, badge: '❄️ FROZEN' },
-  { id: 'sp_minecraft', name: '🟩 Pixel Craft', border: '#15803d', accent: '#78716c', text: '#14532d', cardBg: '#f0fdf4', softBg: '#f5f5f4', isSpecial: true, badge: '🟩 CRAFT' },
-  { id: 'sp_cherry', name: '🌸 Sakura Blossom', border: '#f43f5e', accent: '#fda4af', text: '#881337', cardBg: '#fff1f2', softbg: '#ffe4e6', isSpecial: true, badge: '🌸 SAKURA' },
-  { id: 'sp_matchacat', name: '🍵 Neko Matcha', border: '#15803d', accent: '#d97706', text: '#14532d', cardBg: '#f0fdf4', softBg: '#fef3c7', isSpecial: true, badge: '🍵 MATCHA' },
-  { id: 'sp_cyberpunk', name: '🌆 Neo City', border: '#9333ea', accent: '#db2777', text: '#3b0764', cardBg: '#faf5ff', softBg: '#fce7f3', isSpecial: true, badge: '🌆 CYBER' },
-  { id: 'sp_sunsetglow', name: '🌇 Golden Hour', border: '#c2410c', accent: '#fb923c', text: '#7c2d12', cardBg: '#fff7ed', softBg: '#ffedd5', isSpecial: true, badge: '🌇 SUNSET' },
-  { id: 'sp_lovelock', name: '🔐 Eternal Love', border: '#991b1b', accent: '#f43f5e', text: '#450a0a', cardBg: '#fff5f5', softBg: '#fff1f2', isSpecial: true, badge: '🔐 ETERNAL' }
+  // 30 Bingkai Spesial dengan Tema Visual Khusus (Spider-Man, Pikachu, Naruto, Spongebob, dll)
+  { id: 'sp_spiderman', name: '🕷️ Spider Hero Web', border: '#dc2626', accent: '#1d4ed8', text: '#991b1b', cardBg: '#fef2f2', softBg: '#fee2e2', isSpecial: true, pattern: 'spiderweb', badge: '🕷️ SPIDER-WEB' },
+  { id: 'sp_pikachu', name: '⚡ Pikachu Thunder', border: '#ca8a04', accent: '#facc15', text: '#713f12', cardBg: '#fefce8', softBg: '#fef9c3', isSpecial: true, pattern: 'thunder', badge: '⚡ THUNDER' },
+  { id: 'sp_naruto', name: '🍥 Uzumaki Scroll', border: '#ea580c', accent: '#0284c7', text: '#7c2d12', cardBg: '#fff7ed', softBg: '#ffedd5', isSpecial: true, pattern: 'naruto', badge: '🍥 UZUMAKI' },
+  { id: 'sp_luffy', name: '🏴‍☠️ Pirate Strawhat', border: '#b91c1c', accent: '#15803d', text: '#7f1d1d', cardBg: '#fef2f2', softBg: '#dcfce7', isSpecial: true, pattern: 'pirate', badge: '🏴‍☠️ STRAP' },
+  { id: 'sp_gojo', name: '👁️ Infinite Void', border: '#1e1b4b', accent: '#38bdf8', text: '#312e81', cardBg: '#f8fafc', softBg: '#e0f2fe', isSpecial: true, pattern: 'gojo', badge: '👁️ INFINITY' },
+  { id: 'sp_demonslayer', name: '👺 Demon Slayer', border: '#991b1b', accent: '#14532d', text: '#450a0a', cardBg: '#fff5f5', softBg: '#dcfce7', isSpecial: true, pattern: 'demonslayer', badge: '👺 KIMETSU' },
+  { id: 'sp_hellokitty', name: '🎀 Hello Kitty Ribbon', border: '#f43f5e', accent: '#fb7185', text: '#9f1239', cardBg: '#fff1f2', softBg: '#ffe4e6', isSpecial: true, pattern: 'kitty', badge: '🎀 RIBBON' },
+  { id: 'sp_cinnamon', name: '☁️ Cinnamoroll Cloud', border: '#0284c7', accent: '#38bdf8', text: '#0369a1', cardBg: '#f0f9ff', softBg: '#e0f2fe', isSpecial: true, pattern: 'cloud', badge: '☁️ CLOUDS' },
+  { id: 'sp_melody', name: '🐰 My Melody Floral', border: '#ec4899', accent: '#f472b6', text: '#831843', cardBg: '#fdf2f8', softBg: '#fce7f3', isSpecial: true, pattern: 'floral', badge: '🐰 MELODY' },
+  { id: 'sp_kuromi', name: '🖤 Kuromi Punk Skull', border: '#581c87', accent: '#a855f7', text: '#3b0764', cardBg: '#faf5ff', softBg: '#f3e8ff', isSpecial: true, pattern: 'skull', badge: '🖤 PUNK' },
+  { id: 'sp_stitch', name: '💙 Stitch Ohana Wave', border: '#1d4ed8', accent: '#60a5fa', text: '#1e3a8a', cardBg: '#eff6ff', softBg: '#dbeafe', isSpecial: true, pattern: 'wave', badge: '💙 OHANA' },
+  { id: 'sp_pooh', name: '🍯 Winnie Honeycomb', border: '#d97706', accent: '#fbbf24', text: '#78350f', cardBg: '#fffbeb', softBg: '#fef3c7', isSpecial: true, pattern: 'honey', badge: '🍯 HONEY' },
+  { id: 'sp_mickey', name: '🐭 Mickey Classic', border: '#18181b', accent: '#dc2626', text: '#09090b', cardBg: '#f4f4f5', softBg: '#f1f5f9', isSpecial: true, pattern: 'mickey', badge: '🐭 MICKEY' },
+  { id: 'sp_batman', name: '🦇 Dark Knight Bat', border: '#09090b', accent: '#eab308', text: '#27272a', cardBg: '#18181b', softBg: '#27272a', isSpecial: true, pattern: 'bat', badge: '🦇 GOTHAM' },
+  { id: 'sp_deadpool', name: '⚔️ Deadpool Slash', border: '#b91c1c', accent: '#18181b', text: '#7f1d1d', cardBg: '#fef2f2', softBg: '#f3f4f6', isSpecial: true, pattern: 'slash', badge: '⚔️ DEADPOOL' },
+  { id: 'sp_ironman', name: '🦾 Stark Arc Reactor', border: '#b91c1c', accent: '#eab308', text: '#7f1d1d', cardBg: '#fffbeb', softBg: '#fef3c7', isSpecial: true, pattern: 'arc', badge: '🦾 STARK' },
+  { id: 'sp_goku', name: '🔥 Super Saiyan Aura', border: '#ea580c', accent: '#2563eb', text: '#7c2d12', cardBg: '#fff7ed', softBg: '#dbeafe', isSpecial: true, pattern: 'aura', badge: '🔥 SAIYAN' },
+  { id: 'sp_sailormoon', name: '🌙 Sailor Moon Crystal', border: '#db2777', accent: '#facc15', text: '#831843', cardBg: '#fdf2f8', softBg: '#fef9c3', isSpecial: true, pattern: 'crystal', badge: '🌙 CRYSTAL' },
+  { id: 'sp_totoro', name: '🌳 Totoro Leaf', border: '#15803d', accent: '#4ade80', text: '#14532d', cardBg: '#f0fdf4', softBg: '#dcfce7', isSpecial: true, pattern: 'leaf', badge: '🌳 TOTORO' },
+  { id: 'sp_doraemon', name: '🔔 Doraemon Pocket', border: '#0284c7', accent: '#f43f5e', text: '#0369a1', cardBg: '#f0f9ff', softBg: '#fff1f2', isSpecial: true, pattern: 'pocket', badge: '🔔 POCKET' },
+  { id: 'sp_sponge', name: '🍍 Bikini Bottom Bubble', border: '#ca8a04', accent: '#0284c7', text: '#713f12', cardBg: '#fefce8', softBg: '#e0f2fe', isSpecial: true, pattern: 'bubbles', badge: '🍍 SPONGE' },
+  { id: 'sp_barbie', name: '💖 Barbie Diamond', border: '#ec4899', accent: '#f472b6', text: '#831843', cardBg: '#fdf2f8', softBg: '#fce7f3', isSpecial: true, pattern: 'diamond', badge: '💖 BARBIE' },
+  { id: 'sp_harry', name: '⚡ Hogwarts Magic', border: '#78350f', accent: '#b45309', text: '#451a03', cardBg: '#fdf8f6', softBg: '#fef3c7', isSpecial: true, pattern: 'magic', badge: '⚡ HOGWARTS' },
+  { id: 'sp_frozen', name: '❄️ Frozen Snowflake', border: '#0284c7', accent: '#9333ea', text: '#0369a1', cardBg: '#f0f9ff', softBg: '#f3e8ff', isSpecial: true, pattern: 'snowflake', badge: '❄️ FROZEN' },
+  { id: 'sp_minecraft', name: '🟩 Pixel Craft', border: '#15803d', accent: '#78716c', text: '#14532d', cardBg: '#f0fdf4', softBg: '#f5f5f4', isSpecial: true, pattern: 'pixel', badge: '🟩 CRAFT' },
+  { id: 'sp_cherry', name: '🌸 Sakura Blossom', border: '#f43f5e', accent: '#fda4af', text: '#881337', cardBg: '#fff1f2', softBg: '#ffe4e6', isSpecial: true, pattern: 'sakura', badge: '🌸 SAKURA' },
+  { id: 'sp_matchacat', name: '🍵 Neko Matcha', border: '#15803d', accent: '#d97706', text: '#14532d', cardBg: '#f0fdf4', softBg: '#fef3c7', isSpecial: true, pattern: 'matcha', badge: '🍵 MATCHA' },
+  { id: 'sp_cyberpunk', name: '🌆 Neo Cyber Grid', border: '#9333ea', accent: '#db2777', text: '#3b0764', cardBg: '#faf5ff', softBg: '#fce7f3', isSpecial: true, pattern: 'cyber', badge: '🌆 CYBER' },
+  { id: 'sp_sunsetglow', name: '🌇 Golden Hour Sun', border: '#c2410c', accent: '#fb923c', text: '#7c2d12', cardBg: '#fff7ed', softBg: '#ffedd5', isSpecial: true, pattern: 'sun', badge: '🌇 SUNSET' },
+  { id: 'sp_lovelock', name: '🔐 Eternal Lock', border: '#991b1b', accent: '#f43f5e', text: '#450a0a', cardBg: '#fff5f5', softBg: '#fff1f2', isSpecial: true, pattern: 'lock', badge: '🔐 ETERNAL' }
 ];
 
 const stickerOptions = ['🧸', '💖', '✨', '🌹', '👑', '💐', '🍫', '💍', '💋', '💌', '🍓', '🎀', '⭐', '🦋', '🧊', '🍰', '🐱', '🐥', '🍀', '🔥'];
@@ -143,9 +142,9 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   // Editor States
   const [stripCaption, setStripCaption] = useState('Our Sweet Moment Together');
-  const [captionPos, setCaptionPos] = useState({ x: 50, y: 88, size: 15 }); 
+  const [captionPos, setCaptionPos] = useState({ x: 50, y: 90, size: 16 }); 
   const [placedStickers, setPlacedStickers] = useState([
-    { id: 1, emoji: '🧸', x: 50, y: 50, size: 36 }
+    { id: 1, emoji: '🧸', x: 50, y: 80, size: 40 }
   ]);
   const [selectedElementId, setSelectedElementId] = useState(null);
   const stickerContainerRef = useRef(null);
@@ -1063,120 +1062,134 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.save();
       ctx.beginPath();
       ctx.roundRect(x, y, width, height, radius);
-      ctx.lineWidth = 5;
+      ctx.lineWidth = 4;
       ctx.strokeStyle = currentTheme.border;
       ctx.stroke();
       ctx.restore();
     };
 
+    // Fungsi helper untuk menggambar pola visual khusus bingkai spesial
+    const drawSpecialPattern = () => {
+      if (!currentTheme.isSpecial || !currentTheme.pattern) return;
+      ctx.save();
+      ctx.strokeStyle = currentTheme.accent;
+      ctx.fillStyle = currentTheme.accent;
+      ctx.lineWidth = 2;
+
+      const pattern = currentTheme.pattern;
+      if (pattern === 'spiderweb') {
+        // Pola jaring laba-laba ala Spider-Man
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 3;
+        for (let i = 0; i < 6; i++) {
+          ctx.beginPath();
+          ctx.moveTo(30 + i * 100, 15);
+          ctx.lineTo(30 + i * 100, 950);
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.arc(315, 470, 200, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(315, 470, 350, 0, Math.PI * 2);
+        ctx.stroke();
+      } else if (pattern === 'thunder') {
+        // Pola Petir Pikachu
+        ctx.font = 'bold 24px sans-serif';
+        ctx.fillText('⚡ ⚡ ⚡ ⚡ ⚡ ⚡ ⚡ ⚡ ⚡', 40, 45);
+        ctx.fillText('⚡ ⚡ ⚡ ⚡ ⚡ ⚡ ⚡ ⚡ ⚡', 40, 935);
+      } else if (pattern === 'pocket' || pattern === 'wave') {
+        ctx.font = 'bold 22px sans-serif';
+        ctx.fillText('🔵 🔔 🔵 🔔 🔵 🔔 🔵 🔔 🔵', 40, 45);
+        ctx.fillText('🔵 🔔 🔵 🔔 🔵 🔔 🔵 🔔 🔵', 40, 935);
+      } else if (pattern === 'bubbles') {
+        ctx.font = 'bold 22px sans-serif';
+        ctx.fillText('🍍 💧 🍍 💧 🍍 💧 🍍 💧 🍍', 40, 45);
+        ctx.fillText('🍍 💧 🍍 💧 🍍 💧 🍍 💧 🍍', 40, 935);
+      } else {
+        ctx.font = 'bold 20px sans-serif';
+        ctx.fillText('✨ 💖 ✨ 💖 ✨ 💖 ✨ 💖 ✨', 45, 45);
+        ctx.fillText('✨ 💖 ✨ 💖 ✨ 💖 ✨ 💖 ✨', 45, 935);
+      }
+      ctx.restore();
+    };
+
     if (selectedLayout === 'photocard') {
       canvas.width = 520;
-      canvas.height = 870;
+      canvas.height = 760;
       ctx.fillStyle = currentTheme.cardBg;
       ctx.beginPath();
-      ctx.roundRect(0, 0, 520, 870, 35);
+      ctx.roundRect(0, 0, 520, 760, 30);
       ctx.fill();
 
-      ctx.lineWidth = 10;
+      ctx.lineWidth = 8;
       ctx.strokeStyle = currentTheme.border;
       ctx.stroke();
 
       if (photos[0]) {
-        await drawCoverImage(photos[0], 30, 30, 460, 560, 20);
+        await drawCoverImage(photos[0], 30, 30, 460, 700, 20);
       }
     } else {
+      // Ukuran proporsional layout vertikal (1x2, 2x2, dll) agar tidak ada ruang kosong berlebih di bawah
       canvas.width = 630;
-      canvas.height = 1230;
+      canvas.height = 960;
 
       ctx.fillStyle = currentTheme.cardBg;
       ctx.beginPath();
-      ctx.roundRect(0, 0, 630, 1230, 40);
+      ctx.roundRect(0, 0, 630, 960, 35);
       ctx.fill();
 
       ctx.save();
-      ctx.lineWidth = 12;
+      ctx.lineWidth = 10;
       ctx.strokeStyle = currentTheme.border;
       ctx.beginPath();
-      ctx.roundRect(15, 15, 600, 1200, 30);
+      ctx.roundRect(15, 15, 600, 930, 25);
       ctx.stroke();
       ctx.restore();
 
-      if (currentTheme.isSpecial) {
-        ctx.save();
-        ctx.font = '28px sans-serif';
-        ctx.fillText(currentTheme.badge.split(' ')[0], 30, 50);
-        ctx.fillText('✨', 565, 50);
-        ctx.fillText('💖', 30, 1205);
-        ctx.fillText(currentTheme.badge.split(' ')[0], 565, 1205);
-        ctx.restore();
-      }
+      drawSpecialPattern();
 
-      ctx.save();
-      ctx.fillStyle = currentTheme.softBg;
-      ctx.beginPath();
-      ctx.roundRect(30, 930, 570, 230, 20);
-      ctx.fill();
-      ctx.strokeStyle = currentTheme.accent;
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([6, 6]);
-      ctx.stroke();
-      ctx.restore();
-
-      ctx.save();
-      ctx.fillStyle = currentTheme.border;
-      ctx.beginPath();
-      ctx.roundRect(220, 945, 190, 26, 13);
-      ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(currentTheme.isSpecial ? currentTheme.badge : 'SPECIAL MOMENT', 315, 962);
-      ctx.restore();
-
+      // Judul Atas Card
       ctx.fillStyle = currentTheme.text;
-      ctx.font = '900 18px sans-serif';
+      ctx.font = '900 16px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(currentTheme.isSpecial ? `✨ ${currentTheme.name.split(': ')[1]} ✨` : 'STUDIO LOVE STRIP', canvas.width / 2, 55);
-      ctx.font = '14px sans-serif';
-      ctx.fillStyle = currentTheme.accent;
-      ctx.fillText('Our Sweet Memories Together', canvas.width / 2, 80);
+      ctx.fillText(currentTheme.isSpecial ? `✨ ${currentTheme.name} ✨` : 'STUDIO LOVE STRIP', canvas.width / 2, 45);
 
-      if (selectedLayout === '1x2') {
-        if (photos[0]) await drawCoverImage(photos[0], 50, 105, 530, 380, 15);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 50, 500, 530, 380, 15);
-      } else if (selectedLayout === '1x3') {
-        if (photos[0]) await drawCoverImage(photos[0], 55, 100, 520, 255, 12);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 55, 370, 520, 255, 12);
-        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 55, 640, 520, 255, 12);
-      } else if (selectedLayout === '2x2') {
-        if (photos[0]) await drawCoverImage(photos[0], 45, 105, 260, 375, 12);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 325, 105, 260, 375, 12);
-        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 45, 495, 260, 375, 12);
-        if (photos[3] || photos[1] || photos[0]) await drawCoverImage(photos[3] || photos[1] || photos[0], 325, 495, 260, 375, 12);
-      } else if (selectedLayout === 'polaroid') {
-        if (photos[0]) await drawCoverImage(photos[0], 65, 105, 500, 580, 15);
-      } else if (selectedLayout === 'strip4') {
-        if (photos[0]) await drawCoverImage(photos[0], 65, 95, 500, 190, 10);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 65, 295, 500, 190, 10);
-        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 65, 495, 500, 190, 10);
-        if (photos[3] || photos[1] || photos[0]) await drawCoverImage(photos[3] || photos[1] || photos[0], 65, 695, 500, 190, 10);
+      // Render foto sesuai layout agar pas dan memenuhi ruang
+      if (selectedLayout === '1x2' || selectedLayout === 'mini_polaroid') {
+        if (photos[0]) await drawCoverImage(photos[0], 55, 65, 520, 390, 15);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 55, 470, 520, 390, 15);
       } else if (selectedLayout === 'duo_horizontal') {
-        if (photos[0]) await drawCoverImage(photos[0], 50, 150, 530, 260, 12);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 50, 440, 530, 260, 12);
+        if (photos[0]) await drawCoverImage(photos[0], 55, 75, 520, 380, 15);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 55, 475, 520, 380, 15);
+      } else if (selectedLayout === '1x3') {
+        if (photos[0]) await drawCoverImage(photos[0], 55, 60, 520, 265, 12);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 55, 340, 520, 265, 12);
+        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 55, 620, 520, 265, 12);
+      } else if (selectedLayout === '2x2') {
+        // Grid 2x2 disesuaikan persis agar pas dan proporsional untuk foto duo
+        if (photos[0]) await drawCoverImage(photos[0], 45, 65, 260, 385, 12);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 325, 65, 260, 385, 12);
+        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 45, 470, 260, 385, 12);
+        if (photos[3] || photos[1] || photos[0]) await drawCoverImage(photos[3] || photos[1] || photos[0], 325, 470, 260, 385, 12);
+      } else if (selectedLayout === 'polaroid') {
+        if (photos[0]) await drawCoverImage(photos[0], 65, 65, 500, 740, 15);
+      } else if (selectedLayout === 'strip4') {
+        if (photos[0]) await drawCoverImage(photos[0], 75, 55, 480, 205, 10);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 75, 275, 480, 205, 10);
+        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 75, 495, 480, 205, 10);
+        if (photos[3] || photos[1] || photos[0]) await drawCoverImage(photos[3] || photos[1] || photos[0], 75, 715, 480, 205, 10);
       } else if (selectedLayout === 'triple_grid') {
-        if (photos[0]) await drawCoverImage(photos[0], 50, 100, 530, 240, 12);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 50, 355, 255, 310, 12);
-        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 325, 355, 255, 310, 12);
-      } else if (selectedLayout === 'mini_polaroid') {
-        if (photos[0]) await drawCoverImage(photos[0], 70, 110, 225, 290, 12);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 335, 110, 225, 290, 12);
+        if (photos[0]) await drawCoverImage(photos[0], 55, 60, 520, 390, 12);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 55, 470, 250, 380, 12);
+        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 325, 470, 250, 380, 12);
       } else if (selectedLayout === 'heart_frame') {
-        if (photos[0]) await drawCoverImage(photos[0], 55, 105, 520, 570, 25);
+        if (photos[0]) await drawCoverImage(photos[0], 55, 65, 520, 780, 20);
       }
     }
 
     placedStickers.forEach(stk => {
-      ctx.font = `${stk.size || 32}px sans-serif`;
+      ctx.font = `${stk.size || 36}px sans-serif`;
       ctx.textAlign = 'center';
       const canvasX = (stk.x / 100) * canvas.width;
       const canvasY = (stk.y / 100) * canvas.height;
@@ -1189,15 +1202,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.font = `bold ${captionPos.size || 16}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.fillText(stripCaption, captionX, captionY);
-
-    ctx.fillStyle = '#57534e';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`${myName} & ${partnerName}`, 45, 1185);
-
-    ctx.textAlign = 'right';
-    const today = new Date();
-    ctx.fillText(`${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`, 585, 1185);
 
     setFinalStripUrl(canvas.toDataURL('image/png', 1.0));
   };
@@ -1218,7 +1222,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   };
 
   const addStickerToCard = (emoji) => {
-    const newStickers = [...placedStickers, { id: Date.now(), emoji, x: 50, y: 50, size: 36 }];
+    const newStickers = [...placedStickers, { id: Date.now(), emoji, x: 50, y: 70, size: 40 }];
     handleUpdateEditor(stripCaption, captionPos, newStickers);
     setSelectedElementId(newStickers[newStickers.length - 1].id);
   };
@@ -1238,7 +1242,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     } else {
       const newStickers = placedStickers.map(s => {
         if (s.id === id) {
-          const newSize = Math.max(20, Math.min(120, (s.size || 36) + delta));
+          const newSize = Math.max(20, Math.min(120, (s.size || 40) + delta));
           return { ...s, size: newSize };
         }
         return s;
@@ -1292,7 +1296,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       activePinchRef.current = { 
         id: item.id || 'caption', 
         initialDist: dist, 
-        initialSize: item.id === 'caption' ? (captionPos.size || 16) : (item.size || 36) 
+        initialSize: item.id === 'caption' ? (captionPos.size || 16) : (item.size || 40) 
       };
     }
   };
@@ -1332,7 +1336,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       setCaptionPos(newPos);
       handleUpdateEditor(stripCaption, newPos, placedStickers);
     } else {
-      const newSize = Math.max(20, Math.min(120, (item.size || 36) + delta));
+      const newSize = Math.max(20, Math.min(120, (item.size || 40) + delta));
       const updated = placedStickers.map(stk => stk.id === item.id ? { ...stk, size: newSize } : stk);
       handleUpdateEditor(stripCaption, captionPos, updated);
     }
@@ -1685,7 +1689,7 @@ export default function LiveLoveRoomWithPhotobooth() {
             )}
 
             {activeTab === 'photobooth' && (
-              <div className="flex-1 flex flex-col items-center justify-between space-y-1 overflow-y-auto p-1">
+              <div className="flex-1 flex flex-col items-center justify-between space-y-1.5 overflow-y-auto p-1">
                 
                 {boothStep === 'select-layout' && (
                   <div className="space-y-2.5 w-full text-left my-auto overflow-y-auto max-h-[78vh] pr-1">
@@ -1818,12 +1822,12 @@ export default function LiveLoveRoomWithPhotobooth() {
                 )}
 
                 {boothStep === 'ready' && finalStripUrl && (
-                  <div className="w-full flex flex-col items-center justify-center space-y-1.5">
+                  <div className="w-full flex-1 flex flex-col items-center justify-center space-y-2 my-auto">
                     
-                    {/* Area Card Diperbesar (Zoom In) Supaya Nyaman Diedit */}
+                    {/* Card di tengah, proporsional, tanpa sisa ruang kosong di bawah */}
                     <div 
                       ref={stickerContainerRef} 
-                      className="w-[170px] sm:w-[190px] relative rounded-2xl shadow-2xl overflow-hidden select-none touch-none border-2 border-rose-300 bg-white shrink-0"
+                      className="w-[200px] sm:w-[220px] relative rounded-2xl shadow-2xl overflow-hidden select-none touch-none border-2 border-rose-300 bg-white shrink-0 my-auto"
                     >
                       <img src={finalStripUrl} alt="Hasil Photobooth" className="w-full h-auto object-contain block pointer-events-none" />
                       
@@ -1841,7 +1845,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                           left: `${captionPos.x}%`,
                           top: `${captionPos.y}%`,
                           transform: 'translate(-50%, -50%)',
-                          fontSize: `${(captionPos.size || 16) * 0.55}px`,
+                          fontSize: `${(captionPos.size || 16) * 0.6}px`,
                           touchAction: 'none'
                         }}
                         className={`cursor-grab active:cursor-grabbing px-1.5 py-0.5 rounded text-center transition-all whitespace-nowrap ${selectedElementId === 'caption' ? 'ring-2 ring-rose-500 bg-white/90 shadow-md' : ''}`}
@@ -1865,7 +1869,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                             left: `${s.x}%`,
                             top: `${s.y}%`,
                             transform: 'translate(-50%, -50%)',
-                            fontSize: `${(s.size || 36) * 0.5}px`,
+                            fontSize: `${(s.size || 40) * 0.55}px`,
                             touchAction: 'none'
                           }}
                           className={`cursor-grab active:cursor-grabbing p-0.5 transition-transform ${selectedElementId === s.id ? 'ring-2 ring-rose-500 rounded bg-white/70 shadow-md' : ''}`}
@@ -1875,7 +1879,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                       ))}
                     </div>
 
-                    <div className="bg-stone-50 border border-stone-200 p-2 rounded-2xl w-full max-w-[310px] space-y-1 text-left shadow-sm shrink-0">
+                    <div className="bg-stone-50 border border-stone-200 p-2 rounded-2xl w-full max-w-[320px] space-y-1 text-left shadow-sm shrink-0">
                       <p className="text-[9px] font-bold text-stone-700 text-center">✨ Editor (Cubit 2 jari teks/stiker untuk besar/kecil)</p>
                       
                       <div>
@@ -1917,7 +1921,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                       )}
                     </div>
 
-                    <div className="flex gap-2 w-full max-w-[310px] shrink-0 pt-0.5">
+                    <div className="flex gap-2 w-full max-w-[320px] shrink-0 pt-0.5">
                       <a href={finalStripUrl} download={`StudioPhotobooth_${myName}_${partnerName}.png`} className="flex-1 py-2 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs text-center block cursor-pointer hover:scale-105 transition">📥 Download (PNG)</a>
                       <button onClick={handleOpenLivePreview} className="px-3 py-2 bg-stone-200 text-stone-600 font-bold rounded-xl text-xs hover:bg-stone-300 transition cursor-pointer shadow-xs">Ulangi 🔄</button>
                     </div>
