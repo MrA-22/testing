@@ -553,9 +553,9 @@ export default function LiveLoveRoomWithPhotobooth() {
     return 2;
   };
 
-  // Fungsi untuk menggambar latar belakang pemandangan & orang pada Canvas (Virtual Background Replacement)
+  // Render Pemandangan & Bingkai Potret Bersih (Estetik & Konsisten Tanpa Cacat Tumpukan Piksel)
   const drawCompositeScene = (ctx, width, height) => {
-    // 1. Gambar Latar Belakang Pemandangan di Kanvas
+    // 1. Latar Belakang Pemandangan
     let grad = ctx.createLinearGradient(0, 0, width, height);
     if (studioBackground === 'beach') {
       grad.addColorStop(0, '#38bdf8'); grad.addColorStop(0.6, '#2dd4bf'); grad.addColorStop(1, '#fde68a');
@@ -571,57 +571,50 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, width, height);
 
-    const halfW = width / 2;
+    const cardW = width * 0.42;
+    const cardH = height * 0.78;
+    const yPos = (height - cardH) / 2;
 
-    // 2. Gambar Video Kamu (Sisi Kiri dengan Chroma-Key / Latar Dihilangkan Otomatis)
+    // 2. Bingkai Potret Kamu (Kiri)
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    ctx.shadowBlur = 20;
+    ctx.beginPath();
+    ctx.roundRect(width * 0.05, yPos, cardW, cardH, 25);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.clip();
+
     if (localVideoRef.current && localVideoRef.current.readyState >= 2) {
       ctx.save();
-      ctx.translate(halfW, 0);
+      ctx.translate(width * 0.05 + cardW, yPos);
       ctx.scale(-1, 1);
-      
-      // Buat offscreen canvas untuk memproses frame video kamu agar background dinding terang/putih tersaring
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = halfW;
-      tempCanvas.height = height;
-      const tCtx = tempCanvas.getContext('2d');
-      tCtx.drawImage(localVideoRef.current, 0, 0, halfW, height);
-      
-      const imgData = tCtx.getImageData(0, 0, halfW, height);
-      const data = imgData.data;
-      // Algoritma sederhana mendeteksi dinding terang/putih/kusam di latar belakang untuk menjadikannya transparan
-      for (let i = 0; i < data.length; i += 4) {
-        const r = data[i], g = data[i+1], b = data[i+2];
-        // Jika piksel cenderung terang (dinding kamar putih/kusam)
-        if (r > 160 && g > 160 && b > 140 && Math.abs(r - g) < 30 && Math.abs(g - b) < 30) {
-          data[i+3] = 0; // Buat transparan agar pemandangan di belakangnya tembus
-        }
-      }
-      tCtx.putImageData(imgData, 0, 0);
-      ctx.drawImage(tempCanvas, 0, 0, halfW, height);
+      ctx.drawImage(localVideoRef.current, 0, 0, cardW, cardH);
       ctx.restore();
     }
+    ctx.restore();
 
-    // 3. Gambar Video Pasangan (Sisi Kanan dengan efek serupa)
+    // 3. Bingkai Potret Pasangan (Kanan)
+    ctx.save();
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.3)';
+    ctx.shadowBlur = 20;
+    ctx.beginPath();
+    ctx.roundRect(width * 0.53, yPos, cardW, cardH, 25);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.clip();
+
     if (remoteVideoRef.current && remoteStream && remoteVideoRef.current.readyState >= 2) {
-      ctx.save();
-      const tempCanvasR = document.createElement('canvas');
-      tempCanvasR.width = halfW;
-      tempCanvasR.height = height;
-      const rCtx = tempCanvasR.getContext('2d');
-      rCtx.drawImage(remoteVideoRef.current, 0, 0, halfW, height);
-      
-      const imgDataR = rCtx.getImageData(0, 0, halfW, height);
-      const dataR = imgDataR.data;
-      for (let i = 0; i < dataR.length; i += 4) {
-        const r = dataR[i], g = dataR[i+1], b = dataR[i+2];
-        if (r > 160 && g > 160 && b > 140 && Math.abs(r - g) < 30 && Math.abs(g - b) < 30) {
-          dataR[i+3] = 0;
-        }
-      }
-      rCtx.putImageData(imgDataR, 0, 0);
-      ctx.drawImage(tempCanvasR, halfW, 0, halfW, height);
-      ctx.restore();
+      ctx.drawImage(remoteVideoRef.current, width * 0.53, yPos, cardW, cardH);
+    } else {
+      ctx.fillStyle = '#f3f4f6';
+      ctx.fillRect(width * 0.53, yPos, cardW, cardH);
+      ctx.fillStyle = '#6b7280';
+      ctx.font = 'bold 16px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`Menunggu ${partnerName}...`, width * 0.53 + cardW / 2, yPos + cardH / 2);
     }
+    ctx.restore();
   };
 
   // Loop Render Live Preview ke Kanvas
@@ -1147,7 +1140,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               </div>
             )}
 
-            {/* TAB 6: PHOTOBOOTH KAMERA GANDA & VIRTUAL BACKGROUND */}
+            {/* TAB 6: PHOTOBOOTH KAMERA GANDA */}
             {activeTab === 'photobooth' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-3 overflow-y-auto p-1">
                 
@@ -1156,7 +1149,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                   <div className="space-y-3 w-full max-w-xs text-left my-auto">
                     <div className="text-center">
                       <h3 className="font-bold text-stone-900 text-base">Photobooth Kamera Ganda 📸</h3>
-                      <p className="text-xs text-stone-500">Latar ruangan asli akan diganti pemandangan indah secara otomatis!</p>
+                      <p className="text-xs text-stone-500">Tampil bersih & rapi dengan latar belakang pemandangan indah!</p>
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-stone-600 mb-1">Pilih Layout:</label>
@@ -1176,7 +1169,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* 2. TAHAP LIVE PREVIEW DENGAN VIRTUAL BACKGROUND (LATAR DIGANTI PEMANDANGAN) */}
+                {/* 2. TAHAP LIVE PREVIEW */}
                 {boothStep === 'preview' && (
                   <div className="space-y-3 w-full text-center my-auto">
                     <p className="text-xs font-bold text-stone-700">✨ Pilih Latar Belakang Pemandangan ✨</p>
@@ -1209,7 +1202,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                       <video ref={remoteVideoRef} autoPlay playsInline />
                     </div>
 
-                    {/* KANVAS UTAMA VIRTUAL BACKGROUND (1 FRAME UTUH TANPA PEMISAH) */}
+                    {/* KANVAS PREVIEW DENGAN BINGKAI BERSIH */}
                     <div className="relative rounded-3xl shadow-xl max-w-[390px] mx-auto overflow-hidden h-[180px] bg-black">
                       <canvas ref={previewCanvasRef} width={640} height={360} className="w-full h-full object-cover" />
                       {!remoteStream && (
