@@ -43,8 +43,12 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [conn, setConn] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   
-  // Setup Room & Nama
-  const [mode, setMode] = useState('menu'); 
+  // Setup Room & Nama (Dengan pemulihan anti-error saat refresh)
+  const [mode, setMode] = useState(() => {
+    const savedMode = localStorage.getItem('bucin_mode');
+    // Jika sebelumnya di dashboard tapi direfresh, kembalikan ke menu agar tidak error koneksi mati
+    return (savedMode === 'dashboard' || savedMode === 'waiting-host') ? 'menu' : (savedMode || 'menu');
+  }); 
   const [roomCode, setRoomCode] = useState(() => localStorage.getItem('bucin_roomCode') || '');
   const [inputCode, setInputCode] = useState('');
   const [myName, setMyName] = useState(() => localStorage.getItem('bucin_myName') || '');
@@ -143,7 +147,7 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   const messagesEndRef = useRef(null);
 
-  // Load MediaPipe Selfie Segmentation via CDN Script
+  // Load MediaPipe Selfie Segmentation via CDN Script (Tanpa Error Build npm)
   useEffect(() => {
     const script = document.createElement('script');
     script.src = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js";
@@ -219,9 +223,9 @@ export default function LiveLoveRoomWithPhotobooth() {
     };
   }, [boothStep, isSegmentationLoaded, cameraBgTheme]);
 
-  // Fungsi Helper Presisi untuk Menghitung Crop Rasio Video & Masker AI
-  const getVideoCropParams = (video, destW, destH) => {
-    if (!video) return { sX: 0, sY: 0, sW: 640, sH: 480 };
+  // Fungsi Helper untuk Cover Ratio Video (Tanpa Gepeng/Melar)
+  const drawVideoCover = (ctx, video, destX, destY, destW, destH, mirror = false) => {
+    if (!video || video.readyState < 2) return;
     const vW = video.videoWidth || 640;
     const vH = video.videoHeight || 480;
 
@@ -241,13 +245,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       sY = (vH - sH) / 2;
     }
 
-    return { sX, sY, sW, sH };
-  };
-
-  const drawVideoCover = (ctx, video, destX, destY, destW, destH, mirror = false) => {
-    if (!video || video.readyState < 2) return;
-    const { sX, sY, sW, sH } = getVideoCropParams(video, destW, destH);
-
     ctx.save();
     ctx.beginPath();
     ctx.rect(destX, destY, destW, destH);
@@ -263,7 +260,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.restore();
   };
 
-  // Hasil Masking AI & Render 1 Frame Studio Bersama (Dilengkapi Placeholder Estetik Anti-Hitam)
+  // Hasil Masking AI & Render 1 Frame Studio Bersama
   const onMediaPipeResults = (results) => {
     const canvas = previewCanvasRef.current;
     if (!canvas) return;
@@ -285,55 +282,30 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillRect(0, 0, w, h);
     }
 
-    // 2. SISI KIRI: KAMU (Masker AI & Video diselaraskan koordinat crop-nya)
+    // 2. SISI KIRI: KAMU (Badan di Depan Latar Virtual dengan Masking AI)
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = halfW;
+    tempCanvas.height = h;
+    const tCtx = tempCanvas.getContext('2d');
+
     if (localVideoRef.current && localVideoRef.current.readyState >= 2) {
-      const video = localVideoRef.current;
-      const { sX, sY, sW, sH } = getVideoCropParams(video, halfW, h);
-
-      const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = halfW;
-      tempCanvas.height = h;
-      const tCtx = tempCanvas.getContext('2d');
-
-      tCtx.save();
-      tCtx.translate(halfW, 0);
-      tCtx.scale(-1, 1);
-      tCtx.drawImage(video, sX, sY, sW, sH, 0, 0, halfW, h);
-      tCtx.restore();
-
-      const maskCanvas = document.createElement('canvas');
-      maskCanvas.width = halfW;
-      maskCanvas.height = h;
-      const mCtx = maskCanvas.getContext('2d');
-
-      mCtx.save();
-      mCtx.translate(halfW, 0);
-      mCtx.scale(-1, 1);
-      mCtx.drawImage(results.segmentationMask, sX, sY, sW, sH, 0, 0, halfW, h);
-      mCtx.restore();
-
-      tCtx.globalCompositeOperation = 'destination-in';
-      tCtx.drawImage(maskCanvas, 0, 0);
-
-      ctx.drawImage(tempCanvas, 0, 0);
+      drawVideoCover(tCtx, localVideoRef.current, 0, 0, halfW, h, true);
     }
 
-    // 3. SISI KANAN: PASANGAN (WebRTC Remote Video atau Placeholder Estetik Anti-Hitam)
+    tCtx.globalCompositeOperation = 'destination-in';
+    tCtx.drawImage(results.segmentationMask, 0, 0, halfW, h);
+    ctx.drawImage(tempCanvas, 0, 0);
+
+    // 3. SISI KANAN: PASANGAN (WebRTC Remote Video Stream)
     if (remoteVideoRef.current && remoteVideoRef.current.readyState >= 2 && remoteStream) {
       drawVideoCover(ctx, remoteVideoRef.current, halfW, 0, halfW, h, false);
     } else {
-      // Kotak Pendukung / Placeholder Agar Tidak Hitam Polos
-      ctx.fillStyle = 'rgba(255, 228, 230, 0.85)';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
       ctx.fillRect(halfW, 0, halfW, h);
-
-      ctx.fillStyle = '#881337';
-      ctx.font = 'bold 18px sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`🧸 ${partnerName} 🧸`, halfW + (halfW / 2), h / 2 - 15);
-
-      ctx.font = '12px sans-serif';
-      ctx.fillStyle = '#9f1239';
-      ctx.fillText(`Menunggu Sambungan Kamera...`, halfW + (halfW / 2), h / 2 + 15);
+      ctx.fillText(`Menunggu ${partnerName}...`, halfW + (halfW / 2), h / 2);
     }
 
     // Label Nama Estetik di Dalam Frame
@@ -359,11 +331,12 @@ export default function LiveLoveRoomWithPhotobooth() {
   };
 
   useEffect(() => {
+    localStorage.setItem('bucin_mode', mode);
     localStorage.setItem('bucin_roomCode', roomCode);
     localStorage.setItem('bucin_myName', myName);
     localStorage.setItem('bucin_partnerName', partnerName);
     localStorage.setItem('bucin_anniversary', anniversaryDate);
-  }, [roomCode, myName, partnerName, anniversaryDate]);
+  }, [mode, roomCode, myName, partnerName, anniversaryDate]);
 
   useEffect(() => {
     allPhotosRef.current = allPhotos;
@@ -408,12 +381,12 @@ export default function LiveLoveRoomWithPhotobooth() {
       }
       const stream = await navigator.mediaDevices.getUserMedia({ 
         video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }, 
-        audio: false 
+        audio: true 
       });
       localStreamRef.current = stream;
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
-        await localVideoRef.current.play().catch(e => console.log("Play interrupted:", e));
+        await localVideoRef.current.play().catch(e => console.log(e));
       }
       setCameraActive(true);
 
@@ -437,7 +410,8 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  const handleReconnectCall = async () => {
+  // Fungsi sinkronisasi manual untuk tombol "Hubungkan Ulang Video"
+  const handleReconnectStream = async () => {
     const stream = await startDualCameraStream();
     if (stream && peerInstanceRef.current && conn && conn.peer) {
       const call = peerInstanceRef.current.call(conn.peer, stream);
@@ -449,9 +423,9 @@ export default function LiveLoveRoomWithPhotobooth() {
           remoteVideoRef.current.play().catch(e => console.log(e));
         }
       });
-      alert("Sinyal video berhasil dikirim ulang ke pasangan! 🔄");
+      alert("Permintaan sambungan video dikirim ulang ke pasangan! 🔄");
     } else {
-      alert("Belum terhubung ke room pasangan.");
+      alert("Koneksi data dengan pasangan belum siap.");
     }
   };
 
@@ -464,6 +438,7 @@ export default function LiveLoveRoomWithPhotobooth() {
         localStreamRef.current = null;
       }
       
+      localStorage.removeItem('bucin_mode');
       localStorage.removeItem('bucin_roomCode');
       localStorage.removeItem('bucin_partnerName');
 
@@ -562,7 +537,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     });
 
     newPeer.on('error', () => {
-      alert('Gagal terhubung! Pastikan kode room benar.');
+      alert('Gagal terhubung! Pastikan kode room benar atau buat ulang room.');
       setMode('join');
     });
 
@@ -858,6 +833,9 @@ export default function LiveLoveRoomWithPhotobooth() {
           ctx.clip();
           ctx.drawImage(previewCanvasRef.current, 0, 0, 1280, 720, 40, 60, 720, 450);
           ctx.restore();
+        } else {
+          ctx.fillStyle = '#111';
+          ctx.fillRect(40, 60, 720, 450);
         }
 
         ctx.save();
@@ -932,9 +910,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.strokeStyle = themeConfig.border;
       ctx.stroke();
 
-      if (photos[0]) {
-        await drawCoverImage(photos[0], 65, 65, 470, 580, 20);
-      }
+      if (photos[0]) await drawCoverImage(photos[0], 65, 65, 470, 580, 20);
 
       ctx.font = '40px sans-serif';
       ctx.textAlign = 'center';
@@ -1473,7 +1449,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                     <div className="bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 border-2 border-rose-200 p-3 rounded-3xl shadow-lg max-w-[480px] mx-auto space-y-2">
                       <div className="flex justify-between items-center px-1">
                         <span className="text-[11px] font-bold text-rose-700 tracking-wide">💖 {myName} & {partnerName} • {bgThemes[cameraBgTheme]?.emoji} {bgThemes[cameraBgTheme]?.name} 💖</span>
-                        <button onClick={handleReconnectCall} className="text-[10px] bg-rose-200 hover:bg-rose-300 text-rose-800 font-bold px-2 py-1 rounded-lg transition cursor-pointer">🔄 Hubungkan Ulang Video</button>
+                        <button onClick={handleReconnectStream} className="text-[10px] bg-rose-200 hover:bg-rose-300 text-rose-800 font-bold px-2 py-1 rounded-lg transition cursor-pointer">🔄 Hubungkan Ulang Video</button>
                       </div>
                       
                       {/* Kanvas Live Studio Gabungan */}
