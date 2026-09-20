@@ -143,7 +143,7 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   const messagesEndRef = useRef(null);
 
-  // Load MediaPipe Selfie Segmentation via CDN Script (Tanpa Error Build npm)
+  // Load MediaPipe Selfie Segmentation via CDN Script
   useEffect(() => {
     const script = document.createElement('script');
     script.src = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js";
@@ -219,9 +219,9 @@ export default function LiveLoveRoomWithPhotobooth() {
     };
   }, [boothStep, isSegmentationLoaded, cameraBgTheme]);
 
-  // Fungsi Helper untuk Cover Ratio Video (Tanpa Gepeng/Melar)
-  const drawVideoCover = (ctx, video, destX, destY, destW, destH, mirror = false) => {
-    if (!video || video.readyState < 2) return;
+  // Fungsi Helper Presisi untuk Menghitung Crop Rasio Video & Masker AI
+  const getVideoCropParams = (video, destW, destH) => {
+    if (!video) return { sX: 0, sY: 0, sW: 640, sH: 480 };
     const vW = video.videoWidth || 640;
     const vH = video.videoHeight || 480;
 
@@ -241,6 +241,13 @@ export default function LiveLoveRoomWithPhotobooth() {
       sY = (vH - sH) / 2;
     }
 
+    return { sX, sY, sW, sH };
+  };
+
+  const drawVideoCover = (ctx, video, destX, destY, destW, destH, mirror = false) => {
+    if (!video || video.readyState < 2) return;
+    const { sX, sY, sW, sH } = getVideoCropParams(video, destW, destH);
+
     ctx.save();
     ctx.beginPath();
     ctx.rect(destX, destY, destW, destH);
@@ -256,7 +263,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     ctx.restore();
   };
 
-  // Hasil Masking AI & Render 1 Frame Studio Bersama
+  // Hasil Masking AI & Render 1 Frame Studio Bersama (Tanpa Geser/Offset)
   const onMediaPipeResults = (results) => {
     const canvas = previewCanvasRef.current;
     if (!canvas) return;
@@ -278,19 +285,42 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.fillRect(0, 0, w, h);
     }
 
-    // 2. SISI KIRI: KAMU (Badan di Depan Latar Virtual dengan Masking AI)
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = halfW;
-    tempCanvas.height = h;
-    const tCtx = tempCanvas.getContext('2d');
-
+    // 2. SISI KIRI: KAMU (Masker AI & Video diselaraskan koordinat crop-nya 100%)
     if (localVideoRef.current && localVideoRef.current.readyState >= 2) {
-      drawVideoCover(tCtx, localVideoRef.current, 0, 0, halfW, h, true);
-    }
+      const video = localVideoRef.current;
+      const { sX, sY, sW, sH } = getVideoCropParams(video, halfW, h);
 
-    tCtx.globalCompositeOperation = 'destination-in';
-    tCtx.drawImage(results.segmentationMask, 0, 0, halfW, h);
-    ctx.drawImage(tempCanvas, 0, 0);
+      // Kanvas Sementara untuk Video Kamu (Mirrored)
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = halfW;
+      tempCanvas.height = h;
+      const tCtx = tempCanvas.getContext('2d');
+
+      tCtx.save();
+      tCtx.translate(halfW, 0);
+      tCtx.scale(-1, 1);
+      tCtx.drawImage(video, sX, sY, sW, sH, 0, 0, halfW, h);
+      tCtx.restore();
+
+      // Kanvas Sementara untuk Masker AI (Diselaraskan Mirror dan Crop-nya agar tidak geser)
+      const maskCanvas = document.createElement('canvas');
+      maskCanvas.width = halfW;
+      maskCanvas.height = h;
+      const mCtx = maskCanvas.getContext('2d');
+
+      mCtx.save();
+      mCtx.translate(halfW, 0);
+      mCtx.scale(-1, 1);
+      mCtx.drawImage(results.segmentationMask, sX, sY, sW, sH, 0, 0, halfW, h);
+      mCtx.restore();
+
+      // Terapkan masking pada video
+      tCtx.globalCompositeOperation = 'destination-in';
+      tCtx.drawImage(maskCanvas, 0, 0);
+
+      // Gambar hasil akhir sisi kiri ke kanvas utama
+      ctx.drawImage(tempCanvas, 0, 0);
+    }
 
     // 3. SISI KANAN: PASANGAN (WebRTC Remote Video Stream)
     if (remoteVideoRef.current && remoteVideoRef.current.readyState >= 2 && remoteStream) {
@@ -382,7 +412,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       localStreamRef.current = stream;
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
-        await localVideoRef.current.play().catch(e => console.log(e));
+        await localVideoRef.current.play().catch(e => console.log("Play interrupted:", e));
       }
       setCameraActive(true);
 
