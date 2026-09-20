@@ -3,16 +3,61 @@ import { Peer } from 'peerjs';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
 
-// 8 Pilihan Tema Background Studio
+// 50 Pilihan Background (30 Nuansa Dunia/Wisata/Desa/Kota + 20 Polosan & Gradasi)
 const bgThemes = {
-  sunset: { name: 'Sunset', emoji: '🌅', url: 'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?auto=format&fit=crop&w=1200&q=80' },
-  pantai: { name: 'Pantai', emoji: '🏖️', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80' },
-  gunung: { name: 'Gunung', emoji: '⛰️', url: 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80' },
-  cafe: { name: 'Cafe Aesthetic', emoji: '☕', url: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?auto=format&fit=crop&w=1200&q=80' },
-  city: { name: 'Neon City', emoji: '🌆', url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1200&q=80' },
-  galaxy: { name: 'Galaxy Space', emoji: '🌌', url: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=1200&q=80' },
-  sakura: { name: 'Sakura Park', emoji: '🌸', url: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?auto=format&fit=crop&w=1200&q=80' },
-  autumn: { name: 'Autumn Woods', emoji: '🍁', url: 'https://images.unsplash.com/photo-1507783590520-64746b074a3c?auto=format&fit=crop&w=1200&q=80' }
+  // --- 30 Nuansa Dunia, Kota, Desa, & Tempat Wisata ---
+  tokyo: { name: 'Tokyo Street', emoji: '🗼', type: 'image', url: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1200&q=80' },
+  seoul: { name: 'Seoul Hanok', emoji: '🏯', type: 'image', url: 'https://images.unsplash.com/photo-1538485399060-071c360ca4fa?auto=format&fit=crop&w=1200&q=80' },
+  ny: { name: 'New York City', emoji: '🗽', type: 'image', url: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=1200&q=80' },
+  paris: { name: 'Paris Eiffel', emoji: '✨', type: 'image', url: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=1200&q=80' },
+  santorini: { name: 'Santorini Greece', emoji: '🏛️', type: 'image', url: 'https://images.unsplash.com/photo-1570077188670-e3a8d69ac5ff?auto=format&fit=crop&w=1200&q=80' },
+  swiss: { name: 'Swiss Alps', emoji: '⛰️', type: 'image', url: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=1200&q=80' },
+  kyoto: { name: 'Kyoto Bamboo', emoji: '🎋', type: 'image', url: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80' },
+  london: { name: 'London Big Ben', emoji: '🇬🇧', type: 'image', url: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=1200&q=80' },
+  venice: { name: 'Venice Canal', emoji: '🛶', type: 'image', url: 'https://images.unsplash.com/photo-1514896856522-8f35f299c8bf?auto=format&fit=crop&w=1200&q=80' },
+  la: { name: 'Los Angeles', emoji: '🌴', type: 'image', url: 'https://images.unsplash.com/photo-1534190760960-a298ff1e1548?auto=format&fit=crop&w=1200&q=80' },
+  bali: { name: 'Bali Resort', emoji: '🌺', type: 'image', url: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80' },
+  aurora: { name: 'Aurora Norway', emoji: '🌌', type: 'image', url: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=1200&q=80' },
+  amsterdam: { name: 'Amsterdam', emoji: '🚲', type: 'image', url: 'https://images.unsplash.com/photo-1512470876302-972faa2aa9a4?auto=format&fit=crop&w=1200&q=80' },
+  cappadocia: { name: 'Cappadocia', emoji: '🎈', type: 'image', url: 'https://images.unsplash.com/photo-1641128324970-23021dd0668d?auto=format&fit=crop&w=1200&q=80' },
+  tajmahal: { name: 'Taj Mahal', emoji: '🕌', type: 'image', url: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=1200&q=80' },
+  sydney: { name: 'Sydney Opera', emoji: '🇦🇺', type: 'image', url: 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=1200&q=80' },
+  village_swiss: { name: 'Swiss Village', emoji: '🏡', type: 'image', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80' },
+  village_tuscany: { name: 'Tuscany Italy', emoji: '🍇', type: 'image', url: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=1200&q=80' },
+  village_japan: { name: 'Japanese Rural', emoji: '🌾', type: 'image', url: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80' },
+  village_england: { name: 'English Cottage', emoji: '🏡', type: 'image', url: 'https://images.unsplash.com/photo-1513584684374-8bab748fbf90?auto=format&fit=crop&w=1200&q=80' },
+  sunset: { name: 'Sunset Beach', emoji: '🌅', type: 'image', url: 'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?auto=format&fit=crop&w=1200&q=80' },
+  cyberpunk: { name: 'Neon Cyberpunk', emoji: '🌆', type: 'image', url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1200&q=80' },
+  cabin: { name: 'Mountain Cabin', emoji: '🪵', type: 'image', url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1200&q=80' },
+  rainforest: { name: 'Rainforest', emoji: '🌿', type: 'image', url: 'https://images.unsplash.com/photo-1511497584788-876761192569?auto=format&fit=crop&w=1200&q=80' },
+  desert: { name: 'Desert Oasis', emoji: '🐪', type: 'image', url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1200&q=80' },
+  galaxy: { name: 'Galaxy Space', emoji: '🌌', type: 'image', url: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=1200&q=80' },
+  autumn: { name: 'Autumn Woods', emoji: '🍁', type: 'image', url: 'https://images.unsplash.com/photo-1507783590520-64746b074a3c?auto=format&fit=crop&w=1200&q=80' },
+  sakura: { name: 'Sakura Park', emoji: '🌸', type: 'image', url: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?auto=format&fit=crop&w=1200&q=80' },
+  winter: { name: 'Winter Snow', emoji: '❄️', type: 'image', url: 'https://images.unsplash.com/photo-1517299321609-52687d1bc55a?auto=format&fit=crop&w=1200&q=80' },
+  lavender: { name: 'Lavender Field', emoji: '💜', type: 'image', url: 'https://images.unsplash.com/photo-1499002238440-d264edd596ec?auto=format&fit=crop&w=1200&q=80' },
+
+  // --- 20 Polosan & Gradasi ---
+  plain_white: { name: 'Pure White', emoji: '⚪', type: 'color', value: '#ffffff' },
+  plain_pink: { name: 'Soft Pink', emoji: '🌸', type: 'color', value: '#ffe4e6' },
+  plain_blue: { name: 'Pastel Blue', emoji: '🔹', type: 'color', value: '#e0f2fe' },
+  plain_mint: { name: 'Pastel Mint', emoji: '🍃', type: 'color', value: '#d1fae5' },
+  plain_peach: { name: 'Pastel Peach', emoji: '🍑', type: 'color', value: '#ffedd5' },
+  plain_lilac: { name: 'Lilac Purple', emoji: '💜', type: 'color', value: '#f3e8ff' },
+  plain_cream: { name: 'Soft Cream', emoji: '🥛', type: 'color', value: '#fef3c7' },
+  plain_beige: { name: 'Warm Beige', emoji: '🪵', type: 'color', value: '#f5f5f4' },
+  plain_yellow: { name: 'Lemon Soft', emoji: '🍋', type: 'color', value: '#fef9c3' },
+  plain_sage: { name: 'Sage Green', emoji: '🌿', type: 'color', value: '#ecfdf5' },
+  grad_rosegold: { name: 'Rose Gold Grad', emoji: '✨', type: 'gradient', c1: '#fda4af', c2: '#fbcfe8' },
+  grad_sunset: { name: 'Sunset Grad', emoji: '🌅', type: 'gradient', c1: '#fb7185', c2: '#fdba74' },
+  grad_ocean: { name: 'Ocean Grad', emoji: '🌊', type: 'gradient', c1: '#38bdf8', c2: '#818cf8' },
+  grad_lavender: { name: 'Lavender Grad', emoji: '🌌', type: 'gradient', c1: '#c084fc', c2: '#f472b6' },
+  grad_peach: { name: 'Peach Grad', emoji: '🍑', type: 'gradient', c1: '#fb923c', c2: '#f43f5e' },
+  grad_mint: { name: 'Mint Grad', emoji: '🌱', type: 'gradient', c1: '#34d399', c2: '#60a5fa' },
+  plain_gray: { name: 'Minimal Gray', emoji: '🪙', type: 'color', value: '#e7e5e4' },
+  plain_charcoal: { name: 'Deep Charcoal', emoji: '🖤', type: 'color', value: '#1c1917' },
+  plain_pastel_lav: { name: 'Soft Lavender', emoji: '🦄', type: 'color', value: '#ede9fe' },
+  plain_mocha: { name: 'Soft Mocha', emoji: '☕', type: 'color', value: '#f3e8df' }
 };
 
 export default function LiveLoveRoomWithPhotobooth() {
@@ -20,12 +65,12 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [conn, setConn] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   
-  // Setup Room & Nama
-  const [mode, setMode] = useState(() => localStorage.getItem('bucin_mode') || 'menu'); 
-  const [roomCode, setRoomCode] = useState(() => localStorage.getItem('bucin_roomCode') || '');
+  // Setup Room & Nama (Tanpa LocalStorage)
+  const [mode, setMode] = useState('menu'); 
+  const [roomCode, setRoomCode] = useState('');
   const [inputCode, setInputCode] = useState('');
-  const [myName, setMyName] = useState(() => localStorage.getItem('bucin_myName') || '');
-  const [partnerName, setPartnerName] = useState(() => localStorage.getItem('bucin_partnerName') || 'Ayang');
+  const [myName, setMyName] = useState('');
+  const [partnerName, setPartnerName] = useState('Ayang');
   const [statusText, setStatusText] = useState('Menunggu koneksi...');
 
   // Navigasi Dashboard Tabs
@@ -53,6 +98,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [selectedLayout, setSelectedLayout] = useState('1x2'); 
   const [selectedTheme, setSelectedTheme] = useState('rose'); 
   const [cameraBgTheme, setCameraBgTheme] = useState('sunset');
+  const [customBgUrl, setCustomBgUrl] = useState(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [countdown, setCountdown] = useState(null);
   const [allPhotos, setAllPhotos] = useState([]);
@@ -75,7 +121,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   const remoteStreamRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
-  const remoteAudioRef = useRef(null); // Ref khusus Audio Pasangan agar suara muncul lancar
+  const remoteAudioRef = useRef(null);
   const currentCallRef = useRef(null);
   const peerInstanceRef = useRef(null);
 
@@ -90,7 +136,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [isSegmentationLoaded, setIsSegmentationLoaded] = useState(false);
 
   // --- COUNTER JADIAN ---
-  const [anniversaryDate, setAnniversaryDate] = useState(() => localStorage.getItem('bucin_anniversary') || '2024-01-01');
+  const [anniversaryDate, setAnniversaryDate] = useState('2024-01-01');
   const [timeTogether, setTimeTogether] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
   // --- QUIZ ---
@@ -119,6 +165,34 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [randomDateIdea, setRandomDateIdea] = useState("Klik tombol untuk memutar ide kencan! ✨");
 
   const messagesEndRef = useRef(null);
+
+  // Efek Suara Jepretan Kamera (Shutter Sound)
+  const playShutterSound = () => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const bufferSize = audioCtx.sampleRate * 0.05;
+      const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+      const noise = audioCtx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = audioCtx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.value = 1200;
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.6, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+      noise.start();
+    } catch (e) {
+      console.log(e);
+    }
+  };
 
   // Load Dual MediaPipe Selfie Segmentation sekali saja di awal
   useEffect(() => {
@@ -169,15 +243,25 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  // Muat gambar background tema aktif
+  // Muat gambar background tema aktif (jika berupa gambar URL)
   useEffect(() => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = bgThemes[cameraBgTheme]?.url || bgThemes.sunset.url;
-    img.onload = () => {
-      bgImageLoadedRef.current = img;
-    };
-  }, [cameraBgTheme]);
+    const theme = bgThemes[cameraBgTheme];
+    if (theme && theme.type === 'image') {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = theme.url;
+      img.onload = () => {
+        bgImageLoadedRef.current = img;
+      };
+    } else if (cameraBgTheme === 'custom' && customBgUrl) {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = customBgUrl;
+      img.onload = () => {
+        bgImageLoadedRef.current = img;
+      };
+    }
+  }, [cameraBgTheme, customBgUrl]);
 
   useEffect(() => {
     if (localStreamRef.current && localVideoRef.current) {
@@ -214,9 +298,7 @@ export default function LiveLoveRoomWithPhotobooth() {
         if (localVid && localSeg && localVid.readyState >= 2) {
           try {
             await localSeg.send({ image: localVid });
-          } catch (e) {
-            // ignore frame drop
-          }
+          } catch (e) {}
         }
 
         const activeRemoteStream = remoteStream || remoteStreamRef.current;
@@ -226,9 +308,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               await remoteVid.play().catch(e => console.log(e));
             }
             await remoteSeg.send({ image: remoteVid });
-          } catch (e) {
-            // ignore frame drop
-          }
+          } catch (e) {}
         }
 
         drawCompositeFrame();
@@ -247,7 +327,7 @@ export default function LiveLoveRoomWithPhotobooth() {
         }
       };
     }
-  }, [boothStep, isSegmentationLoaded, cameraBgTheme, remoteStream, partnerName, myName, cameraActive]);
+  }, [boothStep, isSegmentationLoaded, cameraBgTheme, customBgUrl, remoteStream, partnerName, myName, cameraActive]);
 
   const getVideoCropParams = (video, destW, destH) => {
     if (!video) return { sX: 0, sY: 0, sW: 640, sH: 480 };
@@ -286,11 +366,28 @@ export default function LiveLoveRoomWithPhotobooth() {
     const h = canvas.height;
     const halfW = w / 2;
 
-    if (bgImageLoadedRef.current) {
+    // Render Background (Gambar, Warna Solid, atau Gradasi)
+    const currentTheme = cameraBgTheme === 'custom' ? { type: 'image' } : bgThemes[cameraBgTheme];
+    if (cameraBgTheme === 'custom' && customBgUrl && bgImageLoadedRef.current) {
       ctx.drawImage(bgImageLoadedRef.current, 0, 0, w, h);
-    } else {
-      ctx.fillStyle = '#111';
-      ctx.fillRect(0, 0, w, h);
+    } else if (currentTheme) {
+      if (currentTheme.type === 'color') {
+        ctx.fillStyle = currentTheme.value;
+        ctx.fillRect(0, 0, w, h);
+      } else if (currentTheme.type === 'gradient') {
+        const grad = ctx.createLinearGradient(0, 0, w, h);
+        grad.addColorStop(0, currentTheme.c1);
+        grad.addColorStop(1, currentTheme.c2);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+      } else {
+        if (bgImageLoadedRef.current) {
+          ctx.drawImage(bgImageLoadedRef.current, 0, 0, w, h);
+        } else {
+          ctx.fillStyle = '#111';
+          ctx.fillRect(0, 0, w, h);
+        }
+      }
     }
 
     const localVid = localVideoRef.current;
@@ -393,14 +490,6 @@ export default function LiveLoveRoomWithPhotobooth() {
   };
 
   useEffect(() => {
-    localStorage.setItem('bucin_mode', mode);
-    localStorage.setItem('bucin_roomCode', roomCode);
-    localStorage.setItem('bucin_myName', myName);
-    localStorage.setItem('bucin_partnerName', partnerName);
-    localStorage.setItem('bucin_anniversary', anniversaryDate);
-  }, [mode, roomCode, myName, partnerName, anniversaryDate]);
-
-  useEffect(() => {
     allPhotosRef.current = allPhotos;
   }, [allPhotos]);
 
@@ -491,26 +580,26 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
+  const resetToMainMenu = () => {
+    if (conn) conn.close();
+    if (peer) peer.destroy();
+    stopCamera();
+
+    setMode('menu');
+    setRoomCode('');
+    setInputCode('');
+    setConn(null);
+    setPeer(null);
+    setIsConnected(false);
+    setMessages([]);
+    setNotes([]);
+    setAllPhotos([]);
+    setFinalStripUrl(null);
+  };
+
   const handleLeaveSession = () => {
     if (window.confirm("Yakin ingin keluar dari sesi ruangan ini?")) {
-      if (conn) conn.close();
-      if (peer) peer.destroy();
-      stopCamera();
-      
-      localStorage.removeItem('bucin_mode');
-      localStorage.removeItem('bucin_roomCode');
-      localStorage.removeItem('bucin_partnerName');
-
-      setMode('menu');
-      setRoomCode('');
-      setInputCode('');
-      setConn(null);
-      setPeer(null);
-      setIsConnected(false);
-      setMessages([]);
-      setNotes([]);
-      setAllPhotos([]);
-      setFinalStripUrl(null);
+      resetToMainMenu();
     }
   };
 
@@ -632,6 +721,9 @@ export default function LiveLoveRoomWithPhotobooth() {
         setSelectedTheme(data.theme);
       } else if (data.type === 'pb-bg-theme-sync') {
         setCameraBgTheme(data.theme);
+      } else if (data.type === 'pb-bg-custom-sync') {
+        setCustomBgUrl(data.url);
+        setCameraBgTheme('custom');
       } else if (data.type === 'pb-preview-mode') {
         setSelectedLayout(data.layout);
         setSelectedTheme(data.theme);
@@ -666,9 +758,10 @@ export default function LiveLoveRoomWithPhotobooth() {
       }
     });
 
+    // Otomatis kembali ke menu utama jika pasangan keluar/terputus
     connection.on('close', () => {
-      setIsConnected(false);
-      setStatusText('Pasangan terputus / keluar room.');
+      alert("Pasangan telah keluar dari room. Kembali ke menu utama.");
+      resetToMainMenu();
     });
   };
 
@@ -775,6 +868,22 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
+  const handleCustomBgUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const url = event.target.result;
+        setCustomBgUrl(url);
+        setCameraBgTheme('custom');
+        if (conn) {
+          conn.send({ type: 'pb-bg-custom-sync', url });
+        }
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const getRequiredPhotosCount = () => {
     if (selectedLayout === '1x2') return 2;
     if (selectedLayout === '1x3') return 3;
@@ -833,7 +942,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     const total = getRequiredPhotosCount();
     if (currentStep >= total) {
       setBoothStep('ready');
-      stopCamera(); // Matikan kamera otomatis setelah selesai jepret untuk mencegah lag/memory leak
+      stopCamera();
       generatePhotoboothCanvas(allPhotosRef.current);
       confetti({ particleCount: 100, spread: 100, origin: { y: 0.5 } });
       return;
@@ -849,6 +958,9 @@ export default function LiveLoveRoomWithPhotobooth() {
         clearInterval(timer);
         setCountdown(null);
 
+        // Putar suara jepretan kamera saat foto diambil
+        playShutterSound();
+
         const canvas = document.createElement('canvas');
         canvas.width = 800;
         canvas.height = 600;
@@ -863,7 +975,8 @@ export default function LiveLoveRoomWithPhotobooth() {
         ctx.fillStyle = '#881337';
         ctx.font = 'bold 20px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(`✨ ${myName} & ${partnerName} • ${bgThemes[cameraBgTheme]?.name} ✨`, 400, 38);
+        const activeThemeName = cameraBgTheme === 'custom' ? 'Custom Background' : (bgThemes[cameraBgTheme]?.name || 'Studio');
+        ctx.fillText(`✨ ${myName} & ${partnerName} • ${activeThemeName} ✨`, 400, 38);
 
         if (previewCanvasRef.current) {
           ctx.save();
@@ -1446,16 +1559,18 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* 2. TAHAP LIVE PREVIEW + GANTI TEMA REAL-TIME */}
+                {/* 2. TAHAP LIVE PREVIEW + 50 PILIHAN BACKGROUND & UPLOAD */}
                 {boothStep === 'preview' && (
                   <div className="space-y-3 w-full text-center my-auto">
-                    <p className="text-xs font-bold text-stone-700">✨ Atur Pose & Pilih Tema di Bawah Ini Secara Real-Time! ✨</p>
+                    <p className="text-xs font-bold text-stone-700">✨ Atur Pose & Pilih Background di Bawah Ini Secara Real-Time! ✨</p>
                     
                     <div className="bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 border-2 border-rose-200 p-3 rounded-3xl shadow-lg max-w-[480px] mx-auto space-y-2">
                       <div className="flex justify-between items-center px-1">
-                        <span className="text-[11px] font-bold text-rose-700 tracking-wide">💖 {myName} & {partnerName} • {bgThemes[cameraBgTheme]?.emoji} {bgThemes[cameraBgTheme]?.name} 💖</span>
+                        <span className="text-[11px] font-bold text-rose-700 tracking-wide">
+                          💖 {myName} & {partnerName} • {cameraBgTheme === 'custom' ? '🖼️ Custom' : (bgThemes[cameraBgTheme]?.emoji + ' ' + bgThemes[cameraBgTheme]?.name)} 💖
+                        </span>
                         {cameraActive && (
-                          <button onClick={handleReconnectCall} className="text-[10px] bg-rose-200 hover:bg-rose-300 text-rose-800 font-bold px-2 py-1 rounded-lg transition cursor-pointer">🔄 Hubungkan Ulang Video</button>
+                          <button onClick={handleReconnectCall} className="text-[10px] bg-rose-200 hover:bg-rose-300 text-rose-800 font-bold px-2 py-1 rounded-lg transition cursor-pointer">🔄 Hubungkan Ulang</button>
                         )}
                       </div>
                       
@@ -1476,20 +1591,29 @@ export default function LiveLoveRoomWithPhotobooth() {
                         )}
                       </div>
 
-                      {/* 8 PILIHAN TEMA BACKGROUND REAL-TIME */}
+                      {/* UPLOAD BACKGROUND SENDIRI */}
+                      <div className="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-rose-200">
+                        <span className="text-[11px] font-bold text-stone-700">📁 Pakai Background Sendiri:</span>
+                        <label className="px-3 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-[11px] font-bold cursor-pointer transition">
+                          Pilih Foto 📤
+                          <input type="file" accept="image/*" onChange={handleCustomBgUpload} className="hidden" />
+                        </label>
+                      </div>
+
+                      {/* 50 PILIHAN BACKGROUND (SCROLLABLE GRID) */}
                       <div className="pt-1">
-                        <span className="block text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1">Pilih Tema Background Real-Time:</span>
-                        <div className="grid grid-cols-4 gap-1">
+                        <span className="block text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1">Pilih dari 50 Jenis Background Dunia & Polosan:</span>
+                        <div className="grid grid-cols-5 gap-1 max-h-[110px] overflow-y-auto pr-1">
                           {Object.keys(bgThemes).map((key) => {
                             const bg = bgThemes[key];
                             return (
                               <button
                                 key={key}
                                 onClick={() => handleCameraBgChange(key)}
-                                className={`py-1.5 px-1 rounded-xl text-[11px] font-bold border transition cursor-pointer flex flex-col items-center gap-0.5 ${cameraBgTheme === key ? 'bg-rose-500 text-white border-rose-500 shadow-md scale-105' : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50'}`}
+                                className={`py-1.5 px-1 rounded-xl text-[10px] font-bold border transition cursor-pointer flex flex-col items-center gap-0.5 ${cameraBgTheme === key ? 'bg-rose-500 text-white border-rose-500 shadow-md scale-105' : 'bg-white text-stone-700 border-stone-200 hover:bg-stone-50'}`}
                               >
                                 <span className="text-xs">{bg.emoji}</span>
-                                <span className="text-[9px] truncate w-full">{bg.name}</span>
+                                <span className="text-[8px] truncate w-full">{bg.name}</span>
                               </button>
                             );
                           })}
