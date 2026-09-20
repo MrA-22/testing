@@ -26,7 +26,7 @@ const LiveOrnaments = React.memo(() => (
   </div>
 ));
 
-// Daftar Tema Latar Belakang Kamera (Virtual Background)
+// Daftar Tema Latar Belakang Studio
 const bgThemes = {
   pantai: { 
     name: 'Pantai', 
@@ -80,7 +80,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [notes, setNotes] = useState([]);
   const [inputNote, setInputNote] = useState('');
 
-  // Fitur Photobooth & Virtual Background Kamera
+  // Fitur Photobooth & Studio Kamera
   const [selectedLayout, setSelectedLayout] = useState('1x2'); 
   const [selectedTheme, setSelectedTheme] = useState('rose'); 
   const [cameraBgTheme, setCameraBgTheme] = useState('sunset');
@@ -108,10 +108,9 @@ export default function LiveLoveRoomWithPhotobooth() {
   const currentCallRef = useRef(null);
   const peerInstanceRef = useRef(null);
 
-  // Canvas & MediaPipe Refs untuk 1 Frame Studio Bersama (Real-time)
+  // Canvas Refs untuk 1 Frame Studio Bersama (Real-time 60fps tanpa delay)
   const previewCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
-  const selfieSegmentationRef = useRef(null);
   const bgImageLoadedRef = useRef(null);
 
   // --- FITUR COUNTER JADIAN ---
@@ -149,29 +148,6 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   const messagesEndRef = useRef(null);
 
-  // Load MediaPipe script
-  useEffect(() => {
-    const script1 = document.createElement('script');
-    script1.src = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js";
-    script1.async = true;
-    script1.onload = async () => {
-      if (window.SelfieSegmentation) {
-        const segmentation = new window.SelfieSegmentation({
-          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
-        });
-        segmentation.setOptions({ modelSelection: 1 });
-        segmentation.onResults(onMediaPipeResults);
-        await segmentation.initialize();
-        selfieSegmentationRef.current = segmentation;
-      }
-    };
-    document.body.appendChild(script1);
-
-    return () => {
-      if (script1.parentNode) script1.parentNode.removeChild(script1);
-    };
-  }, []);
-
   // Muat gambar background tema aktif
   useEffect(() => {
     const img = new Image();
@@ -189,15 +165,86 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   }, [boothStep, cameraActive]);
 
-  // Real-time Render Loop 1 Frame Studio Bersama
+  // Real-time Render Loop 1 Frame Studio Bersama (Zero Delay & Crisp Quality)
   useEffect(() => {
     if (boothStep === 'preview' || boothStep === 'capturing') {
-      const renderLoop = async () => {
-        if (localVideoRef.current && selfieSegmentationRef.current && localVideoRef.current.readyState >= 2) {
-          try {
-            await selfieSegmentationRef.current.send({ image: localVideoRef.current });
-          } catch (e) {
-            console.error(e);
+      const renderLoop = () => {
+        const canvas = previewCanvasRef.current;
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.save();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const w = canvas.width;
+            const h = canvas.height;
+            const halfW = w / 2;
+
+            // 1. Gambar Background Studio di Seluruh Kanvas
+            if (bgImageLoadedRef.current) {
+              ctx.drawImage(bgImageLoadedRef.current, 0, 0, w, h);
+            } else {
+              ctx.fillStyle = '#111';
+              ctx.fillRect(0, 0, w, h);
+            }
+
+            // Lapisan transparan tipis agar video lebih kontras dengan background
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+            ctx.fillRect(0, 0, w, h);
+
+            // 2. Render SISI KIRI: KAMU (Real-time, tanpa delay)
+            if (localVideoRef.current && localVideoRef.current.readyState >= 2) {
+              ctx.save();
+              ctx.beginPath();
+              // Tanpa kotak/sekat, langsung menyatu di frame kiri
+              ctx.rect(0, 0, halfW, h);
+              ctx.clip();
+
+              // Efek Mirror Camera Kamu
+              ctx.translate(halfW, 0);
+              ctx.scale(-1, 1);
+              ctx.drawImage(localVideoRef.current, 0, 0, halfW, h);
+              ctx.restore();
+            }
+
+            // 3. Render SISI KANAN: PASANGAN (Real-time dari WebRTC)
+            if (remoteVideoRef.current && remoteVideoRef.current.readyState >= 2 && remoteStream) {
+              ctx.save();
+              ctx.beginPath();
+              ctx.rect(halfW, 0, halfW, h);
+              ctx.clip();
+              ctx.drawImage(remoteVideoRef.current, halfW, 0, halfW, h);
+              ctx.restore();
+            } else {
+              // Placeholder jika pasangan belum masuk
+              ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+              ctx.fillRect(halfW, 0, halfW, h);
+              ctx.fillStyle = '#ffffff';
+              ctx.font = 'bold 16px sans-serif';
+              ctx.textAlign = 'center';
+              ctx.fillText(`Menunggu ${partnerName}...`, halfW + (halfW / 2), h / 2);
+            }
+
+            // 4. Label Nama Estetik di Dalam Frame (Tanpa Bingkai Kotak)
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.beginPath();
+            ctx.roundRect(25, h - 50, 140, 36, 12);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 13px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(`👤 Kamu (${myName})`, 35, h - 28);
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+            ctx.beginPath();
+            ctx.roundRect(halfW + 25, h - 50, 150, 36, 12);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 13px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText(`👤 ${partnerName}`, halfW + 35, h - 28);
+
+            ctx.restore();
           }
         }
         animationFrameRef.current = requestAnimationFrame(renderLoop);
@@ -213,85 +260,7 @@ export default function LiveLoveRoomWithPhotobooth() {
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [boothStep, cameraActive, cameraBgTheme]);
-
-  // Fungsi Komposisi Real-time: Background Virtual di Belakang, Orang di Depan, 1 Frame Tanpa Sekat Bingkai
-  const onMediaPipeResults = (results) => {
-    const canvas = previewCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    ctx.save();
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const w = canvas.width;
-    const h = canvas.height;
-    const halfW = w / 2;
-
-    // 1. Gambar Background Virtual di Seluruh Kanvas Utama
-    if (bgImageLoadedRef.current) {
-      ctx.drawImage(bgImageLoadedRef.current, 0, 0, w, h);
-    } else {
-      ctx.fillStyle = '#111';
-      ctx.fillRect(0, 0, w, h);
-    }
-
-    // 2. Render SISI KIRI: KAMU (Cutout tubuh dengan background virtual di belakangnya)
-    const cutoutCanvas = document.createElement('canvas');
-    cutoutCanvas.width = halfW;
-    cutoutCanvas.height = h;
-    const cCtx = cutoutCanvas.getContext('2d');
-
-    // Gambar video kamu (mirror) ke kanvas sementara
-    cCtx.save();
-    cCtx.translate(halfW, 0);
-    cCtx.scale(-1, 1);
-    cCtx.drawImage(localVideoRef.current, 0, 0, halfW, h);
-    cCtx.restore();
-
-    // Masking menggunakan MediaPipe untuk mengambil bentuk tubuh saja
-    cCtx.globalCompositeOperation = 'destination-in';
-    cCtx.drawImage(results.segmentationMask, 0, 0, halfW, h);
-
-    // Tempelkan cutout tubuh kamu di atas background virtual sisi kiri
-    ctx.drawImage(cutoutCanvas, 0, 0);
-
-
-    // 3. Render SISI KANAN: PASANGAN
-    if (remoteVideoRef.current && remoteVideoRef.current.readyState >= 2 && remoteStream) {
-      ctx.drawImage(remoteVideoRef.current, halfW, 0, halfW, h);
-    } else {
-      // Placeholder jika pasangan belum masuk
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-      ctx.fillRect(halfW, 0, halfW, h);
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 15px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(`Menunggu ${partnerName}...`, halfW + (halfW / 2), h / 2);
-    }
-
-    // 4. Label Nama Estetik Tanpa Bingkai Kotak Sekat
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.beginPath();
-    ctx.roundRect(20, h - 45, 130, 32, 10);
-    ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`👤 Kamu (${myName})`, 30, h - 25);
-
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-    ctx.beginPath();
-    ctx.roundRect(halfW + 20, h - 45, 140, 32, 10);
-    ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.textAlign = 'left';
-    ctx.fillText(`👤 ${partnerName}`, halfW + 30, h - 25);
-
-    ctx.restore();
-  };
+  }, [boothStep, cameraActive, cameraBgTheme, remoteStream, myName, partnerName]);
 
   useEffect(() => {
     localStorage.setItem('bucin_mode', mode);
@@ -816,7 +785,7 @@ export default function LiveLoveRoomWithPhotobooth() {
         ctx.textAlign = 'center';
         ctx.fillText(`✨ ${myName} & ${partnerName} • ${bgThemes[cameraBgTheme]?.name} ✨`, 400, 38);
 
-        // Ambil hasil gambar dari 1 frame kanvas preview (tanpa sekat bingkai)
+        // Ambil hasil gambar dari 1 frame kanvas preview (1 layar penuh tanpa sekat)
         if (previewCanvasRef.current) {
           ctx.save();
           ctx.shadowColor = 'rgba(0, 0, 0, 0.18)';
@@ -1068,7 +1037,7 @@ export default function LiveLoveRoomWithPhotobooth() {
           <motion.div key="menu" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} className="bg-white/80 backdrop-blur-xl p-8 rounded-3xl shadow-xl border border-rose-100 text-center max-w-md w-full space-y-6 relative z-10">
             <div className="text-5xl mb-2">📸💞</div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">Live Space & Photobooth</h1>
-            <p className="text-stone-600 text-xs sm:text-sm leading-relaxed">Ruang interaktif real-time. Ngobrol, Counter Jadian, Quiz, Bucket List, dan Photobooth kamera ganda bareng pasangan!</p>
+            <p className="text-stone-600 text-xs sm:text-sm leading-relaxed">Ruang interaktif real-time. Ngobrol, Counter Jadian, Quiz, Bucket List, dan Photobooth studio bersama pasangan!</p>
             <div className="space-y-3 pt-2">
               <button onClick={() => setMode('create')} className="w-full py-4 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-2xl shadow-md transition cursor-pointer text-sm">✨ Buat Room Baru</button>
               <button onClick={() => setMode('join')} className="w-full py-4 bg-white hover:bg-rose-50 text-rose-600 border-2 border-rose-200 font-bold rounded-2xl transition cursor-pointer text-sm">🔗 Gabung ke Room Pasangan</button>
@@ -1393,7 +1362,7 @@ export default function LiveLoveRoomWithPhotobooth() {
             {activeTab === 'photobooth' && (
               <div className="flex-1 flex flex-col items-center justify-center space-y-3 overflow-y-auto p-1">
                 
-                {/* 1. PILIH LAYOUT & TEMA VIRTUAL BACKGROUND */}
+                {/* 1. PILIH LAYOUT & TEMA STUDIO */}
                 {boothStep === 'select-layout' && (
                   <div className="space-y-3 w-full max-w-xs text-left my-auto">
                     <div className="text-center">
@@ -1402,7 +1371,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-stone-600 mb-1">🌴 Pilih Tema Virtual Background:</label>
+                      <label className="block text-xs font-bold text-stone-600 mb-1">🌴 Pilih Tema Latar Belakang Studio:</label>
                       <div className="grid grid-cols-3 gap-1.5">
                         {Object.keys(bgThemes).map((key) => {
                           const bg = bgThemes[key];
@@ -1452,7 +1421,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                   </div>
                 )}
 
-                {/* 2. TAHAP LIVE PREVIEW (1 FRAME LEBAR TERGABUNG TANPA BINGKAI SEKAT) */}
+                {/* 2. TAHAP LIVE PREVIEW (1 FRAME LEBAR TANPA DELAY & TANPA BINGKAI SEKAT) */}
                 {boothStep === 'preview' && (
                   <div className="space-y-3 w-full text-center my-auto">
                     <p className="text-xs font-bold text-stone-700">✨ Atur Pose Terbaik di Studio {bgThemes[cameraBgTheme]?.name}! ✨</p>
@@ -1460,7 +1429,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                     <div className="bg-gradient-to-br from-rose-50 via-pink-50 to-purple-50 border-2 border-rose-200 p-3 rounded-3xl shadow-lg max-w-[480px] mx-auto space-y-2">
                       <div className="text-[11px] font-bold text-rose-700 tracking-wide">💖 {myName} & {partnerName} • {bgThemes[cameraBgTheme]?.emoji} {bgThemes[cameraBgTheme]?.name} 💖</div>
                       
-                      {/* 1 Canvas Tunggal Tergabung Real-time Tanpa Sekat Bingkai */}
+                      {/* 1 Canvas Tunggal Tergabung Real-time 60fps (Tanpa Delay & Tanpa Sekat Bingkai) */}
                       <div className="relative bg-stone-900 rounded-2xl overflow-hidden border-2 border-rose-300 h-[220px] flex items-center justify-center shadow-inner">
                         <video ref={localVideoRef} autoPlay playsInline muted className="hidden" />
                         <video ref={remoteVideoRef} autoPlay playsInline className="hidden" />
