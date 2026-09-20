@@ -13,49 +13,43 @@ const bgThemes = {
   kyoto: { name: 'Kyoto Bamboo', emoji: '🎋', type: 'image', url: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80' },
   london: { name: 'London Big Ben', emoji: '🇬🇧', type: 'image', url: 'https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?auto=format&fit=crop&w=1200&q=80' },
   venice: { name: 'Venice Canal', emoji: '🛶', type: 'image', url: 'https://images.unsplash.com/photo-1514896856522-8f35f299c8bf?auto=format&fit=crop&w=1200&q=80' },
-  la: { name: 'Los Angeles', emoji: '🌴', type: 'image', url: 'https://images.unsplash.com/photo-1534190760960-a298ff1e1548?auto=format&fit=crop&w=1200&q=80' },
-  bali: { name: 'Bali Resort', emoji: '🌺', type: 'image', url: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=1200&q=80' },
-  aurora: { name: 'Aurora Norway', emoji: '🌌', type: 'image', url: 'https://images.unsplash.com/photo-1531366936337-7c912a4589a7?auto=format&fit=crop&w=1200&q=80' },
-  amsterdam: { name: 'Amsterdam', emoji: '🚲', type: 'image', url: 'https://images.unsplash.com/photo-1512470876302-972faa2aa9a4?auto=format&fit=crop&w=1200&q=80' },
-  cappadocia: { name: 'Cappadocia', emoji: '🎈', type: 'image', url: 'https://images.unsplash.com/photo-1641128324970-23021dd0668d?auto=format&fit=crop&w=1200&q=80' },
-  tajmahal: { name: 'Taj Mahal', emoji: '🕌', type: 'image', url: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=1200&q=80' },
-  sydney: { name: 'Sydney Opera', emoji: '🇦🇺', type: 'image', url: 'https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?auto=format&fit=crop&w=1200&q=80' },
-  village_swiss: { name: 'Swiss Village', emoji: '🏡', type: 'image', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80' },
-  village_tuscany: { name: 'Tuscany Italy', emoji: '🍇', type: 'image', url: 'https://images.unsplash.com/photo-1516483638261-f4dbaf036963?auto=format&fit=crop&w=1200&q=80' },
-  village_japan: { name: 'Japanese Rural', emoji: '🌾', type: 'image', url: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80' },
-  village_england: { name: 'English Cottage', emoji: '🏡', type: 'image', url: 'https://images.unsplash.com/photo-1513584684374-8bab748fbf90?auto=format&fit=crop&w=1200&q=80' },
-  sunset: { name: 'Sunset Beach', emoji: '🌅', type: 'image', url: 'https://images.unsplash.com/photo-1495616811223-4d98c6e9c869?auto=format&fit=crop&w=1200&q=80' },
-  cyberpunk: { name: 'Neon Cyberpunk', emoji: '🌆', type: 'image', url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1200&q=80' },
-  cabin: { name: 'Mountain Cabin', emoji: '🪵', type: 'image', url: 'https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&w=1200&q=80' },
-  rainforest: { name: 'Rainforest', emoji: '🌿', type: 'image', url: 'https://images.unsplash.com/photo-1511497584788-876761192569?auto=format&fit=crop&w=1200&q=80' },
-  desert: { name: 'Desert Oasis', emoji: '🐪', type: 'image', url: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1200&q=80' },
-  galaxy: { name: 'Galaxy Space', emoji: '🌌', type: 'image', url: 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?auto=format&fit=crop&w=1200&q=80' },
-  autumn: { name: 'Autumn Woods', emoji: '🍁', type: 'image', url: 'https://images.unsplash.com/photo-1507783590520-64746b074a3c?auto=format&fit=crop&w=1200&q=80' },
-  sakura: { name: 'Sakura Park', emoji: '🌸', type: 'image', url: 'https://images.unsplash.com/photo-1522383225653-ed111181a951?auto=format&fit=crop&w=1200&q=80' },
-  winter: { name: 'Winter Snow', emoji: '❄️', type: 'image', url: 'https://images.unsplash.com/photo-1517299321609-52687d1bc55a?auto=format&fit=crop&w=1200&q=80' },
-  lavender: { name: 'Lavender Field', emoji: '💜', type: 'image', url: 'https://images.unsplash.com/photo-1499002238440-d264edd596ec?auto=format&fit=crop&w=1200&q=80' },
-
-  plain_white: { name: 'Pure White', emoji: '⚪', type: 'color', value: '#ffffff' },
-  plain_pink: { name: 'Soft Pink', emoji: '🌸', type: 'color', value: '#ffe4e6' },
-  plain_blue: { name: 'Pastel Blue', emoji: '🔹', type: 'color', value: '#e0f2fe' },
-  plain_mint: { name: 'Pastel Mint', emoji: '🍃', type: 'color', value: '#d1fae5' },
-  plain_peach: { name: 'Pastel Peach', emoji: '🍑', type: 'color', value: '#ffedd5' },
-  plain_lilac: { name: 'Lilac Purple', emoji: '💜', type: 'color', value: '#f3e8ff' },
-  plain_cream: { name: 'Soft Cream', emoji: '🥛', type: 'color', value: '#fef3c7' },
-  plain_beige: { name: 'Warm Beige', emoji: '🪵', type: 'color', value: '#f5f5f4' },
-  plain_yellow: { name: 'Lemon Soft', emoji: '🍋', type: 'color', value: '#fef9c3' },
-  plain_sage: { name: 'Sage Green', emoji: '🌿', type: 'color', value: '#ecfdf5' },
-  grad_rosegold: { name: 'Rose Gold Grad', emoji: '✨', type: 'gradient', c1: '#fda4af', c2: '#fbcfe8' },
-  grad_sunset: { name: 'Sunset Grad', emoji: '🌅', type: 'gradient', c1: '#fb7185', c2: '#fdba74' },
-  grad_ocean: { name: 'Ocean Grad', emoji: '🌊', type: 'gradient', c1: '#38bdf8', c2: '#818cf8' },
-  grad_lavender: { name: 'Lavender Grad', emoji: '🌌', type: 'gradient', c1: '#c084fc', c2: '#f472b6' },
-  grad_peach: { name: 'Peach Grad', emoji: '🍑', type: 'gradient', c1: '#fb923c', c2: '#f43f5e' },
-  grad_mint: { name: 'Mint Grad', emoji: '🌱', type: 'gradient', c1: '#34d399', c2: '#60a5fa' },
-  plain_gray: { name: 'Minimal Gray', emoji: '🪙', type: 'color', value: '#e7e5e4' },
-  plain_charcoal: { name: 'Deep Charcoal', emoji: '🖤', type: 'color', value: '#1c1917' },
-  plain_pastel_lav: { name: 'Soft Lavender', emoji: '🦄', type: 'color', value: '#ede9fe' },
-  plain_mocha: { name: 'Soft Mocha', emoji: '☕', type: 'color', value: '#f3e8df' }
+  la: { name: 'Los Angeles', emoji: '🌴', type: 'image', url: 'https://images.unsplash.com/photo-1534190760960-a298ff1e1548?auto=format&fit=crop&w=1200&q=80' }
 };
+
+// 10 Jenis Layout Photobooth
+const layoutOptions = [
+  { id: '1x2', label: '1x2 (2 Cut Vertikal)' },
+  { id: '1x3', label: '1x3 (3 Cut Vertikal)' },
+  { id: '2x2', label: '2x2 (4 Grid Kotak)' },
+  { id: 'polaroid', label: '🖼️ Polaroid Klasik' },
+  { id: 'photocard', label: '💳 Photocard' },
+  { id: 'strip4', label: '🎞️ Strip 4 Cut' },
+  { id: 'duo_horizontal', label: '👥 Duo Horizontal' },
+  { id: 'triple_grid', label: '📐 3 Grid Asimetris' },
+  { id: 'mini_polaroid', label: '📌 Mini Polaroid Duo' },
+  { id: 'heart_frame', label: '💖 Love Grid' }
+];
+
+// 10 Jenis Tema Warna Frame Reguler + 5 Tema Spesial Unik/Anime
+const frameThemes = [
+  { id: 'rose', name: '🌸 Rose Pink', border: '#f43f5e', accent: '#fb7185', text: '#881337', cardBg: '#ffffff', softBg: '#fff1f2' },
+  { id: 'purple', name: '💜 Lilac Dream', border: '#9333ea', accent: '#a855f7', text: '#581c87', cardBg: '#ffffff', softBg: '#faf5ff' },
+  { id: 'peach', name: '🍑 Warm Peach', border: '#ea580c', accent: '#f97316', text: '#7c2d12', cardBg: '#ffffff', softBg: '#fff7ed' },
+  { id: 'mono', name: '🖤 Aesthetic Mono', border: '#292524', accent: '#78716c', text: '#1c1917', cardBg: '#ffffff', softBg: '#f5f5f4' },
+  { id: 'matcha', name: '🍵 Matcha Green', border: '#15803d', accent: '#22c55e', text: '#14532d', cardBg: '#f0fdf4', softBg: '#dcfce7' },
+  { id: 'sky', name: '☁️ Sky Blue', border: '#0284c7', accent: '#38bdf8', text: '#0369a1', cardBg: '#f0f9ff', softBg: '#e0f2fe' },
+  { id: 'sunset_glow', name: '🌅 Sunset Glow', border: '#c2410c', accent: '#fb923c', text: '#7c2d12', cardBg: '#fff7ed', softBg: '#ffedd5' },
+  { id: 'neon_cyber', name: '⚡ Neon Cyber', border: '#db2777', accent: '#f43f5e', text: '#831843', cardBg: '#18181b', softBg: '#27272a' },
+  { id: 'choco_latte', name: '☕ Choco Latte', border: '#78350f', accent: '#92400e', text: '#451a03', cardBg: '#fdf8f6', softBg: '#fbe7c6' },
+  { id: 'galaxy_night', name: '🌌 Galaxy Night', border: '#4f46e5', accent: '#818cf8', text: '#312e81', cardBg: '#0f172a', softBg: '#1e293b' },
+  
+  // 5 Frame Spesial (Lucu, Unik, Anime)
+  { id: 'special_chibi', name: '🍡 Special: Chibi Kawaii', border: '#ec4899', accent: '#f472b6', text: '#be185d', cardBg: '#fff1f2', softBg: '#ffe4e6', isSpecial: true, badge: '🍡 CHIBI' },
+  { id: 'special_anime', name: '🌸 Special: Sakura Anime', border: '#f43f5e', accent: '#fb7185', text: '#881337', cardBg: '#fffdfd', softBg: '#ffe4e6', isSpecial: true, badge: '✨ ANIME' },
+  { id: 'special_cat', name: '🐱 Special: Neko Purrfect', border: '#d97706', accent: '#fbbf24', text: '#78350f', cardBg: '#fffbeb', softBg: '#fef3c7', isSpecial: true, badge: '🐾 NEKO' },
+  { id: 'special_magical', name: '🪄 Special: Magical Star', border: '#7c3aed', accent: '#a78bfa', text: '#4c1d95', cardBg: '#f5f3ff', softBg: '#ede9fe', isSpecial: true, badge: '⭐ MAGICAL' },
+  { id: 'special_dinopet', name: '🦖 Special: Dino Cute', border: '#059669', accent: '#34d399', text: '#065f46', cardBg: '#ecfdf5', softBg: '#d1fae5', isSpecial: true, badge: '🦖 DINO' }
+];
 
 const stickerOptions = ['🧸', '💖', '✨', '🌹', '👑', '💐', '🍫', '💍', '💋', '💌', '🍓', '🎀', '⭐', '🦋', '🧊', '🍰', '🐱', '🐥', '🍀', '🔥'];
 
@@ -103,13 +97,13 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [iAmReady, setIAmReady] = useState(false);
   const [partnerIsReady, setPartnerIsReady] = useState(false);
 
-  // Editor States (Sekarang caption dan elemen lain bisa digerakkan posisinya)
-  const [stripCaption, setStripCaption] = useState('Our Sweet Moment Together ❤️');
-  const [captionPos, setCaptionPos] = useState({ x: 50, y: 88 }); // Posisi teks bisa digeser
+  // Editor States
+  const [stripCaption, setStripCaption] = useState('Our Sweet Moment Together');
+  const [captionPos, setCaptionPos] = useState({ x: 50, y: 88 }); 
   const [placedStickers, setPlacedStickers] = useState([
     { id: 1, emoji: '🧸', x: 50, y: 50, size: 36 }
   ]);
-  const [selectedElementId, setSelectedElementId] = useState(null); // Bisa memilih stiker atau teks caption untuk digeser
+  const [selectedElementId, setSelectedElementId] = useState(null);
   const stickerContainerRef = useRef(null);
 
   const localStreamRef = useRef(null);
@@ -877,9 +871,9 @@ export default function LiveLoveRoomWithPhotobooth() {
   };
 
   const getRequiredPhotosCount = () => {
-    if (selectedLayout === '1x2') return 2;
-    if (selectedLayout === '1x3') return 3;
-    if (selectedLayout === '2x2') return 4;
+    if (selectedLayout === '1x2' || selectedLayout === 'duo_horizontal' || selectedLayout === 'mini_polaroid') return 2;
+    if (selectedLayout === '1x3' || selectedLayout === 'triple_grid') return 3;
+    if (selectedLayout === '2x2' || selectedLayout === 'strip4' || selectedLayout === 'heart_frame') return 4;
     if (selectedLayout === 'polaroid' || selectedLayout === 'photocard') return 1;
     return 2;
   };
@@ -1006,15 +1000,13 @@ export default function LiveLoveRoomWithPhotobooth() {
     }, 1000);
   };
 
+  // Fungsi Pembuatan Canvas Photobooth dengan 10 Layout & 15 Tema Frame (termasuk 5 Spesial Anime/Lucu)
   const generatePhotoboothCanvas = async (photosToUse) => {
     const photos = photosToUse || allPhotosRef.current;
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
 
-    let themeConfig = { border: '#f43f5e', accent: '#fb7185', text: '#881337', cardBg: '#ffffff', softBg: '#fff1f2' };
-    if (selectedTheme === 'purple') themeConfig = { border: '#9333ea', accent: '#a855f7', text: '#581c87', cardBg: '#ffffff', softBg: '#faf5ff' };
-    else if (selectedTheme === 'peach') themeConfig = { border: '#ea580c', accent: '#f97316', text: '#7c2d12', cardBg: '#ffffff', softBg: '#fff7ed' };
-    else if (selectedTheme === 'mono') themeConfig = { border: '#292524', accent: '#78716c', text: '#1c1917', cardBg: '#ffffff', softBg: '#f5f5f4' };
+    const currentTheme = frameThemes.find(t => t.id === selectedTheme) || frameThemes[0];
 
     const drawCoverImage = async (photoSrc, x, y, width, height, radius) => {
       const img = await loadImage(photoSrc);
@@ -1029,7 +1021,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.beginPath();
       ctx.roundRect(x, y, width, height, radius);
       ctx.lineWidth = 4;
-      ctx.strokeStyle = themeConfig.border;
+      ctx.strokeStyle = currentTheme.border;
       ctx.stroke();
       ctx.restore();
     };
@@ -1037,95 +1029,115 @@ export default function LiveLoveRoomWithPhotobooth() {
     if (selectedLayout === 'photocard') {
       canvas.width = 520;
       canvas.height = 870;
-      ctx.fillStyle = themeConfig.cardBg;
+      ctx.fillStyle = currentTheme.cardBg;
       ctx.beginPath();
       ctx.roundRect(0, 0, 520, 870, 35);
       ctx.fill();
 
       ctx.lineWidth = 8;
-      ctx.strokeStyle = themeConfig.border;
+      ctx.strokeStyle = currentTheme.border;
       ctx.stroke();
 
       if (photos[0]) {
         await drawCoverImage(photos[0], 25, 25, 470, 580, 20);
       }
-
-      placedStickers.forEach(stk => {
-        ctx.font = `${stk.size || 36}px sans-serif`;
-        ctx.textAlign = 'center';
-        const canvasX = (stk.x / 100) * canvas.width;
-        const canvasY = (stk.y / 100) * canvas.height;
-        ctx.fillText(stk.emoji, canvasX, canvasY);
-      });
-
-      const captionX = (captionPos.x / 100) * canvas.width;
-      const captionY = (captionPos.y / 100) * canvas.height;
-      ctx.fillStyle = themeConfig.text;
-      ctx.font = 'bold 15px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(`${myName} & ${partnerName}`, captionX, captionY - 24);
-      ctx.font = 'italic 13px sans-serif';
-      ctx.fillStyle = themeConfig.accent;
-      ctx.fillText(`"${stripCaption}"`, captionX, captionY);
     } else {
       canvas.width = 630;
       canvas.height = 1230;
 
-      // Background Card Lembut
-      ctx.fillStyle = themeConfig.cardBg;
+      // Background Card
+      ctx.fillStyle = currentTheme.cardBg;
       ctx.beginPath();
       ctx.roundRect(0, 0, 630, 1230, 40);
       ctx.fill();
 
-      // Ornamen Dekoratif di Area Bawah agar Lebih Lucu & Ramai
+      // Ornamen Area Bawah
       ctx.save();
-      ctx.fillStyle = themeConfig.softBg;
+      ctx.fillStyle = currentTheme.softBg;
       ctx.beginPath();
       ctx.roundRect(25, 930, 580, 230, 25);
       ctx.fill();
-      ctx.strokeStyle = themeConfig.accent;
+      ctx.strokeStyle = currentTheme.accent;
       ctx.lineWidth = 1.5;
       ctx.setLineDash([6, 6]);
       ctx.stroke();
       ctx.restore();
 
-      // Elemen Ilustrasi Pita / Pita Kecil di Bawah Frame
+      // Render Tema Spesial Unik / Anime / Lucu
+      if (currentTheme.id === 'special_chibi') {
+        ctx.save();
+        ctx.fillStyle = '#ec4899';
+        ctx.globalAlpha = 0.25;
+        ctx.font = '24px sans-serif';
+        ctx.fillText('🍡', 60, 970);
+        ctx.fillText('🌸', 550, 980);
+        ctx.fillText('🍡', 530, 1120);
+        ctx.restore();
+      } else if (currentTheme.id === 'special_anime') {
+        ctx.save();
+        ctx.fillStyle = '#f43f5e';
+        ctx.globalAlpha = 0.3;
+        ctx.font = '22px sans-serif';
+        ctx.fillText('🌸', 70, 970);
+        ctx.fillText('✨', 540, 980);
+        ctx.fillText('🌸', 100, 1120);
+        ctx.fillText('💖', 500, 1100);
+        ctx.restore();
+      } else if (currentTheme.id === 'special_cat') {
+        ctx.save();
+        ctx.fillStyle = '#d97706';
+        ctx.globalAlpha = 0.3;
+        ctx.font = '22px sans-serif';
+        ctx.fillText('🐾', 70, 970);
+        ctx.fillText('🐱', 540, 980);
+        ctx.fillText('🐾', 100, 1120);
+        ctx.restore();
+      } else if (currentTheme.id === 'special_magical') {
+        ctx.save();
+        ctx.fillStyle = '#7c3aed';
+        ctx.globalAlpha = 0.3;
+        ctx.font = '22px sans-serif';
+        ctx.fillText('🪄', 70, 970);
+        ctx.fillText('⭐', 540, 980);
+        ctx.fillText('🌙', 100, 1120);
+        ctx.restore();
+      } else if (currentTheme.id === 'special_dinopet') {
+        ctx.save();
+        ctx.fillStyle = '#059669';
+        ctx.globalAlpha = 0.3;
+        ctx.font = '22px sans-serif';
+        ctx.fillText('🦖', 70, 970);
+        ctx.fillText('🌿', 540, 980);
+        ctx.fillText('💚', 100, 1120);
+        ctx.restore();
+      }
+
+      // Pita Dekoratif Bawah
       ctx.save();
-      ctx.fillStyle = themeConfig.border;
+      ctx.fillStyle = currentTheme.border;
       ctx.beginPath();
-      ctx.roundRect(265, 945, 100, 24, 12);
+      ctx.roundRect(245, 945, 140, 26, 13);
       ctx.fill();
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 11px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('SPECIAL MOMENT', 315, 961);
-      ctx.restore();
-
-      // Pola Hiasan Bintang & Hati Transparan
-      ctx.save();
-      ctx.fillStyle = themeConfig.accent;
-      ctx.globalAlpha = 0.3;
-      ctx.font = '20px sans-serif';
-      ctx.fillText('🎀', 65, 980);
-      ctx.fillText('⭐', 545, 985);
-      ctx.fillText('💖', 95, 1115);
-      ctx.fillText('✨', 510, 1110);
-      ctx.fillText('🧸', 300, 1130);
+      ctx.fillText(currentTheme.isSpecial ? currentTheme.badge : 'SPECIAL MOMENT', 315, 962);
       ctx.restore();
 
       ctx.lineWidth = 10;
-      ctx.strokeStyle = themeConfig.border;
+      ctx.strokeStyle = currentTheme.border;
       ctx.stroke();
 
-      // Header Teks Diperkecil & Dibersihkan dari Emoji Berlebih
-      ctx.fillStyle = themeConfig.text;
+      // Header Teks
+      ctx.fillStyle = currentTheme.text;
       ctx.font = '900 18px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('STUDIO LOVE STRIP', canvas.width / 2, 50);
+      ctx.fillText(currentTheme.isSpecial ? `✨ ${currentTheme.name.split(': ')[1]} ✨` : 'STUDIO LOVE STRIP', canvas.width / 2, 50);
       ctx.font = '14px sans-serif';
-      ctx.fillStyle = themeConfig.accent;
+      ctx.fillStyle = currentTheme.accent;
       ctx.fillText('Our Sweet Memories Together', canvas.width / 2, 75);
 
+      // Render Berdasarkan 10 Layout
       if (selectedLayout === '1x2') {
         if (photos[0]) await drawCoverImage(photos[0], 40, 100, 550, 390, 20);
         if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 40, 510, 550, 390, 20);
@@ -1140,33 +1152,49 @@ export default function LiveLoveRoomWithPhotobooth() {
         if (photos[3] || photos[1] || photos[0]) await drawCoverImage(photos[3] || photos[1] || photos[0], 330, 500, 265, 380, 15);
       } else if (selectedLayout === 'polaroid') {
         if (photos[0]) await drawCoverImage(photos[0], 55, 100, 520, 600, 15);
+      } else if (selectedLayout === 'strip4') {
+        if (photos[0]) await drawCoverImage(photos[0], 65, 95, 500, 190, 12);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 65, 295, 500, 190, 12);
+        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 65, 495, 500, 190, 12);
+        if (photos[3] || photos[1] || photos[0]) await drawCoverImage(photos[3] || photos[1] || photos[0], 65, 695, 500, 190, 12);
+      } else if (selectedLayout === 'duo_horizontal') {
+        if (photos[0]) await drawCoverImage(photos[0], 40, 150, 550, 260, 15);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 40, 440, 550, 260, 15);
+      } else if (selectedLayout === 'triple_grid') {
+        if (photos[0]) await drawCoverImage(photos[0], 40, 100, 550, 240, 15);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 40, 360, 265, 320, 15);
+        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 325, 360, 265, 320, 15);
+      } else if (selectedLayout === 'mini_polaroid') {
+        if (photos[0]) await drawCoverImage(photos[0], 65, 110, 230, 290, 12);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 335, 110, 230, 290, 12);
+      } else if (selectedLayout === 'heart_frame') {
+        if (photos[0]) await drawCoverImage(photos[0], 50, 100, 530, 580, 30);
       }
-
-      placedStickers.forEach(stk => {
-        ctx.font = `${stk.size || 32}px sans-serif`;
-        ctx.textAlign = 'center';
-        const canvasX = (stk.x / 100) * canvas.width;
-        const canvasY = (stk.y / 100) * canvas.height;
-        ctx.fillText(stk.emoji, canvasX, canvasY);
-      });
-
-      const captionX = (captionPos.x / 100) * canvas.width;
-      const captionY = (captionPos.y / 100) * canvas.height;
-      ctx.fillStyle = themeConfig.border;
-      ctx.font = 'bold 15px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(stripCaption, captionX, captionY);
-
-      // Footer Info Ukuran Proporsional
-      ctx.fillStyle = '#57534e';
-      ctx.font = 'bold 13px sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText(`${myName} & ${partnerName}`, 45, 1185);
-
-      ctx.textAlign = 'right';
-      const today = new Date();
-      ctx.fillText(`${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`, 585, 1185);
     }
+
+    placedStickers.forEach(stk => {
+      ctx.font = `${stk.size || 32}px sans-serif`;
+      ctx.textAlign = 'center';
+      const canvasX = (stk.x / 100) * canvas.width;
+      const canvasY = (stk.y / 100) * canvas.height;
+      ctx.fillText(stk.emoji, canvasX, canvasY);
+    });
+
+    const captionX = (captionPos.x / 100) * canvas.width;
+    const captionY = (captionPos.y / 100) * canvas.height;
+    ctx.fillStyle = currentTheme.border;
+    ctx.font = 'bold 15px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(stripCaption, captionX, captionY);
+
+    ctx.fillStyle = '#57534e';
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${myName} & ${partnerName}`, 45, 1185);
+
+    ctx.textAlign = 'right';
+    const today = new Date();
+    ctx.fillText(`${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`, 585, 1185);
 
     setFinalStripUrl(canvas.toDataURL('image/png', 1.0));
   };
@@ -1175,7 +1203,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     if (boothStep === 'ready' && allPhotos.length > 0) {
       generatePhotoboothCanvas(allPhotos);
     }
-  }, [stripCaption, captionPos, placedStickers]);
+  }, [stripCaption, captionPos, placedStickers, selectedLayout, selectedTheme]);
 
   const handleUpdateEditor = (newCaption, newCaptionPos, newStickers) => {
     setStripCaption(newCaption);
@@ -1211,7 +1239,6 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   const activePinchRef = useRef(null);
 
-  // Universal Pointer Handlers for Dragging Elements (Stickers or Caption Text)
   const handleElementPointerDown = (e, id) => {
     e.stopPropagation();
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -1398,7 +1425,7 @@ export default function LiveLoveRoomWithPhotobooth() {
         )}
 
         {mode === 'dashboard' && (
-          <motion.div key="dash" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white/95 backdrop-blur-2xl p-4 sm:p-5 rounded-3xl shadow-2xl border border-rose-200 max-w-lg w-full space-y-3 relative z-10 flex flex-col h-[92vh]">
+          <motion.div key="dash" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="bg-white/95 backdrop-blur-2xl p-4 sm:p-5 rounded-3xl shadow-2xl border border-rose-200 max-w-lg w-full space-y-3 relative z-10 flex flex-col h-[94vh]">
             
             <div className="flex justify-between items-center border-b border-stone-100 pb-2 shrink-0">
               <div>
@@ -1638,44 +1665,37 @@ export default function LiveLoveRoomWithPhotobooth() {
             )}
 
             {activeTab === 'photobooth' && (
-              <div className="flex-1 flex flex-col items-center justify-center space-y-3 overflow-y-auto p-1">
+              <div className="flex-1 flex flex-col items-center justify-center space-y-2 overflow-y-auto p-1">
                 
                 {boothStep === 'select-layout' && (
-                  <div className="space-y-3 w-full max-w-xs text-left my-auto">
+                  <div className="space-y-3 w-full max-w-sm text-left my-auto overflow-y-auto max-h-[75vh] pr-1">
                     <div className="text-center">
                       <h3 className="font-bold text-stone-900 text-base">Photobooth Studio Bersama 📸</h3>
-                      <p className="text-xs text-stone-500">Pilih layout strip foto dan gaya warna frame!</p>
+                      <p className="text-xs text-stone-500">Pilih dari 10 Layout & 15 Pilihan Tema Frame!</p>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-stone-600 mb-1">Pilih Layout:</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { id: '1x2', label: '1x2 (2 Cut)' },
-                          { id: '1x3', label: '1x3 (3 Cut)' },
-                          { id: '2x2', label: '2x2 (4 Grid)' },
-                          { id: 'polaroid', label: '🖼️ Polaroid' },
-                          { id: 'photocard', label: '💳 Photocard' }
-                        ].map((layout) => (
-                          <button key={layout.id} onClick={() => handleLayoutChange(layout.id)} className={`py-2 px-2 rounded-xl text-xs font-bold border transition cursor-pointer ${selectedLayout === layout.id ? 'bg-rose-500 text-white border-rose-500 shadow-sm' : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'}`}>{layout.label}</button>
+                      <label className="block text-xs font-bold text-stone-600 mb-1">Pilih 10 Jenis Layout:</label>
+                      <div className="grid grid-cols-2 gap-1.5 max-h-[140px] overflow-y-auto pr-1">
+                        {layoutOptions.map((layout) => (
+                          <button key={layout.id} onClick={() => handleLayoutChange(layout.id)} className={`py-2 px-2 rounded-xl text-[11px] font-bold border transition cursor-pointer ${selectedLayout === layout.id ? 'bg-rose-500 text-white border-rose-500 shadow-sm' : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'}`}>{layout.label}</button>
                         ))}
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold text-stone-600 mb-1">Pilih Tema Warna Frame:</label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {[
-                          { id: 'rose', label: '🌸 Rose Pink' },
-                          { id: 'purple', label: '💜 Lilac Dream' },
-                          { id: 'peach', label: '🍑 Warm Peach' },
-                          { id: 'mono', label: '🖤 Aesthetic Mono' }
-                        ].map((theme) => (
-                          <button key={theme.id} onClick={() => handleThemeChange(theme.id)} className={`py-2 px-2 rounded-xl text-xs font-bold border transition cursor-pointer ${selectedTheme === theme.id ? 'bg-stone-900 text-white border-stone-900 shadow-sm' : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'}`}>{theme.label}</button>
+                      <label className="block text-xs font-bold text-stone-600 mb-1">Pilih Jenis Tema Frame & Spesial Anime/Lucu:</label>
+                      <div className="grid grid-cols-2 gap-1.5 max-h-[160px] overflow-y-auto pr-1">
+                        {frameThemes.map((theme) => (
+                          <button key={theme.id} onClick={() => handleThemeChange(theme.id)} className={`py-2 px-2 rounded-xl text-[11px] font-bold border transition cursor-pointer flex items-center justify-between ${selectedTheme === theme.id ? 'bg-stone-900 text-white border-stone-900 shadow-sm' : theme.isSpecial ? 'bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100' : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'}`}>
+                            <span>{theme.name}</span>
+                            {theme.isSpecial && <span className="text-[9px] bg-rose-500 text-white px-1.5 py-0.5 rounded-full">Spesial</span>}
+                          </button>
                         ))}
                       </div>
                     </div>
-                    <button onClick={handleOpenLivePreview} className="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-2xl shadow-md text-xs cursor-pointer mt-1">Buka Studio Live 1 Frame 🎥</button>
+
+                    <button onClick={handleOpenLivePreview} className="w-full py-3.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-2xl shadow-md text-xs cursor-pointer mt-1">Buka Studio Live 🎥</button>
                   </div>
                 )}
 
@@ -1783,14 +1803,12 @@ export default function LiveLoveRoomWithPhotobooth() {
                 {boothStep === 'ready' && finalStripUrl && (
                   <div className="space-y-2 w-full flex flex-col items-center my-auto pt-1">
                     
-                    {/* Area Card Photobooth yang elemen teks & stikernya bisa digeser */}
                     <div 
                       ref={stickerContainerRef} 
-                      className="w-[170px] relative rounded-2xl shadow-2xl overflow-hidden select-none touch-none border-2 border-rose-200 bg-white"
+                      className="w-[150px] relative rounded-2xl shadow-2xl overflow-hidden select-none touch-none border-2 border-rose-200 bg-white"
                     >
                       <img src={finalStripUrl} alt="Hasil Photobooth" className="w-full h-auto object-contain block pointer-events-none" />
                       
-                      {/* Teks Caption yang sekarang bisa digeser sesuka hati */}
                       <div
                         onPointerDown={(e) => handleElementPointerDown(e, 'caption')}
                         onPointerMove={(e) => handleElementPointerMove(e, 'caption')}
@@ -1804,10 +1822,9 @@ export default function LiveLoveRoomWithPhotobooth() {
                         }}
                         className={`cursor-grab active:cursor-grabbing px-2 py-1 rounded text-center transition-all ${selectedElementId === 'caption' ? 'ring-2 ring-rose-500 bg-white/80 shadow-md' : ''}`}
                       >
-                        <span className="text-[10px] font-bold text-rose-700 drop-shadow-xs block whitespace-nowrap">📝 {stripCaption}</span>
+                        <span className="text-[10px] font-bold text-rose-700 drop-shadow-xs block whitespace-nowrap">{stripCaption}</span>
                       </div>
 
-                      {/* Stiker yang bisa digeser & diatur ukurannya */}
                       {placedStickers.map((s) => (
                         <div
                           key={s.id}
@@ -1834,27 +1851,27 @@ export default function LiveLoveRoomWithPhotobooth() {
                       ))}
                     </div>
 
-                    <div className="bg-stone-50 border border-stone-200 p-2.5 rounded-2xl w-full max-w-[290px] space-y-2 text-left shadow-sm">
-                      <p className="text-[11px] font-bold text-stone-700 text-center">✨ Editor Card (Sentuh & Geser Teks/Stiker)</p>
+                    <div className="bg-stone-50 border border-stone-200 p-2 rounded-2xl w-full max-w-[280px] space-y-1.5 text-left shadow-sm">
+                      <p className="text-[10px] font-bold text-stone-700 text-center">✨ Editor Card (Cubit 2 jari untuk ukuran stiker)</p>
                       
                       <div>
-                        <label className="block text-[10px] font-semibold text-stone-500 mb-0.5">Ubah Caption / Pesan:</label>
+                        <label className="block text-[9px] font-semibold text-stone-500 mb-0.5">Ubah Caption / Pesan:</label>
                         <input 
                           type="text" 
                           value={stripCaption} 
                           onChange={(e) => handleUpdateEditor(e.target.value, captionPos, placedStickers)} 
-                          className="w-full px-2.5 py-1.5 rounded-xl border border-stone-200 text-xs bg-white font-medium focus:outline-none focus:border-rose-400" 
+                          className="w-full px-2 py-1 rounded-xl border border-stone-200 text-xs bg-white font-medium focus:outline-none focus:border-rose-400" 
                         />
                       </div>
 
                       <div>
-                        <span className="block text-[10px] font-semibold text-stone-500 mb-1">Tambah Stiker (Pilih & Geser di card):</span>
-                        <div className="grid grid-cols-10 gap-1 max-h-[75px] overflow-y-auto p-1 bg-white rounded-xl border border-stone-200 shadow-inner">
+                        <span className="block text-[9px] font-semibold text-stone-500 mb-1">Tambah Stiker (Pilih & Geser di card):</span>
+                        <div className="grid grid-cols-10 gap-1 max-h-[65px] overflow-y-auto p-1 bg-white rounded-xl border border-stone-200 shadow-inner">
                           {stickerOptions.map((stk) => (
                             <button 
                               key={stk} 
                               onClick={() => addStickerToCard(stk)}
-                              className="w-6 h-6 rounded-lg text-xs flex items-center justify-center hover:bg-rose-100 transition cursor-pointer"
+                              className="w-5 h-5 rounded-lg text-xs flex items-center justify-center hover:bg-rose-100 transition cursor-pointer"
                             >
                               {stk}
                             </button>
@@ -1863,20 +1880,20 @@ export default function LiveLoveRoomWithPhotobooth() {
                       </div>
 
                       {selectedElementId && selectedElementId !== 'caption' && (
-                        <div className="bg-rose-50 border border-rose-200 p-2 rounded-xl flex items-center justify-between text-xs">
-                          <span className="font-bold text-rose-700">Atur Stiker:</span>
-                          <div className="flex items-center gap-1.5">
-                            <button onClick={() => updateStickerSize(selectedElementId, -6)} className="px-2 py-0.5 bg-white border border-rose-300 font-bold rounded shadow-xs">➖</button>
-                            <button onClick={() => updateStickerSize(selectedElementId, 6)} className="px-2 py-0.5 bg-white border border-rose-300 font-bold rounded shadow-xs">➕</button>
-                            <button onClick={() => removeSticker(selectedElementId)} className="px-2 py-0.5 bg-red-500 text-white font-bold rounded shadow-xs">Hapus 🗑️</button>
+                        <div className="bg-rose-50 border border-rose-200 p-1.5 rounded-xl flex items-center justify-between text-xs">
+                          <span className="font-bold text-rose-700 text-[10px]">Atur Stiker:</span>
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => updateStickerSize(selectedElementId, -6)} className="px-1.5 py-0.5 bg-white border border-rose-300 font-bold rounded shadow-xs text-[10px]">➖</button>
+                            <button onClick={() => updateStickerSize(selectedElementId, 6)} className="px-1.5 py-0.5 bg-white border border-rose-300 font-bold rounded shadow-xs text-[10px]">➕</button>
+                            <button onClick={() => removeSticker(selectedElementId)} className="px-1.5 py-0.5 bg-red-500 text-white font-bold rounded shadow-xs text-[10px]">Hapus 🗑️</button>
                           </div>
                         </div>
                       )}
                     </div>
 
-                    <div className="flex gap-2 w-full max-w-[290px]">
-                      <a href={finalStripUrl} download={`StudioPhotobooth_${myName}_${partnerName}.png`} className="flex-1 py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs text-center block cursor-pointer hover:scale-105 transition">📥 Download (PNG)</a>
-                      <button onClick={handleOpenLivePreview} className="px-3 py-2.5 bg-stone-200 text-stone-600 font-bold rounded-xl text-xs hover:bg-stone-300 transition cursor-pointer shadow-xs">Ulangi 🔄</button>
+                    <div className="flex gap-2 w-full max-w-[280px]">
+                      <a href={finalStripUrl} download={`StudioPhotobooth_${myName}_${partnerName}.png`} className="flex-1 py-2 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs text-center block cursor-pointer hover:scale-105 transition">📥 Download (PNG)</a>
+                      <button onClick={handleOpenLivePreview} className="px-3 py-2 bg-stone-200 text-stone-600 font-bold rounded-xl text-xs hover:bg-stone-300 transition cursor-pointer shadow-xs">Ulangi 🔄</button>
                     </div>
                   </div>
                 )}
