@@ -1061,23 +1061,23 @@ export default function LiveLoveRoomWithPhotobooth() {
       const captionX = (captionPos.x / 100) * canvas.width;
       const captionY = (captionPos.y / 100) * canvas.height;
       ctx.fillStyle = themeConfig.text;
-      ctx.font = 'bold 20px sans-serif';
+      ctx.font = 'bold 15px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`✨ ${myName} & ${partnerName} ✨`, captionX, captionY - 30);
-      ctx.font = 'italic 16px sans-serif';
+      ctx.fillText(`${myName} & ${partnerName}`, captionX, captionY - 24);
+      ctx.font = 'italic 13px sans-serif';
       ctx.fillStyle = themeConfig.accent;
       ctx.fillText(`"${stripCaption}"`, captionX, captionY);
     } else {
       canvas.width = 630;
       canvas.height = 1230;
 
-      // Background Card dengan gradasi lembut agar tidak polos
+      // Background Card Lembut
       ctx.fillStyle = themeConfig.cardBg;
       ctx.beginPath();
       ctx.roundRect(0, 0, 630, 1230, 40);
       ctx.fill();
 
-      // Ornamen Background di area bawah agar tidak kosong / hampa
+      // Ornamen Dekoratif di Area Bawah agar Lebih Lucu & Ramai
       ctx.save();
       ctx.fillStyle = themeConfig.softBg;
       ctx.beginPath();
@@ -1089,42 +1089,57 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.stroke();
       ctx.restore();
 
-      // Efek Hati Kecil Transparan sebagai pola hiasan aesthetic
+      // Elemen Ilustrasi Pita / Pita Kecil di Bawah Frame
+      ctx.save();
+      ctx.fillStyle = themeConfig.border;
+      ctx.beginPath();
+      ctx.roundRect(265, 945, 100, 24, 12);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('SPECIAL MOMENT', 315, 961);
+      ctx.restore();
+
+      // Pola Hiasan Bintang & Hati Transparan
       ctx.save();
       ctx.fillStyle = themeConfig.accent;
-      ctx.globalAlpha = 0.25;
-      ctx.font = '18px sans-serif';
-      ctx.fillText('❤️', 70, 970);
-      ctx.fillText('✨', 540, 980);
-      ctx.fillText('💖', 100, 1120);
-      ctx.fillText('⭐', 500, 1100);
+      ctx.globalAlpha = 0.3;
+      ctx.font = '20px sans-serif';
+      ctx.fillText('🎀', 65, 980);
+      ctx.fillText('⭐', 545, 985);
+      ctx.fillText('💖', 95, 1115);
+      ctx.fillText('✨', 510, 1110);
+      ctx.fillText('🧸', 300, 1130);
       ctx.restore();
 
       ctx.lineWidth = 10;
       ctx.strokeStyle = themeConfig.border;
       ctx.stroke();
 
+      // Header Teks Diperkecil & Dibersihkan dari Emoji Berlebih
       ctx.fillStyle = themeConfig.text;
-      ctx.font = '900 24px sans-serif';
+      ctx.font = '900 18px sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText('✨ STUDIO LOVE STRIP ✨', canvas.width / 2, 50);
-      ctx.font = '22px sans-serif';
-      ctx.fillText(`💖 🎀 📸 🌟 🌸`, canvas.width / 2, 85);
+      ctx.fillText('STUDIO LOVE STRIP', canvas.width / 2, 50);
+      ctx.font = '14px sans-serif';
+      ctx.fillStyle = themeConfig.accent;
+      ctx.fillText('Our Sweet Memories Together', canvas.width / 2, 75);
 
       if (selectedLayout === '1x2') {
-        if (photos[0]) await drawCoverImage(photos[0], 40, 110, 550, 380, 20);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 40, 510, 550, 380, 20);
+        if (photos[0]) await drawCoverImage(photos[0], 40, 100, 550, 390, 20);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 40, 510, 550, 390, 20);
       } else if (selectedLayout === '1x3') {
-        if (photos[0]) await drawCoverImage(photos[0], 50, 105, 530, 250, 15);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 50, 375, 530, 250, 15);
-        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 50, 645, 530, 250, 15);
+        if (photos[0]) await drawCoverImage(photos[0], 50, 95, 530, 260, 15);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 50, 370, 530, 260, 15);
+        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 50, 645, 530, 260, 15);
       } else if (selectedLayout === '2x2') {
-        if (photos[0]) await drawCoverImage(photos[0], 35, 110, 265, 370, 15);
-        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 330, 110, 265, 370, 15);
-        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 35, 500, 265, 370, 15);
-        if (photos[3] || photos[1] || photos[0]) await drawCoverImage(photos[3] || photos[1] || photos[0], 330, 500, 265, 370, 15);
+        if (photos[0]) await drawCoverImage(photos[0], 35, 100, 265, 380, 15);
+        if (photos[1] || photos[0]) await drawCoverImage(photos[1] || photos[0], 330, 100, 265, 380, 15);
+        if (photos[2] || photos[0]) await drawCoverImage(photos[2] || photos[0], 35, 500, 265, 380, 15);
+        if (photos[3] || photos[1] || photos[0]) await drawCoverImage(photos[3] || photos[1] || photos[0], 330, 500, 265, 380, 15);
       } else if (selectedLayout === 'polaroid') {
-        if (photos[0]) await drawCoverImage(photos[0], 55, 110, 520, 580, 15);
+        if (photos[0]) await drawCoverImage(photos[0], 55, 100, 520, 600, 15);
       }
 
       placedStickers.forEach(stk => {
@@ -1138,18 +1153,19 @@ export default function LiveLoveRoomWithPhotobooth() {
       const captionX = (captionPos.x / 100) * canvas.width;
       const captionY = (captionPos.y / 100) * canvas.height;
       ctx.fillStyle = themeConfig.border;
-      ctx.font = 'bold 18px sans-serif';
+      ctx.font = 'bold 15px sans-serif';
       ctx.textAlign = 'center';
       ctx.fillText(stripCaption, captionX, captionY);
 
+      // Footer Info Ukuran Proporsional
       ctx.fillStyle = '#57534e';
-      ctx.font = 'bold 15px sans-serif';
+      ctx.font = 'bold 13px sans-serif';
       ctx.textAlign = 'left';
-      ctx.fillText(`👥 ${myName} & ${partnerName}`, 45, 1185);
+      ctx.fillText(`${myName} & ${partnerName}`, 45, 1185);
 
       ctx.textAlign = 'right';
       const today = new Date();
-      ctx.fillText(`📅 ${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`, 585, 1185);
+      ctx.fillText(`${today.getMonth()+1}/${today.getDate()}/${today.getFullYear()}`, 585, 1185);
     }
 
     setFinalStripUrl(canvas.toDataURL('image/png', 1.0));
