@@ -177,6 +177,13 @@ export default function LiveLoveRoomWithPhotobooth() {
     };
   }, [cameraBgTheme]);
 
+  // Otomatis nyalakan kamera ketika masuk mode preview studio
+  useEffect(() => {
+    if (boothStep === 'preview') {
+      startDualCameraStream();
+    }
+  }, [boothStep]);
+
   useEffect(() => {
     if (localStreamRef.current && localVideoRef.current) {
       localVideoRef.current.srcObject = localStreamRef.current;
@@ -405,6 +412,18 @@ export default function LiveLoveRoomWithPhotobooth() {
           localVideoRef.current.srcObject = localStreamRef.current;
           localVideoRef.current.play().catch(e => console.log(e));
         }
+        // Auto panggil ulang partner juga jika stream sudah ada
+        if (peerInstanceRef.current && conn && conn.peer) {
+          const call = peerInstanceRef.current.call(conn.peer, localStreamRef.current);
+          currentCallRef.current = call;
+          call.on('stream', (remoteStreamFeed) => {
+            setRemoteStream(remoteStreamFeed);
+            if (remoteVideoRef.current) {
+              remoteVideoRef.current.srcObject = remoteStreamFeed;
+              remoteVideoRef.current.play().catch(e => console.log(e));
+            }
+          });
+        }
         return localStreamRef.current;
       }
       const stream = await navigator.mediaDevices.getUserMedia({ 
@@ -418,7 +437,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       }
       setCameraActive(true);
 
-      // Auto call ke pasangan jika koneksi sudah ada
       if (peerInstanceRef.current && conn && conn.peer) {
         const call = peerInstanceRef.current.call(conn.peer, stream);
         currentCallRef.current = call;
