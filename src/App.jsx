@@ -119,13 +119,28 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   const messagesEndRef = useRef(null);
 
-  // Load Dual MediaPipe Selfie Segmentation via CDN Script
+  // Load Dual MediaPipe Selfie Segmentation sekali saja di awal
   useEffect(() => {
+    if (window.SelfieSegmentation) {
+      initMediaPipe();
+      return;
+    }
     const script = document.createElement('script');
     script.src = "https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/selfie_segmentation.js";
     script.async = true;
-    script.onload = async () => {
-      if (window.SelfieSegmentation) {
+    script.onload = () => {
+      initMediaPipe();
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      if (script.parentNode) script.parentNode.removeChild(script);
+    };
+  }, []);
+
+  const initMediaPipe = async () => {
+    if (window.SelfieSegmentation && !localSegmentationRef.current) {
+      try {
         const segLocal = new window.SelfieSegmentation({
           locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/selfie_segmentation/${file}`
         });
@@ -147,14 +162,11 @@ export default function LiveLoveRoomWithPhotobooth() {
         remoteSegmentationRef.current = segRemote;
 
         setIsSegmentationLoaded(true);
+      } catch (e) {
+        console.error("Gagal inisialisasi MediaPipe:", e);
       }
-    };
-    document.body.appendChild(script);
-
-    return () => {
-      if (script.parentNode) script.parentNode.removeChild(script);
-    };
-  }, []);
+    }
+  };
 
   // Muat gambar background tema aktif
   useEffect(() => {
@@ -181,10 +193,13 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   }, [remoteStream, boothStep]);
 
-  // Real-time Render Loop AI Dual Background Removal & Komposisi Studio
+  // Real-time Render Loop AI Dual Background Removal & Komposisi Studio (Dioptimalkan agar tidak menumpuk)
   useEffect(() => {
     if ((boothStep === 'preview' || boothStep === 'capturing') && isSegmentationLoaded && cameraActive) {
+      let isCancelled = false;
+
       const renderLoop = async () => {
+        if (isCancelled) return;
         const localVid = localVideoRef.current;
         const remoteVid = remoteVideoRef.current;
         const localSeg = localSegmentationRef.current;
@@ -194,7 +209,7 @@ export default function LiveLoveRoomWithPhotobooth() {
           try {
             await localSeg.send({ image: localVid });
           } catch (e) {
-            console.error(e);
+            // ignore frame drop
           }
         }
 
@@ -206,25 +221,26 @@ export default function LiveLoveRoomWithPhotobooth() {
             }
             await remoteSeg.send({ image: remoteVid });
           } catch (e) {
-            console.error(e);
+            // ignore frame drop
           }
         }
 
         drawCompositeFrame();
 
-        animationFrameRef.current = requestAnimationFrame(renderLoop);
+        if (!isCancelled) {
+          animationFrameRef.current = requestAnimationFrame(renderLoop);
+        }
       };
       renderLoop();
-    } else {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
+
+      return () => {
+        isCancelled = true;
+        if (animationFrameRef.current) {
+          cancelAnimationFrame(animationFrameRef.current);
+          animationFrameRef.current = null;
+        }
+      };
     }
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
   }, [boothStep, isSegmentationLoaded, cameraBgTheme, remoteStream, partnerName, myName, cameraActive]);
 
   const getVideoCropParams = (video, destW, destH) => {
@@ -404,6 +420,10 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   // Fungsi untuk mematikan kamera sepenuhnya
   const stopCamera = () => {
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach(track => track.stop());
       localStreamRef.current = null;
@@ -421,9 +441,10 @@ export default function LiveLoveRoomWithPhotobooth() {
     try {
       let stream = localStreamRef.current;
       if (!stream) {
+        // Mengaktifkan audio: true agar suara terdengar seperti video call
         stream = await navigator.mediaDevices.getUserMedia({ 
           video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }, 
-          audio: false 
+          audio: true 
         });
         localStreamRef.current = stream;
       }
@@ -442,6 +463,7 @@ export default function LiveLoveRoomWithPhotobooth() {
           setRemoteStream(remoteStreamFeed);
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = remoteStreamFeed;
+            remoteVideoRef.current.muted = false; // Pastikan audio pasangan aktif
             remoteVideoRef.current.play().catch(e => console.log(e));
           }
         });
@@ -449,7 +471,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       return stream;
     } catch (err) {
       console.error("Gagal kamera:", err);
-      alert("Tidak dapat mengakses kamera. Pastikan izin kamera aktif!");
+      alert("Tidak dapat mengakses kamera/mikrofon. Pastikan izin aktif!");
       return null;
     }
   };
@@ -516,6 +538,7 @@ export default function LiveLoveRoomWithPhotobooth() {
         setRemoteStream(remoteStreamFeed);
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = remoteStreamFeed;
+          remoteVideoRef.current.muted = false;
           remoteVideoRef.current.play().catch(e => console.log(e));
         }
       });
@@ -552,6 +575,7 @@ export default function LiveLoveRoomWithPhotobooth() {
         setRemoteStream(remoteStreamFeed);
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = remoteStreamFeed;
+          remoteVideoRef.current.muted = false;
           remoteVideoRef.current.play().catch(e => console.log(e));
         }
       });
@@ -596,7 +620,6 @@ export default function LiveLoveRoomWithPhotobooth() {
       } else if (data.type === 'pb-bg-theme-sync') {
         setCameraBgTheme(data.theme);
       } else if (data.type === 'pb-preview-mode') {
-        // HANYA mengganti step preview tanpa menyalakan kamera secara otomatis
         setSelectedLayout(data.layout);
         setSelectedTheme(data.theme);
         setBoothStep('preview');
@@ -609,6 +632,9 @@ export default function LiveLoveRoomWithPhotobooth() {
           call.on('stream', (remoteStreamFeed) => {
             remoteStreamRef.current = remoteStreamFeed;
             setRemoteStream(remoteStreamFeed);
+            if (remoteVideoRef.current) {
+              remoteVideoRef.current.muted = false;
+            }
           });
         }
       } else if (data.type === 'pb-ready-status') {
@@ -793,7 +819,7 @@ export default function LiveLoveRoomWithPhotobooth() {
     const total = getRequiredPhotosCount();
     if (currentStep >= total) {
       setBoothStep('ready');
-      stopCamera(); // Matikan kamera otomatis setelah selesai jepret
+      stopCamera(); // Matikan kamera otomatis setelah selesai jepret untuk menghemat resource/mencegah lag
       generatePhotoboothCanvas(allPhotosRef.current);
       confetti({ particleCount: 100, spread: 100, origin: { y: 0.5 } });
       return;
@@ -1009,7 +1035,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-100 via-pink-100 to-purple-200 flex items-center justify-center p-4 overflow-hidden relative font-sans text-stone-800">
 
-      {/* ELEMEN VIDEO STREAM UTAMA (TERSEMBUNYI PERMANEN) */}
+      {/* ELEMEN VIDEO & AUDIO STREAM UTAMA */}
       <video ref={localVideoRef} autoPlay playsInline muted className="hidden" />
       <video ref={remoteVideoRef} autoPlay playsInline className="hidden" />
 
@@ -1122,7 +1148,7 @@ export default function LiveLoveRoomWithPhotobooth() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] uppercase tracking-widest text-green-600 font-bold flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Terhubung Live
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Terhubung Live (Suara Aktif 🎙️)
                   </span>
                   <button
                     onClick={handleLeaveSession}
@@ -1424,12 +1450,12 @@ export default function LiveLoveRoomWithPhotobooth() {
                           <canvas ref={previewCanvasRef} width={1280} height={720} className="w-full h-full object-cover" />
                         ) : (
                           <div className="text-center p-4 space-y-2">
-                            <p className="text-xs text-stone-300">Kamera belum aktif untuk menghemat baterai & kuota.</p>
+                            <p className="text-xs text-stone-300">Kamera & Suara belum aktif.</p>
                             <button 
                               onClick={initializeCameraAndCall}
                               className="px-4 py-2 bg-rose-500 hover:bg-rose-600 text-white font-bold rounded-xl text-xs shadow transition cursor-pointer"
                             >
-                              🎥 Nyalakan Kamera Saya
+                              🎥 Nyalakan Kamera & Suara Saya
                             </button>
                           </div>
                         )}
