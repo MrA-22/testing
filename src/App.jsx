@@ -96,6 +96,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   // WebRTC Media Stream
   const localStreamRef = useRef(null);
   const [remoteStream, setRemoteStream] = useState(null);
+  const remoteStreamRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const currentCallRef = useRef(null);
@@ -177,10 +178,10 @@ export default function LiveLoveRoomWithPhotobooth() {
     };
   }, [cameraBgTheme]);
 
-  // Otomatis nyalakan kamera ketika masuk mode preview studio
+  // Pastikan kamera langsung aktif saat masuk preview studio
   useEffect(() => {
     if (boothStep === 'preview') {
-      startDualCameraStream();
+      initializeCameraAndCall();
     }
   }, [boothStep]);
 
@@ -193,6 +194,7 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   useEffect(() => {
     if (remoteStream && remoteVideoRef.current) {
+      remoteStreamRef.current = remoteStream;
       remoteVideoRef.current.srcObject = remoteStream;
       remoteVideoRef.current.play().catch(e => console.log(e));
     }
@@ -326,11 +328,14 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
 
     // 3. SISI KANAN: PASANGAN (WebRTC Remote Video Stream)
-    if (remoteVideoRef.current && remoteStream) {
-      if (remoteVideoRef.current.paused) {
-        remoteVideoRef.current.play().catch(e => console.log(e));
+    const activeRemoteVideo = remoteVideoRef.current;
+    const activeRemoteStream = remoteStream || remoteStreamRef.current;
+
+    if (activeRemoteVideo && activeRemoteStream) {
+      if (activeRemoteVideo.paused) {
+        activeRemoteVideo.play().catch(e => console.log(e));
       }
-      drawVideoCover(ctx, remoteVideoRef.current, halfW, 0, halfW, h, false);
+      drawVideoCover(ctx, activeRemoteVideo, halfW, 0, halfW, h, false);
     } else {
       ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
       ctx.fillRect(halfW, 0, halfW, h);
@@ -405,42 +410,29 @@ export default function LiveLoveRoomWithPhotobooth() {
     };
   }, []);
 
-  const startDualCameraStream = async () => {
+  const initializeCameraAndCall = async () => {
     try {
-      if (localStreamRef.current) {
-        if (localVideoRef.current && !localVideoRef.current.srcObject) {
-          localVideoRef.current.srcObject = localStreamRef.current;
-          localVideoRef.current.play().catch(e => console.log(e));
-        }
-        // Auto panggil ulang partner juga jika stream sudah ada
-        if (peerInstanceRef.current && conn && conn.peer) {
-          const call = peerInstanceRef.current.call(conn.peer, localStreamRef.current);
-          currentCallRef.current = call;
-          call.on('stream', (remoteStreamFeed) => {
-            setRemoteStream(remoteStreamFeed);
-            if (remoteVideoRef.current) {
-              remoteVideoRef.current.srcObject = remoteStreamFeed;
-              remoteVideoRef.current.play().catch(e => console.log(e));
-            }
-          });
-        }
-        return localStreamRef.current;
+      let stream = localStreamRef.current;
+      if (!stream) {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }, 
+          audio: false 
+        });
+        localStreamRef.current = stream;
       }
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' }, 
-        audio: false 
-      });
-      localStreamRef.current = stream;
+
       if (localVideoRef.current) {
         localVideoRef.current.srcObject = stream;
-        await localVideoRef.current.play().catch(e => console.log("Play interrupted:", e));
+        await localVideoRef.current.play().catch(e => console.log(e));
       }
       setCameraActive(true);
 
+      // Panggil pasangan secara otomatis via PeerJS
       if (peerInstanceRef.current && conn && conn.peer) {
         const call = peerInstanceRef.current.call(conn.peer, stream);
         currentCallRef.current = call;
         call.on('stream', (remoteStreamFeed) => {
+          remoteStreamRef.current = remoteStreamFeed;
           setRemoteStream(remoteStreamFeed);
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = remoteStreamFeed;
@@ -448,30 +440,20 @@ export default function LiveLoveRoomWithPhotobooth() {
           }
         });
       }
-
       return stream;
     } catch (err) {
-      console.error("Gagal mengakses kamera:", err);
+      console.error("Gagal kamera:", err);
       alert("Tidak dapat mengakses kamera. Pastikan izin kamera aktif!");
       return null;
     }
   };
 
   const handleReconnectCall = async () => {
-    const stream = await startDualCameraStream();
-    if (stream && peerInstanceRef.current && conn && conn.peer) {
-      const call = peerInstanceRef.current.call(conn.peer, stream);
-      currentCallRef.current = call;
-      call.on('stream', (remoteStreamFeed) => {
-        setRemoteStream(remoteStreamFeed);
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = remoteStreamFeed;
-          remoteVideoRef.current.play().catch(e => console.log(e));
-        }
-      });
-      alert("Sambungan video berhasil direfresh! 🔄");
-    } else {
-      alert("Belum terhubung ke room pasangan.");
+    const stream = await initializeCameraAndCall();
+    if (stream && conn && conn.peer) {
+      // Kirim sinyal data juga agar pasangan tahu untuk merefresh panggilan
+      conn.send({ type: 'request-video-sync' });
+      alert("Permintaan sinkronisasi video dikirim ke pasangan! 🔄");
     }
   };
 
@@ -524,10 +506,14 @@ export default function LiveLoveRoomWithPhotobooth() {
     });
 
     newPeer.on('call', async (call) => {
-      const stream = await startDualCameraStream();
+      let stream = localStreamRef.current;
+      if (!stream) {
+        stream = await initializeCameraAndCall();
+      }
       call.answer(stream);
       currentCallRef.current = call;
       call.on('stream', (remoteStreamFeed) => {
+        remoteStreamRef.current = remoteStreamFeed;
         setRemoteStream(remoteStreamFeed);
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = remoteStreamFeed;
@@ -557,23 +543,30 @@ export default function LiveLoveRoomWithPhotobooth() {
       setConn(connection);
       setupConnection(connection, newPeer);
 
-      const stream = await startDualCameraStream();
-      const call = newPeer.call(`bucin-room-${inputCode}`, stream);
-      currentCallRef.current = call;
-      call.on('stream', (remoteStreamFeed) => {
-        setRemoteStream(remoteStreamFeed);
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = remoteStreamFeed;
-          remoteVideoRef.current.play().catch(e => console.log(e));
-        }
-      });
+      let stream = await initializeCameraAndCall();
+      if (stream) {
+        const call = newPeer.call(`bucin-room-${inputCode}`, stream);
+        currentCallRef.current = call;
+        call.on('stream', (remoteStreamFeed) => {
+          remoteStreamRef.current = remoteStreamFeed;
+          setRemoteStream(remoteStreamFeed);
+          if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = remoteStreamFeed;
+            remoteVideoRef.current.play().catch(e => console.log(e));
+          }
+        });
+      }
     });
 
     newPeer.on('call', async (call) => {
-      const stream = await startDualCameraStream();
+      let stream = localStreamRef.current;
+      if (!stream) {
+        stream = await initializeCameraAndCall();
+      }
       call.answer(stream);
       currentCallRef.current = call;
       call.on('stream', (remoteStreamFeed) => {
+        remoteStreamRef.current = remoteStreamFeed;
         setRemoteStream(remoteStreamFeed);
         if (remoteVideoRef.current) {
           remoteVideoRef.current.srcObject = remoteStreamFeed;
@@ -596,11 +589,15 @@ export default function LiveLoveRoomWithPhotobooth() {
       setStatusText('Terhubung dengan Ayang! ❤️');
       connection.send({ type: 'init', name: myName, mood: myMood });
 
-      const stream = await startDualCameraStream();
+      let stream = localStreamRef.current;
+      if (!stream) {
+        stream = await initializeCameraAndCall();
+      }
       if (stream && connection.peer) {
         const call = currentPeerInstance.call(connection.peer, stream);
         currentCallRef.current = call;
         call.on('stream', (remoteStreamFeed) => {
+          remoteStreamRef.current = remoteStreamFeed;
           setRemoteStream(remoteStreamFeed);
           if (remoteVideoRef.current) {
             remoteVideoRef.current.srcObject = remoteStreamFeed;
@@ -610,7 +607,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       }
     });
 
-    connection.on('data', (data) => {
+    connection.on('data', async (data) => {
       if (data.type === 'init') {
         setPartnerName(data.name);
         setPartnerMood(data.mood);
@@ -641,6 +638,17 @@ export default function LiveLoveRoomWithPhotobooth() {
         setBoothStep('preview');
         setIAmReady(false);
         setPartnerIsReady(false);
+        // Otomatis aktifkan kamera dan panggil balik saat masuk preview
+        await initializeCameraAndCall();
+      } else if (data.type === 'request-video-sync') {
+        if (localStreamRef.current && currentPeerInstance && connection.peer) {
+          const call = currentPeerInstance.call(connection.peer, localStreamRef.current);
+          currentCallRef.current = call;
+          call.on('stream', (remoteStreamFeed) => {
+            remoteStreamRef.current = remoteStreamFeed;
+            setRemoteStream(remoteStreamFeed);
+          });
+        }
       } else if (data.type === 'pb-ready-status') {
         setPartnerIsReady(data.ready);
       } else if (data.type === 'pb-start-countdown') {
@@ -790,7 +798,7 @@ export default function LiveLoveRoomWithPhotobooth() {
   };
 
   const handleOpenLivePreview = async () => {
-    await startDualCameraStream();
+    await initializeCameraAndCall();
     setAllPhotos([]);
     setBoothStep('preview');
     setIAmReady(false);
