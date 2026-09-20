@@ -5,7 +5,6 @@ import confetti from 'canvas-confetti';
 
 // 50 Pilihan Background (30 Nuansa Dunia/Wisata/Desa/Kota + 20 Polosan & Gradasi)
 const bgThemes = {
-  // --- 30 Nuansa Dunia, Kota, Desa, & Tempat Wisata ---
   tokyo: { name: 'Tokyo Street', emoji: '🗼', type: 'image', url: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1200&q=80' },
   seoul: { name: 'Seoul Hanok', emoji: '🏯', type: 'image', url: 'https://images.unsplash.com/photo-1538485399060-071c360ca4fa?auto=format&fit=crop&w=1200&q=80' },
   ny: { name: 'New York City', emoji: '🗽', type: 'image', url: 'https://images.unsplash.com/photo-1496442226666-8d4d0e62e6e9?auto=format&fit=crop&w=1200&q=80' },
@@ -37,7 +36,6 @@ const bgThemes = {
   winter: { name: 'Winter Snow', emoji: '❄️', type: 'image', url: 'https://images.unsplash.com/photo-1517299321609-52687d1bc55a?auto=format&fit=crop&w=1200&q=80' },
   lavender: { name: 'Lavender Field', emoji: '💜', type: 'image', url: 'https://images.unsplash.com/photo-1499002238440-d264edd596ec?auto=format&fit=crop&w=1200&q=80' },
 
-  // --- 20 Polosan & Gradasi ---
   plain_white: { name: 'Pure White', emoji: '⚪', type: 'color', value: '#ffffff' },
   plain_pink: { name: 'Soft Pink', emoji: '🌸', type: 'color', value: '#ffe4e6' },
   plain_blue: { name: 'Pastel Blue', emoji: '🔹', type: 'color', value: '#e0f2fe' },
@@ -60,6 +58,8 @@ const bgThemes = {
   plain_mocha: { name: 'Soft Mocha', emoji: '☕', type: 'color', value: '#f3e8df' }
 };
 
+const stickerOptions = ['🧸', '💖', '✨', '🌹', '👑', '💐', '🍫', '💍', '💋', '💌', '🍓', '🎀', '⭐', '🦋', '🧊', '🍰', '🐱', '🐥', '🍀', '🔥'];
+
 export default function LiveLoveRoomWithPhotobooth() {
   const [peer, setPeer] = useState(null);
   const [conn, setConn] = useState(null);
@@ -73,49 +73,44 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [partnerName, setPartnerName] = useState('Ayang');
   const [statusText, setStatusText] = useState('Menunggu koneksi...');
 
-  // Navigasi Dashboard Tabs
   const [activeTab, setActiveTab] = useState('chat');
 
-  // Fitur Live Chat, Mood, Voice Note, & Kado Virtual
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [partnerMood, setPartnerMood] = useState('😊 Normal / Senang');
   const [myMood, setMyMood] = useState('😊 Normal / Senang');
   
-  // Voice Note States
   const [isRecording, setIsRecording] = useState(false);
   const mediaRecorderAudioRef = useRef(null);
   const audioChunksRef = useRef([]);
 
-  // Gift Popup Effect
   const [activeGiftPopup, setActiveGiftPopup] = useState(null);
-
-  // Fitur Love Notes
   const [notes, setNotes] = useState([]);
   const [inputNote, setInputNote] = useState('');
 
-  // Fitur Photobooth & Studio Kamera
+  // Photobooth States
   const [selectedLayout, setSelectedLayout] = useState('1x2'); 
   const [selectedTheme, setSelectedTheme] = useState('rose'); 
   const [cameraBgTheme, setCameraBgTheme] = useState('sunset');
   const [customBgUrl, setCustomBgUrl] = useState(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [countdown, setCountdown] = useState(null);
+  const [flashActive, setFlashActive] = useState(false); // Efek Jepret / Gepret Flash
   const [allPhotos, setAllPhotos] = useState([]);
   const allPhotosRef = useRef([]);
   const [boothStep, setBoothStep] = useState('select-layout'); 
   const [currentStep, setCurrentStep] = useState(0);
   const [finalStripUrl, setFinalStripUrl] = useState(null);
   
-  // Ready States
   const [iAmReady, setIAmReady] = useState(false);
   const [partnerIsReady, setPartnerIsReady] = useState(false);
 
-  // Editor States
+  // Editor States (Multiple Free Stickers & Custom Caption)
   const [stripCaption, setStripCaption] = useState('Our Sweet Moment Together ❤️');
-  const [selectedSticker, setSelectedSticker] = useState('🧸');
+  const [placedStickers, setPlacedStickers] = useState([
+    { id: 1, emoji: '🧸', x: 50, y: 50 }
+  ]);
 
-  // WebRTC Media Stream
   const localStreamRef = useRef(null);
   const [remoteStream, setRemoteStream] = useState(null);
   const remoteStreamRef = useRef(null);
@@ -125,7 +120,6 @@ export default function LiveLoveRoomWithPhotobooth() {
   const currentCallRef = useRef(null);
   const peerInstanceRef = useRef(null);
 
-  // Canvas & Dual MediaPipe Refs
   const previewCanvasRef = useRef(null);
   const animationFrameRef = useRef(null);
   const localSegmentationRef = useRef(null);
@@ -135,11 +129,9 @@ export default function LiveLoveRoomWithPhotobooth() {
   const bgImageLoadedRef = useRef(null);
   const [isSegmentationLoaded, setIsSegmentationLoaded] = useState(false);
 
-  // --- COUNTER JADIAN ---
   const [anniversaryDate, setAnniversaryDate] = useState('2024-01-01');
   const [timeTogether, setTimeTogether] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
 
-  // --- QUIZ ---
   const quizQuestions = [
     { q: "Apa makanan kesukaan atau jajanan favoritku?", options: ["Seblak/Pedas", "Manis/Dessert", "Makanan Berkuah", "Fast Food"] },
     { q: "Kalau lagi ngambek, biasanya aku paling suka digimanain?", options: ["Diemin dulu", "Dipujuk & ditenangin", "Dikasih makanan", "Diajak ngelawak"] },
@@ -148,7 +140,6 @@ export default function LiveLoveRoomWithPhotobooth() {
   const [quizAnswers, setQuizAnswers] = useState({});
   const [partnerQuizAnswers, setPartnerQuizAnswers] = useState({});
 
-  // --- BUCKET LIST ---
   const [bucketList, setBucketList] = useState([
     { id: 1, text: "Nonton bioskop genre horor berdua 🍿", done: false },
     { id: 2, text: "Masak malam romantis bersama 🍝", done: false },
@@ -166,8 +157,13 @@ export default function LiveLoveRoomWithPhotobooth() {
 
   const messagesEndRef = useRef(null);
 
-  // Efek Suara Jepretan Kamera (Shutter Sound)
-  const playShutterSound = () => {
+  // Efek Suara Jepret & Flash Gepret Kamera
+  const playShutterSoundAndFlash = () => {
+    // 1. Efek Visual Flash (Gepret)
+    setFlashActive(true);
+    setTimeout(() => setFlashActive(false), 200);
+
+    // 2. Efek Audio Shutter
     try {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const bufferSize = audioCtx.sampleRate * 0.05;
@@ -182,7 +178,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       filter.type = 'highpass';
       filter.frequency.value = 1200;
       const gain = audioCtx.createGain();
-      gain.gain.setValueAtTime(0.6, audioCtx.currentTime);
+      gain.gain.setValueAtTime(0.7, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
 
       noise.connect(filter);
@@ -194,7 +190,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  // Load Dual MediaPipe Selfie Segmentation sekali saja di awal
   useEffect(() => {
     if (window.SelfieSegmentation) {
       initMediaPipe();
@@ -243,7 +238,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     }
   };
 
-  // Muat gambar background tema aktif (jika berupa gambar URL)
   useEffect(() => {
     const theme = bgThemes[cameraBgTheme];
     if (theme && theme.type === 'image') {
@@ -278,12 +272,11 @@ export default function LiveLoveRoomWithPhotobooth() {
       }
       if (remoteAudioRef.current) {
         remoteAudioRef.current.srcObject = remoteStream;
-        remoteAudioRef.current.play().catch(e => console.log("Audio play blocked:", e));
+        remoteAudioRef.current.play().catch(e => console.log(e));
       }
     }
   }, [remoteStream, boothStep]);
 
-  // Real-time Render Loop AI Dual Background Removal & Komposisi Studio
   useEffect(() => {
     if ((boothStep === 'preview' || boothStep === 'capturing') && isSegmentationLoaded && cameraActive) {
       let isCancelled = false;
@@ -366,7 +359,6 @@ export default function LiveLoveRoomWithPhotobooth() {
     const h = canvas.height;
     const halfW = w / 2;
 
-    // Render Background (Gambar, Warna Solid, atau Gradasi)
     const currentTheme = cameraBgTheme === 'custom' ? { type: 'image' } : bgThemes[cameraBgTheme];
     if (cameraBgTheme === 'custom' && customBgUrl && bgImageLoadedRef.current) {
       ctx.drawImage(bgImageLoadedRef.current, 0, 0, w, h);
@@ -754,11 +746,10 @@ export default function LiveLoveRoomWithPhotobooth() {
         setCurrentStep(data.step + 1);
       } else if (data.type === 'pb-edit-sync') {
         setStripCaption(data.caption);
-        setSelectedSticker(data.sticker);
+        setPlacedStickers(data.stickers);
       }
     });
 
-    // Otomatis kembali ke menu utama jika pasangan keluar/terputus
     connection.on('close', () => {
       alert("Pasangan telah keluar dari room. Kembali ke menu utama.");
       resetToMainMenu();
@@ -958,8 +949,8 @@ export default function LiveLoveRoomWithPhotobooth() {
         clearInterval(timer);
         setCountdown(null);
 
-        // Putar suara jepretan kamera saat foto diambil
-        playShutterSound();
+        // Putar suara jepret & efek gepret (flash)
+        playShutterSoundAndFlash();
 
         const canvas = document.createElement('canvas');
         canvas.width = 800;
@@ -1065,12 +1056,18 @@ export default function LiveLoveRoomWithPhotobooth() {
         await drawCoverImage(photos[0], 65, 65, 470, 580, 20);
       }
 
-      ctx.font = '40px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText(selectedSticker, canvas.width / 2, 690);
+      // Render semua stiker bebas di canvas photocard
+      placedStickers.forEach(stk => {
+        ctx.font = '36px sans-serif';
+        ctx.textAlign = 'center';
+        const canvasX = (stk.x / 100) * canvas.width;
+        const canvasY = (stk.y / 100) * canvas.height;
+        ctx.fillText(stk.emoji, canvasX, canvasY);
+      });
 
       ctx.fillStyle = themeConfig.text;
       ctx.font = 'bold 20px sans-serif';
+      ctx.textAlign = 'center';
       ctx.fillText(`✨ ${myName} & ${partnerName} ✨`, canvas.width / 2, 740);
       ctx.font = 'italic 16px sans-serif';
       ctx.fillStyle = themeConfig.accent;
@@ -1098,7 +1095,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.textAlign = 'center';
       ctx.fillText('✨ STUDIO LOVE STRIP ✨', canvas.width / 2, 85);
       ctx.font = '22px sans-serif';
-      ctx.fillText(`💖 ${selectedSticker} 🎀 📸 🌟 🌸`, canvas.width / 2, 120);
+      ctx.fillText(`💖 🎀 📸 🌟 🌸`, canvas.width / 2, 120);
 
       if (selectedLayout === '1x2') {
         if (photos[0]) await drawCoverImage(photos[0], 75, 145, 550, 380, 20);
@@ -1119,6 +1116,15 @@ export default function LiveLoveRoomWithPhotobooth() {
         ctx.textAlign = 'center';
         ctx.fillText(`"${stripCaption}"`, canvas.width / 2, 780);
       }
+
+      // Render stiker bebas di strip
+      placedStickers.forEach(stk => {
+        ctx.font = '32px sans-serif';
+        ctx.textAlign = 'center';
+        const canvasX = (stk.x / 100) * canvas.width;
+        const canvasY = (stk.y / 100) * canvas.height;
+        ctx.fillText(stk.emoji, canvasX, canvasY);
+      });
 
       ctx.beginPath();
       ctx.moveTo(70, 1020);
@@ -1149,18 +1155,40 @@ export default function LiveLoveRoomWithPhotobooth() {
     if (boothStep === 'ready' && allPhotos.length > 0) {
       generatePhotoboothCanvas(allPhotos);
     }
-  }, [stripCaption, selectedSticker]);
+  }, [stripCaption, placedStickers]);
 
-  const handleUpdateEditor = (newCaption, newSticker) => {
+  const handleUpdateEditor = (newCaption, newStickers) => {
     setStripCaption(newCaption);
-    setSelectedSticker(newSticker);
+    setPlacedStickers(newStickers);
     if (conn) {
-      conn.send({ type: 'pb-edit-sync', caption: newCaption, sticker: newSticker });
+      conn.send({ type: 'pb-edit-sync', caption: newCaption, stickers: newStickers });
     }
+  };
+
+  const addStickerToCard = (emoji) => {
+    const newStickers = [...placedStickers, { id: Date.now(), emoji, x: 50 + (Math.random() * 30 - 15), y: 50 + (Math.random() * 30 - 15) }];
+    handleUpdateEditor(stripCaption, newStickers);
+  };
+
+  const removeSticker = (id) => {
+    const newStickers = placedStickers.filter(s => s.id !== id);
+    handleUpdateEditor(stripCaption, newStickers);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-rose-100 via-pink-100 to-purple-200 flex items-center justify-center p-4 overflow-hidden relative font-sans text-stone-800">
+
+      {/* EFEK GEPRET / FLASH KAMERA */}
+      <AnimatePresence>
+        {flashActive && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-white z-50 pointer-events-none"
+          />
+        )}
+      </AnimatePresence>
 
       {/* ELEMEN VIDEO & AUDIO STREAM UTAMA */}
       <video ref={localVideoRef} autoPlay playsInline muted className="hidden" />
@@ -1669,38 +1697,56 @@ export default function LiveLoveRoomWithPhotobooth() {
                 {/* 4. TAHAP HASIL & EDITOR */}
                 {boothStep === 'ready' && finalStripUrl && (
                   <div className="space-y-2 w-full flex flex-col items-center my-auto pt-1">
-                    <div className="w-[180px] drop-shadow-xl">
+                    <div className="w-[170px] drop-shadow-xl relative">
                       <img src={finalStripUrl} alt="Hasil Photobooth" className="w-full h-auto object-contain rounded-xl" />
                     </div>
 
-                    <div className="bg-stone-50 border border-stone-200 p-2.5 rounded-2xl w-full max-w-[280px] space-y-2 text-left">
+                    <div className="bg-stone-50 border border-stone-200 p-2.5 rounded-2xl w-full max-w-[290px] space-y-2 text-left">
                       <p className="text-[11px] font-bold text-stone-700 text-center">✨ Studio Editor Foto Bersama</p>
                       <div>
-                        <label className="block text-[10px] font-semibold text-stone-500 mb-0.5">Ubah Caption / Pesan:</label>
+                        <label className="block text-[10px] font-semibold text-stone-500 mb-0.5">Ubah Caption / Pesan (Bebas):</label>
                         <input 
                           type="text" 
                           value={stripCaption} 
-                          onChange={(e) => handleUpdateEditor(e.target.value, selectedSticker)} 
+                          onChange={(e) => handleUpdateEditor(e.target.value, placedStickers)} 
                           className="w-full px-2.5 py-1.5 rounded-xl border border-stone-200 text-xs bg-white font-medium focus:outline-none focus:border-rose-400" 
                         />
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-semibold text-stone-500">Pilih Stiker:</span>
-                        <div className="flex gap-1">
-                          {['🧸', '💖', '✨', '🌹', '👑'].map((stk) => (
+                      <div>
+                        <span className="block text-[10px] font-semibold text-stone-500 mb-1">Tambah Berbagai Stiker (Klik untuk tambah):</span>
+                        <div className="grid grid-cols-10 gap-1 max-h-[80px] overflow-y-auto p-1 bg-white rounded-xl border border-stone-200">
+                          {stickerOptions.map((stk) => (
                             <button 
                               key={stk} 
-                              onClick={() => handleUpdateEditor(stripCaption, stk)}
-                              className={`w-7 h-7 rounded-lg text-xs flex items-center justify-center border transition ${selectedSticker === stk ? 'bg-rose-500 border-rose-500 scale-110 shadow-sm' : 'bg-white border-stone-200'}`}
+                              onClick={() => addStickerToCard(stk)}
+                              className="w-6 h-6 rounded-lg text-xs flex items-center justify-center hover:bg-rose-100 transition cursor-pointer"
                             >
                               {stk}
                             </button>
                           ))}
                         </div>
                       </div>
+
+                      {/* Daftar Stiker Aktif (Bisa Dihapus) */}
+                      {placedStickers.length > 0 && (
+                        <div>
+                          <span className="block text-[9px] font-bold text-stone-400 mb-0.5">Stiker Aktif (Klik untuk hapus):</span>
+                          <div className="flex flex-wrap gap-1">
+                            {placedStickers.map((s) => (
+                              <button
+                                key={s.id}
+                                onClick={() => removeSticker(s.id)}
+                                className="px-2 py-0.5 bg-rose-100 hover:bg-rose-200 text-rose-800 rounded-md text-xs font-bold transition flex items-center gap-1 cursor-pointer"
+                              >
+                                {s.emoji} ✕
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="flex gap-2 w-full max-w-[280px]">
+                    <div className="flex gap-2 w-full max-w-[290px]">
                       <a href={finalStripUrl} download={`StudioPhotobooth_${myName}_${partnerName}.png`} className="flex-1 py-2.5 bg-gradient-to-r from-rose-500 to-pink-600 text-white font-bold rounded-xl shadow-md text-xs text-center block cursor-pointer hover:scale-105 transition">📥 Download (PNG)</a>
                       <button onClick={handleOpenLivePreview} className="px-3 py-2.5 bg-stone-200 text-stone-600 font-bold rounded-xl text-xs hover:bg-stone-300 transition cursor-pointer">Ulangi 🔄</button>
                     </div>
