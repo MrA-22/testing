@@ -50,7 +50,7 @@ const layoutOptions = [
 ];
 
 const frameThemes = [
-  // 15 Pilihan Warna & Gradasi Cantik
+  // Standar & Gradasi Warna (10 Pilihan)
   { id: 'rose', name: '🌸 Rose Pink', border: '#f43f5e', accent: '#fb7185', text: '#881337', cardBg: '#ffffff', softBg: '#fff1f2' },
   { id: 'purple', name: '💜 Lilac Dream', border: '#9333ea', accent: '#a855f7', text: '#581c87', cardBg: '#ffffff', softBg: '#faf5ff' },
   { id: 'peach', name: '🍑 Warm Peach', border: '#ea580c', accent: '#f97316', text: '#7c2d12', cardBg: '#ffffff', softBg: '#fff7ed' },
@@ -61,18 +61,38 @@ const frameThemes = [
   { id: 'neon_cyber', name: '⚡ Neon Cyber', border: '#db2777', accent: '#f43f5e', text: '#831843', cardBg: '#18181b', softBg: '#27272a' },
   { id: 'choco_latte', name: '☕ Choco Latte', border: '#78350f', accent: '#92400e', text: '#451a03', cardBg: '#fdf8f6', softBg: '#fbe7c6' },
   { id: 'galaxy_night', name: '🌌 Galaxy Night', border: '#4f46e5', accent: '#818cf8', text: '#312e81', cardBg: '#0f172a', softBg: '#1e293b' },
-  { id: 'ruby_red', name: '❤️ Ruby Red', border: '#991b1b', accent: '#ef4444', text: '#450a0a', cardBg: '#fff5f5', softBg: '#fee2e2' },
-  { id: 'emerald', name: '💎 Emerald Shine', border: '#065f46', accent: '#10b981', text: '#022c22', cardBg: '#f0fdf4', softBg: '#d1fae5' },
-  { id: 'golden_sun', name: '⭐ Golden Sun', border: '#b45309', accent: '#f59e0b', text: '#451a03', cardBg: '#fffbeb', softBg: '#fef3c7' },
-  { id: 'lavender_mist', name: '🦄 Lavender Mist', border: '#6d28d9', accent: '#8b5cf6', text: '#2e1065', cardBg: '#f5f3ff', softBg: '#ede9fe' },
-  { id: 'mint_sparkle', name: '🍃 Mint Sparkle', border: '#0f766e', accent: '#14b8a6', text: '#042f2e', cardBg: '#f0fdfa', softBg: '#ccfbf1' },
 
-  // 5 Frame Spesial (Gaya Bingkai Dekoratif, Anime, Lucu)
-  { id: 'special_chibi', name: '🍡 Special: Chibi Kawaii', border: '#ec4899', accent: '#f472b6', text: '#be185d', cardBg: '#fff1f2', softBg: '#ffe4e6', isSpecial: true, badge: '🍡 CHIBI' },
-  { id: 'special_anime', name: '🌸 Special: Sakura Anime', border: '#f43f5e', accent: '#fb7185', text: '#881337', cardBg: '#fffdfd', softBg: '#ffe4e6', isSpecial: true, badge: '✨ SAKURA' },
-  { id: 'special_cat', name: '🐱 Special: Neko Purrfect', border: '#d97706', accent: '#fbbf24', text: '#78350f', cardBg: '#fffbeb', softBg: '#fef3c7', isSpecial: true, badge: '🐾 NEKO' },
-  { id: 'special_magical', name: '🪄 Special: Magical Star', border: '#7c3aed', accent: '#a78bfa', text: '#4c1d95', cardBg: '#f5f3ff', softBg: '#ede9fe', isSpecial: true, badge: '⭐ MAGICAL' },
-  { id: 'special_dinopet', name: '🦖 Special: Dino Cute', border: '#059669', accent: '#34d399', text: '#065f46', cardBg: '#ecfdf5', softBg: '#d1fae5', isSpecial: true, badge: '🦖 DINO' }
+  // 30 Bingkai Spesial (Pikachu, Spider-Man, Anime, Karakter Lucu, dll)
+  { id: 'sp_pikachu', name: '⚡ Pikachu Yellow', border: '#eab308', accent: '#facc15', text: '#713f12', cardBg: '#fefce8', softBg: '#fef9c3', isSpecial: true, badge: '⚡ PIKACHU' },
+  { id: 'sp_spiderman', name: '🕷️ Spider Hero', border: '#dc2626', accent: '#2563eb', text: '#991b1b', cardBg: '#fef2f2', softBg: '#fee2e2', isSpecial: true, badge: '🕷️ SPIDER' },
+  { id: 'sp_naruto', name: '🍥 Ninja Uzumaki', border: '#ea580c', accent: '#f97316', text: '#7c2d12', cardBg: '#fff7ed', softBg: '#ffedd5', isSpecial: true, badge: '🍥 NARUTO' },
+  { id: 'sp_luffy', name: '🏴‍☠️ Pirate King', border: '#b91c1c', accent: '#15803d', text: '#7f1d1d', cardBg: '#fef2f2', softBg: '#dcfce7', isSpecial: true, badge: '🏴‍☠️ LUFFY' },
+  { id: 'sp_gojo', name: '👁️ Jujutsu Infinite', border: '#1e1b4b', accent: '#38bdf8', text: '#312e81', cardBg: '#f8fafc', softBg: '#e0f2fe', isSpecial: true, badge: '👁️ GOJO' },
+  { id: 'sp_demonslayer', name: '👺 Demon Slayer', border: '#991b1b', accent: '#14532d', text: '#450a0a', cardBg: '#fff5f5', softBg: '#dcfce7', isSpecial: true, badge: '👺 KIMETSU' },
+  { id: 'sp_hellokitty', name: '🎀 Hello Kitty', border: '#f43f5e', accent: '#fb7185', text: '#9f1239', cardBg: '#fff1f2', softBg: '#ffe4e6', isSpecial: true, badge: '🎀 KITTY' },
+  { id: 'sp_cinnamon', name: '☁️ Cinnamoroll', border: '#0284c7', accent: '#38bdf8', text: '#0369a1', cardBg: '#f0f9ff', softBg: '#e0f2fe', isSpecial: true, badge: '☁️ CINNAMON' },
+  { id: 'sp_melody', name: '🐰 My Melody', border: '#ec4899', accent: '#f472b6', text: '#831843', cardBg: '#fdf2f8', softBg: '#fce7f3', isSpecial: true, badge: '🐰 MELODY' },
+  { id: 'sp_kuromi', name: '🖤 Kuromi Punk', border: '#581c87', accent: '#a855f7', text: '#3b0764', cardBg: '#faf5ff', softBg: '#f3e8ff', isSpecial: true, badge: '🖤 KUROMI' },
+  { id: 'sp_stitch', name: '💙 Stitch Ohana', border: '#1d4ed8', accent: '#60a5fa', text: '#1e3a8a', cardBg: '#eff6ff', softBg: '#dbeafe', isSpecial: true, badge: '💙 STITCH' },
+  { id: 'sp_pooh', name: '🍯 Winnie Honey', border: '#d97706', accent: '#fbbf24', text: '#78350f', cardBg: '#fffbeb', softBg: '#fef3c7', isSpecial: true, badge: '🍯 POOH' },
+  { id: 'sp_mickey', name: '🐭 Mickey Classic', border: '#18181b', accent: '#dc2626', text: '#09090b', cardBg: '#f4f4f5', softBg: '#f1f5f9', isSpecial: true, badge: '🐭 MICKEY' },
+  { id: 'sp_batman', name: '🦇 Dark Knight', border: '#09090b', accent: '#eab308', text: '#27272a', cardBg: '#18181b', softBg: '#27272a', isSpecial: true, badge: '🦇 BATMAN' },
+  { id: 'sp_deadpool', name: '⚔️ Deadpool & Chimi', border: '#b91c1c', accent: '#18181b', text: '#7f1d1d', cardBg: '#fef2f2', softBg: '#f3f4f6', isSpecial: true, badge: '⚔️ DEADPOOL' },
+  { id: 'sp_ironman', name: '🦾 Stark Armor', border: '#b91c1c', accent: '#eab308', text: '#7f1d1d', cardBg: '#fffbeb', softBg: '#fef3c7', isSpecial: true, badge: '🦾 STARK' },
+  { id: 'sp_goku', name: '🔥 Super Saiyan', border: '#ea580c', accent: '#2563eb', text: '#7c2d12', cardBg: '#fff7ed', softBg: '#dbeafe', isSpecial: true, badge: '🔥 GOKU' },
+  { id: 'sp_sailormoon', name: '🌙 Sailor Moon', border: '#db2777', accent: '#facc15', text: '#831843', cardBg: '#fdf2f8', softBg: '#fef9c3', isSpecial: true, badge: '🌙 MOON' },
+  { id: 'sp_totoro', name: '🌳 Totoro Forest', border: '#15803d', accent: '#4ade80', text: '#14532d', cardBg: '#f0fdf4', softBg: '#dcfce7', isSpecial: true, badge: '🌳 TOTORO' },
+  { id: 'sp_doraemon', name: '🔔 Doraemon Time', border: '#0284c7', accent: '#f43f5e', text: '#0369a1', cardBg: '#f0f9ff', softBg: '#fff1f2', isSpecial: true, badge: '🔔 DORAEMON' },
+  { id: 'sp_sponge', name: '🍍 Bikini Bottom', border: '#ca8a04', accent: '#0284c7', text: '#713f12', cardBg: '#fefce8', softBg: '#e0f2fe', isSpecial: true, badge: '🍍 SPONGE' },
+  { id: 'sp_barbie', name: '💖 Barbie Dream', border: '#ec4899', accent: '#f472b6', text: '#831843', cardBg: '#fdf2f8', softBg: '#fce7f3', isSpecial: true, badge: '💖 BARBIE' },
+  { id: 'sp_harry', name: '⚡ Hogwarts Magic', border: '#78350f', accent: '#b45309', text: '#451a03', cardBg: '#fdf8f6', softBg: '#fef3c7', isSpecial: true, badge: '⚡ HOGWARTS' },
+  { id: 'sp_frozen', name: '❄️ Frozen Ice', border: '#0284c7', accent: '#9333ea', text: '#0369a1', cardBg: '#f0f9ff', softBg: '#f3e8ff', isSpecial: true, badge: '❄️ FROZEN' },
+  { id: 'sp_minecraft', name: '🟩 Pixel Craft', border: '#15803d', accent: '#78716c', text: '#14532d', cardBg: '#f0fdf4', softBg: '#f5f5f4', isSpecial: true, badge: '🟩 CRAFT' },
+  { id: 'sp_cherry', name: '🌸 Sakura Blossom', border: '#f43f5e', accent: '#fda4af', text: '#881337', cardBg: '#fff1f2', softbg: '#ffe4e6', isSpecial: true, badge: '🌸 SAKURA' },
+  { id: 'sp_matchacat', name: '🍵 Neko Matcha', border: '#15803d', accent: '#d97706', text: '#14532d', cardBg: '#f0fdf4', softBg: '#fef3c7', isSpecial: true, badge: '🍵 MATCHA' },
+  { id: 'sp_cyberpunk', name: '🌆 Neo City', border: '#9333ea', accent: '#db2777', text: '#3b0764', cardBg: '#faf5ff', softBg: '#fce7f3', isSpecial: true, badge: '🌆 CYBER' },
+  { id: 'sp_sunsetglow', name: '🌇 Golden Hour', border: '#c2410c', accent: '#fb923c', text: '#7c2d12', cardBg: '#fff7ed', softBg: '#ffedd5', isSpecial: true, badge: '🌇 SUNSET' },
+  { id: 'sp_lovelock', name: '🔐 Eternal Love', border: '#991b1b', accent: '#f43f5e', text: '#450a0a', cardBg: '#fff5f5', softBg: '#fff1f2', isSpecial: true, badge: '🔐 ETERNAL' }
 ];
 
 const stickerOptions = ['🧸', '💖', '✨', '🌹', '👑', '💐', '🍫', '💍', '💋', '💌', '🍓', '🎀', '⭐', '🦋', '🧊', '🍰', '🐱', '🐥', '🍀', '🔥'];
@@ -1084,10 +1104,10 @@ export default function LiveLoveRoomWithPhotobooth() {
       if (currentTheme.isSpecial) {
         ctx.save();
         ctx.font = '28px sans-serif';
-        ctx.fillText(currentTheme.id === 'special_chibi' ? '🎀' : currentTheme.id === 'special_anime' ? '🌸' : currentTheme.id === 'special_cat' ? '🐾' : currentTheme.id === 'special_magical' ? '⭐' : '🦖', 30, 50);
-        ctx.fillText(currentTheme.id === 'special_chibi' ? '🧸' : currentTheme.id === 'special_anime' ? '✨' : currentTheme.id === 'special_cat' ? '🐱' : currentTheme.id === 'special_magical' ? '🌙' : '💚', 565, 50);
-        ctx.fillText(currentTheme.id === 'special_chibi' ? '🍫' : currentTheme.id === 'special_anime' ? '💖' : currentTheme.id === 'special_cat' ? '🐟' : currentTheme.id === 'special_magical' ? '🪄' : '🌿', 30, 1205);
-        ctx.fillText(currentTheme.id === 'special_chibi' ? '🎀' : currentTheme.id === 'special_anime' ? '🌸' : currentTheme.id === 'special_cat' ? '🐾' : currentTheme.id === 'special_magical' ? '⭐' : '🦖', 565, 1205);
+        ctx.fillText(currentTheme.badge.split(' ')[0], 30, 50);
+        ctx.fillText('✨', 565, 50);
+        ctx.fillText('💖', 30, 1205);
+        ctx.fillText(currentTheme.badge.split(' ')[0], 565, 1205);
         ctx.restore();
       }
 
@@ -1105,7 +1125,7 @@ export default function LiveLoveRoomWithPhotobooth() {
       ctx.save();
       ctx.fillStyle = currentTheme.border;
       ctx.beginPath();
-      ctx.roundRect(240, 945, 150, 26, 13);
+      ctx.roundRect(220, 945, 190, 26, 13);
       ctx.fill();
       ctx.fillStyle = '#ffffff';
       ctx.font = 'bold 11px sans-serif';
@@ -1671,7 +1691,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                   <div className="space-y-2.5 w-full text-left my-auto overflow-y-auto max-h-[78vh] pr-1">
                     <div className="text-center">
                       <h3 className="font-bold text-stone-900 text-sm">Photobooth Studio Bersama 📸</h3>
-                      <p className="text-[11px] text-stone-500">Pilih 10 Layout & 20 Pilihan Warna/Tema Frame!</p>
+                      <p className="text-[11px] text-stone-500">Pilih 10 Layout & 30 Bingkai Spesial (Pikachu, Spider, Anime, dll)!</p>
                     </div>
 
                     <div>
@@ -1684,7 +1704,7 @@ export default function LiveLoveRoomWithPhotobooth() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-stone-600 mb-1">Pilih Tema Warna & Frame Spesial (20 Pilihan):</label>
+                      <label className="block text-[11px] font-bold text-stone-600 mb-1">Pilih Bingkai & Warna (30 Pilihan):</label>
                       <div className="grid grid-cols-2 gap-1 max-h-[140px] overflow-y-auto pr-1">
                         {frameThemes.map((theme) => (
                           <button key={theme.id} onClick={() => handleThemeChange(theme.id)} className={`py-1.5 px-2 rounded-xl text-[10px] font-bold border transition cursor-pointer flex items-center justify-between ${selectedTheme === theme.id ? 'bg-stone-900 text-white border-stone-900 shadow-sm' : theme.isSpecial ? 'bg-pink-50 text-pink-700 border-pink-200 hover:bg-pink-100' : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'}`}>
